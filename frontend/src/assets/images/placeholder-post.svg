@@ -1,0 +1,10 @@
+<!-- Placeholder image for posts -->
+<svg width="300" height="200" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="200" fill="#a1bbcd"/>
+  <rect x="25" y="75" width="250" height="100" fill="#92c2e7" stroke="#283e54" stroke-width="2"/>
+  <polygon points="25,75 150,25 275,75" fill="#9e7f62" stroke="#283e54" stroke-width="2"/>
+  <rect x="50" y="100" width="40" height="60" fill="#72b0e0" stroke="#283e54" stroke-width="1"/>
+  <rect x="125" y="110" width="50" height="30" fill="#601516" stroke="#283e54" stroke-width="1"/>
+  <rect x="200" y="100" width="40" height="40" fill="#601516" stroke="#283e54" stroke-width="1"/>
+  <text x="150" y="190" text-anchor="middle" fill="#283e54" font-family="Arial" font-size="12">Design Preview</text>
+</svg>

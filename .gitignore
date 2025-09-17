@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+dist/
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build files
+/frontend/dist/
+/backend/house_design
+/backend/main
+
+# Temporary files
+tmp/
+temp/
+
+# Angular specific
+/frontend/.angular/
+/frontend/angular.json.backup
+
+# Go specific
+/backend/*.exe
+/backend/*.exe~
+/backend/*.dll
+/backend/*.so
+/backend/*.dylib
+/backend/vendor/
+
+# Data uploads (keep structure but ignore uploaded files)
+/backend/data/uploads/*
+!/backend/data/uploads/.gitkeep

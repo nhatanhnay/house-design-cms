@@ -1,0 +1,11 @@
+# Ignore all uploaded files but keep directory structure
+uploads/images/*
+uploads/videos/*
+
+# Keep .gitkeep files to preserve directory structure
+!uploads/images/.gitkeep
+!uploads/videos/.gitkeep
+!uploads/.gitkeep
+
+# Keep the gitignore file
+!.gitignore

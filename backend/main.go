@@ -1,0 +1,100 @@
+package main
+
+import (
+	"log"
+	"os"
+
+	"house-design-backend/config"
+	"house-design-backend/database"
+	"house-design-backend/handlers"
+	"house-design-backend/middleware"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	// Load environment variables
+	if err := config.LoadEnv(); err != nil {
+		log.Println("Warning: Failed to load .env file:", err)
+	}
+
+	// Initialize database
+	database.InitDatabase()
+	defer database.DB.Close()
+
+	// Initialize Gin router
+	r := gin.Default()
+
+	// CORS middleware
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:4200"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
+
+	// API routes
+	api := r.Group("/api")
+	{
+		// Authentication routes
+		auth := api.Group("/auth")
+		{
+			auth.POST("/login", handlers.Login)
+			auth.POST("/logout", handlers.Logout)
+		}
+
+		// Public routes
+		api.GET("/categories", handlers.GetCategories)
+		api.GET("/posts", handlers.GetPosts)
+		api.GET("/posts/:id", handlers.GetPost)
+		api.GET("/articles", handlers.GetArticles)
+		api.GET("/articles/:identifier", handlers.GetArticle)
+
+		// Protected routes (require authentication)
+		protected := api.Group("/")
+		protected.Use(middleware.AuthMiddleware())
+		{
+			// Categories management
+			protected.POST("/categories", handlers.CreateCategory)
+			protected.PUT("/categories/:id", handlers.UpdateCategory)
+			protected.DELETE("/categories/:id", handlers.DeleteCategory)
+
+			// Posts management
+			protected.POST("/posts", handlers.CreatePost)
+			protected.PUT("/posts/:id", handlers.UpdatePost)
+			protected.DELETE("/posts/:id", handlers.DeletePost)
+
+			// Articles management
+			protected.POST("/articles", handlers.CreateArticle)
+			protected.PUT("/articles/:id", handlers.UpdateArticle)
+			protected.DELETE("/articles/:id", handlers.DeleteArticle)
+
+			// Media uploads
+			protected.POST("/upload", handlers.UploadImage)
+			protected.POST("/upload-video", handlers.UploadVideo)
+		}
+	}
+
+	// Serve static files for uploaded media
+	r.Static("/data", "./data")
+
+	// Health check endpoint
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "ok",
+			"message": "House Design API is running",
+		})
+	})
+
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("Server starting on :%s", port)
+	if err := r.Run(":" + port); err != nil {
+		log.Fatal("Failed to start server:", err)
+	}
+}

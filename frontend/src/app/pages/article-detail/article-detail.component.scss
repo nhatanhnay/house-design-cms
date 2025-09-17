@@ -1,0 +1,310 @@
+.article-detail-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.article-navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 24px;
+
+  .back-button, .share-button {
+    background-color: #f5f5f5;
+
+    &:hover {
+      background-color: #e0e0e0;
+    }
+  }
+}
+
+.article-header {
+  margin-bottom: 32px;
+
+  .article-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #666;
+
+    .category {
+      background-color: #3f51b5;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .view-count {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  .article-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 16px 0;
+    color: #333;
+  }
+
+  .article-summary {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    color: #666;
+    margin-bottom: 24px;
+  }
+
+  .article-tags {
+    margin-bottom: 16px;
+
+    mat-chip-set {
+      mat-chip {
+        background-color: #e3f2fd;
+        color: #1976d2;
+      }
+    }
+  }
+
+  .author-info {
+    font-size: 14px;
+    color: #888;
+
+    .author-name {
+      font-weight: 500;
+    }
+  }
+}
+
+.featured-image {
+  margin-bottom: 32px;
+  text-align: center;
+
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.article-content {
+  margin-bottom: 48px;
+
+  .content-body {
+    line-height: 1.8;
+    font-size: 1.1rem;
+    color: #333;
+
+    ::ng-deep {
+      h1, h2, h3, h4, h5, h6 {
+        margin-top: 32px;
+        margin-bottom: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+      }
+
+      h1 { font-size: 2rem; }
+      h2 { font-size: 1.75rem; }
+      h3 { font-size: 1.5rem; }
+      h4 { font-size: 1.25rem; }
+      h5 { font-size: 1.1rem; }
+      h6 { font-size: 1rem; }
+
+      p {
+        margin-bottom: 16px;
+      }
+
+      ul, ol {
+        margin: 16px 0;
+        padding-left: 24px;
+
+        li {
+          margin-bottom: 8px;
+        }
+      }
+
+      blockquote {
+        border-left: 4px solid #3f51b5;
+        padding: 16px;
+        margin: 24px 0;
+        background-color: #f8f9fa;
+        font-style: italic;
+
+        p:last-child {
+          margin-bottom: 0;
+        }
+      }
+
+      code {
+        background-color: #f1f3f4;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.9em;
+      }
+
+      pre {
+        background-color: #f8f9fa;
+        padding: 16px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 24px 0;
+
+        code {
+          background-color: transparent;
+          padding: 0;
+        }
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin: 24px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 24px 0;
+
+        th, td {
+          border: 1px solid #ddd;
+          padding: 12px;
+          text-align: left;
+        }
+
+        th {
+          background-color: #f5f5f5;
+          font-weight: 600;
+        }
+
+        tbody tr:nth-child(even) {
+          background-color: #f9f9f9;
+        }
+      }
+
+      a {
+        color: #3f51b5;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+}
+
+.article-footer {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 24px;
+
+  .article-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+}
+
+// Loading and error states
+.loading-container, .error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  padding: 20px;
+}
+
+.loading-card, .error-card {
+  max-width: 400px;
+  text-align: center;
+}
+
+.loading-content, .error-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #666;
+
+    &.loading-spinner {
+      animation: spin 2s linear infinite;
+    }
+  }
+
+  h2 {
+    margin: 0;
+    color: #333;
+  }
+
+  p {
+    margin: 0;
+    color: #666;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .article-detail-container {
+    padding: 16px;
+  }
+
+  .article-header {
+    .article-title {
+      font-size: 2rem;
+    }
+
+    .article-summary {
+      font-size: 1.1rem;
+    }
+
+    .article-meta {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+  }
+
+  .article-content .content-body {
+    font-size: 1rem;
+
+    ::ng-deep {
+      h1 { font-size: 1.75rem; }
+      h2 { font-size: 1.5rem; }
+      h3 { font-size: 1.25rem; }
+    }
+  }
+
+  .article-footer .article-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
