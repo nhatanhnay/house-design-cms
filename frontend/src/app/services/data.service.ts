@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Category, Post, Article } from '../models/models';
+import { map } from 'rxjs/operators';
+import { Category, Post, Article, CreateCategoryRequest, UpdateCategoryRequest, CategoryTreeItem } from '../models/models';
 
 @Injectable({
   providedIn: 'root'
@@ -13,19 +14,87 @@ export class DataService {
 
   // Categories
   getCategories(): Observable<Category[]> {
-    return this.http.get<Category[]>(`${this.apiUrl}/categories`);
+    return this.http.get<any[]>(`${this.apiUrl}/categories`).pipe(
+      map(apiCategories =>
+        apiCategories.map(apiCategory => ({
+          id: apiCategory.id,
+          name: apiCategory.name,
+          slug: apiCategory.slug,
+          description: apiCategory.description,
+          parent_id: apiCategory.parent_id || null,
+          level: apiCategory.level || 0,
+          order_index: apiCategory.order_index || 0,
+          is_active: apiCategory.is_active !== undefined ? apiCategory.is_active : true,
+          created_at: apiCategory.created_at,
+          updated_at: apiCategory.updated_at
+        } as Category))
+      )
+    );
   }
 
-  createCategory(category: Partial<Category>): Observable<Category> {
+  // Get hierarchical categories (main categories with children)
+  getCategoriesHierarchy(): Observable<Category[]> {
+    return this.http.get<Category[]>(`${this.apiUrl}/categories/hierarchy`);
+  }
+
+  // Get only main categories (level 0)
+  getMainCategories(): Observable<Category[]> {
+    return this.http.get<Category[]>(`${this.apiUrl}/categories?level=0`);
+  }
+
+  // Get subcategories for a parent category
+  getSubcategories(parentId: number): Observable<Category[]> {
+    return this.http.get<Category[]>(`${this.apiUrl}/categories?parent_id=${parentId}`);
+  }
+
+  // Build category tree structure for UI
+  buildCategoryTree(categories: Category[]): CategoryTreeItem[] {
+    const categoryMap = new Map<number, CategoryTreeItem>();
+    const tree: CategoryTreeItem[] = [];
+
+    // First pass: create all category items
+    categories.forEach(category => {
+      const treeItem: CategoryTreeItem = {
+        ...category,
+        expanded: false,
+        hasChildren: false,
+        children: []
+      };
+      categoryMap.set(category.id, treeItem);
+    });
+
+    // Second pass: build hierarchy
+    categories.forEach(category => {
+      const treeItem = categoryMap.get(category.id)!;
+
+      if (category.parent_id && categoryMap.has(category.parent_id)) {
+        const parent = categoryMap.get(category.parent_id)!;
+        parent.children = parent.children || [];
+        parent.children.push(treeItem);
+        parent.hasChildren = true;
+      } else {
+        tree.push(treeItem);
+      }
+    });
+
+    return tree.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+  }
+
+  createCategory(category: CreateCategoryRequest): Observable<Category> {
     return this.http.post<Category>(`${this.apiUrl}/categories`, category);
   }
 
-  updateCategory(id: number, category: Partial<Category>): Observable<Category> {
+  updateCategory(id: number, category: UpdateCategoryRequest): Observable<Category> {
     return this.http.put<Category>(`${this.apiUrl}/categories/${id}`, category);
   }
 
   deleteCategory(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/categories/${id}`);
+  }
+
+  // Reorder categories
+  reorderCategories(categoryOrders: Array<{id: number, order_index: number}>): Observable<any> {
+    return this.http.put(`${this.apiUrl}/categories/reorder`, { categories: categoryOrders });
   }
 
   // Posts
@@ -51,6 +120,10 @@ export class DataService {
 
   deletePost(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/posts/${id}`);
+  }
+
+  incrementPostViews(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/posts/${id}/view`, {});
   }
 
   // Articles

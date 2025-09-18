@@ -7,7 +7,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { Observable, switchMap } from 'rxjs';
 import { DataService } from '../../services/data.service';
-import { Post } from '../../models/models';
+import { AuthService } from '../../services/auth.service';
+import { Post, Admin } from '../../models/models';
 
 @Component({
   selector: 'app-post-detail',
@@ -32,7 +33,7 @@ import { Post } from '../../models/models';
                 Trang chủ
               </button>
               <mat-icon>chevron_right</mat-icon>
-              <button mat-button [routerLink]="'/category/' + post.category?.slug" *ngIf="post.category">
+              <button mat-button [routerLink]="'/category/' + post.category.slug" *ngIf="post.category">
                 {{ post.category.name }}
               </button>
               <mat-icon>chevron_right</mat-icon>
@@ -50,9 +51,13 @@ import { Post } from '../../models/models';
                 <mat-icon>category</mat-icon>
                 <span>{{ post.category.name }}</span>
               </div>
-              <div class="meta-item" [class.published]="post.published" [class.draft]="!post.published">
+              <div class="meta-item" *ngIf="currentUser$ | async" [class.published]="post.published" [class.draft]="!post.published">
                 <mat-icon>{{ post.published ? 'visibility' : 'visibility_off' }}</mat-icon>
                 <span>{{ post.published ? 'Đã xuất bản' : 'Bản nháp' }}</span>
+              </div>
+              <div class="meta-item" *ngIf="!(currentUser$ | async)">
+                <mat-icon>visibility</mat-icon>
+                <span>{{ post.views || 0 }} lượt xem</span>
               </div>
             </div>
 
@@ -88,7 +93,7 @@ import { Post } from '../../models/models';
             </div>
 
             <div class="navigation-buttons">
-              <button mat-button [routerLink]="'/category/' + post.category?.slug" *ngIf="post.category">
+              <button mat-button [routerLink]="'/category/' + post.category.slug" *ngIf="post.category">
                 <mat-icon>arrow_back</mat-icon>
                 Quay lại {{ post.category.name }}
               </button>
@@ -457,10 +462,12 @@ export class PostDetailComponent implements OnInit {
   isLoading = true;
   post: Post | null = null;
   hasError = false;
+  currentUser$: Observable<Admin | null>;
 
   constructor(
     private route: ActivatedRoute,
-    private dataService: DataService
+    private dataService: DataService,
+    private authService: AuthService
   ) {
     this.post$ = this.route.params.pipe(
       switchMap(params => {
@@ -469,6 +476,7 @@ export class PostDetailComponent implements OnInit {
         return this.dataService.getPost(id);
       })
     );
+    this.currentUser$ = this.authService.currentUser$;
   }
 
   ngOnInit(): void {
@@ -487,6 +495,11 @@ export class PostDetailComponent implements OnInit {
             this.isLoading = false;
             this.post = post;
             this.hasError = false;
+            // Increment view count
+            this.dataService.incrementPostViews(id).subscribe({
+              next: () => console.log('View count incremented'),
+              error: (error) => console.error('Error incrementing views:', error)
+            });
           },
           error: (error) => {
             console.error('Error loading post:', error);

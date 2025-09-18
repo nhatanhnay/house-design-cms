@@ -40,6 +40,7 @@ func InitDatabase() {
 
 	log.Println("Connected to PostgreSQL database successfully")
 	createTables()
+	migrateCategoriesTable()
 	seedAdminUser()
 }
 
@@ -67,6 +68,10 @@ func createTables() {
 		name VARCHAR(255) NOT NULL,
 		slug VARCHAR(255) UNIQUE NOT NULL,
 		description TEXT,
+		parent_id INTEGER REFERENCES categories(id) ON DELETE CASCADE,
+		level INTEGER DEFAULT 0,
+		order_index INTEGER DEFAULT 0,
+		is_active BOOLEAN DEFAULT TRUE,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	)`
@@ -116,6 +121,30 @@ func createTables() {
 	}
 
 	log.Println("Database tables created successfully")
+}
+
+func migrateCategoriesTable() {
+	// Check if the new columns exist, and add them if they don't
+	migrations := []string{
+		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES categories(id) ON DELETE CASCADE",
+		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 0",
+		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0",
+		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
+	}
+
+	for _, migration := range migrations {
+		if _, err := DB.Exec(migration); err != nil {
+			log.Printf("Migration warning: %v", err)
+		}
+	}
+
+	// Update existing categories to have proper order_index
+	_, err := DB.Exec("UPDATE categories SET order_index = id WHERE order_index = 0")
+	if err != nil {
+		log.Printf("Failed to update order_index: %v", err)
+	}
+
+	log.Println("Categories table migration completed")
 }
 
 func seedAdminUser() {

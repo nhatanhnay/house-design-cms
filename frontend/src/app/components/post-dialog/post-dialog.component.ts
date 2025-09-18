@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { CKEditorModule } from '@ckeditor/ckeditor5-angular';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
@@ -29,6 +30,7 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
     MatButtonModule,
     MatSelectModule,
     MatCheckboxModule,
+    MatIconModule,
     CKEditorModule
   ],
   template: `
@@ -62,10 +64,49 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
           <textarea matInput formControlName="summary" rows="3" placeholder="Nhập tóm tắt bài viết"></textarea>
         </mat-form-field>
 
-        <mat-form-field appearance="fill" class="full-width">
-          <mat-label>URL hình ảnh</mat-label>
-          <input matInput formControlName="image_url" placeholder="Nhập URL hình ảnh">
-        </mat-form-field>
+        <div class="image-upload-field">
+          <label class="upload-label">Hình ảnh thumbnail</label>
+          <div class="upload-container">
+            <input
+              type="file"
+              #fileInput
+              accept="image/*"
+              (change)="onImageSelect($event)"
+              style="display: none">
+
+            <div class="upload-area"
+                 (click)="fileInput.click()"
+                 [class.has-image]="selectedImageUrl">
+
+              <div class="upload-content" *ngIf="!selectedImageUrl && !isUploadingImage">
+                <mat-icon class="upload-icon">cloud_upload</mat-icon>
+                <p>Nhấn để chọn hình ảnh</p>
+                <span class="upload-hint">PNG, JPG, GIF tối đa 5MB</span>
+              </div>
+
+              <div class="upload-loading" *ngIf="isUploadingImage">
+                <div class="loading-spinner"></div>
+                <p>Đang tải lên...</p>
+              </div>
+
+              <div class="image-preview" *ngIf="selectedImageUrl && !isUploadingImage">
+                <img [src]="selectedImageUrl" [alt]="postForm.get('title')?.value || 'Preview'">
+                <div class="image-overlay">
+                  <button mat-icon-button type="button" (click)="removeImage($event)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                  <button mat-icon-button type="button" (click)="$event.stopPropagation(); fileInput.click()">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <mat-error *ngIf="imageUploadError">
+              {{ imageUploadError }}
+            </mat-error>
+          </div>
+        </div>
 
         <div class="editor-field">
           <label class="editor-label">Nội dung</label>
@@ -148,6 +189,134 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
       font-size: 12px;
       margin-top: 4px;
     }
+
+    /* Image Upload Styles */
+    .image-upload-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .upload-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.6);
+    }
+
+    .upload-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .upload-area {
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: #fafafa;
+    }
+
+    .upload-area:hover {
+      border-color: #1976d2;
+      background: #f0f8ff;
+    }
+
+    .upload-area.has-image {
+      padding: 0;
+      border: 1px solid #ddd;
+      min-height: 200px;
+    }
+
+    .upload-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: #666;
+    }
+
+    .upload-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      color: #1976d2;
+    }
+
+    .upload-hint {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .upload-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      color: #666;
+    }
+
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #1976d2;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .image-preview {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 200px;
+    }
+
+    .image-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .image-overlay {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .image-preview:hover .image-overlay {
+      opacity: 1;
+    }
+
+    .image-overlay button {
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      border: none;
+      width: 36px;
+      height: 36px;
+    }
+
+    .image-overlay button:hover {
+      background: rgba(0, 0, 0, 0.9);
+    }
   `]
 })
 export class PostDialogComponent implements OnInit {
@@ -155,7 +324,12 @@ export class PostDialogComponent implements OnInit {
   isLoading = false;
   categories$: Observable<Category[]>;
 
-  public Editor = ClassicEditor;
+  // Image upload properties
+  selectedImageUrl: string | null = null;
+  isUploadingImage = false;
+  imageUploadError: string | null = null;
+
+  public Editor: any = ClassicEditor;
   public editorConfig: any;
 
   constructor(
@@ -243,6 +417,8 @@ export class PostDialogComponent implements OnInit {
         content: post.content,
         published: post.published
       });
+      // Set the selected image URL for preview
+      this.selectedImageUrl = post.image_url || null;
     }
   }
 
@@ -277,5 +453,48 @@ export class PostDialogComponent implements OnInit {
         }
       });
     }
+  }
+
+  onImageSelect(event: any): void {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file size (5MB limit)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      this.imageUploadError = 'Kích thước tệp không được vượt quá 5MB';
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      this.imageUploadError = 'Chỉ chấp nhận tệp hình ảnh';
+      return;
+    }
+
+    this.imageUploadError = null;
+    this.isUploadingImage = true;
+
+    this.uploadService.uploadImage(file).subscribe({
+      next: (response) => {
+        this.isUploadingImage = false;
+        this.selectedImageUrl = response.url;
+        this.postForm.patchValue({ image_url: response.url });
+        this.snackBar.open('Tải lên hình ảnh thành công!', 'Đóng', { duration: 3000 });
+      },
+      error: (error) => {
+        this.isUploadingImage = false;
+        this.imageUploadError = 'Lỗi khi tải lên hình ảnh. Vui lòng thử lại.';
+        this.snackBar.open('Lỗi khi tải lên hình ảnh!', 'Đóng', { duration: 3000 });
+        console.error('Image upload error:', error);
+      }
+    });
+  }
+
+  removeImage(event: Event): void {
+    event.stopPropagation();
+    this.selectedImageUrl = null;
+    this.postForm.patchValue({ image_url: '' });
+    this.imageUploadError = null;
   }
 }

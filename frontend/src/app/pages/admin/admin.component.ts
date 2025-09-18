@@ -8,11 +8,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { DataService } from '../../services/data.service';
 import { AuthService } from '../../services/auth.service';
-import { Category, Post, Admin } from '../../models/models';
+import { Category, Post, Admin, CategoryTreeItem } from '../../models/models';
 import { CategoryDialogComponent } from '../../components/category-dialog/category-dialog.component';
 import { PostDialogComponent } from '../../components/post-dialog/post-dialog.component';
 
@@ -27,7 +29,8 @@ import { PostDialogComponent } from '../../components/post-dialog/post-dialog.co
     MatButtonModule,
     MatIconModule,
     MatTableModule,
-    MatDialogModule
+    MatDialogModule,
+    MatTooltipModule
   ],
   template: `
     <div class="admin-page">
@@ -48,54 +51,103 @@ import { PostDialogComponent } from '../../components/post-dialog/post-dialog.co
           <mat-tab label="Quản Lý Danh Mục">
             <div class="tab-content">
               <div class="section-header">
-                <h2>Danh Mục</h2>
-                <button mat-raised-button 
-                        color="primary" 
-                        (click)="openCategoryDialog()">
-                  <mat-icon>add</mat-icon>
-                  Thêm Danh Mục
-                </button>
+                <h2>Danh Mục Hệ Thống</h2>
+                <div class="category-actions">
+                  <button mat-raised-button
+                          color="primary"
+                          (click)="openCategoryDialog()">
+                    <mat-icon>add</mat-icon>
+                    Thêm Danh Mục Chính
+                  </button>
+                  <button mat-stroked-button
+                          color="primary"
+                          (click)="openCategoryDialog(null, true)">
+                    <mat-icon>add_circle_outline</mat-icon>
+                    Thêm Danh Mục Con
+                  </button>
+                </div>
               </div>
-              
-              <mat-card class="data-table-card">
-                <table mat-table [dataSource]="(categories$ | async) || []" class="admin-table">
-                  <ng-container matColumnDef="id">
-                    <th mat-header-cell *matHeaderCellDef>ID</th>
-                    <td mat-cell *matCellDef="let category">{{ category.id }}</td>
-                  </ng-container>
-                  
-                  <ng-container matColumnDef="name">
-                    <th mat-header-cell *matHeaderCellDef>Tên</th>
-                    <td mat-cell *matCellDef="let category">{{ category.name }}</td>
-                  </ng-container>
-                  
-                  <ng-container matColumnDef="slug">
-                    <th mat-header-cell *matHeaderCellDef>Slug</th>
-                    <td mat-cell *matCellDef="let category">{{ category.slug }}</td>
-                  </ng-container>
-                  
-                  <ng-container matColumnDef="description">
-                    <th mat-header-cell *matHeaderCellDef>Mô tả</th>
-                    <td mat-cell *matCellDef="let category">{{ category.description }}</td>
-                  </ng-container>
-                  
-                  <ng-container matColumnDef="actions">
-                    <th mat-header-cell *matHeaderCellDef>Hành động</th>
-                    <td mat-cell *matCellDef="let category">
-                      <button mat-icon-button (click)="editCategory(category)">
-                        <mat-icon>edit</mat-icon>
-                      </button>
-                      <button mat-icon-button 
-                              color="warn" 
-                              (click)="deleteCategory(category.id)">
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                    </td>
-                  </ng-container>
-                  
-                  <tr mat-header-row *matHeaderRowDef="categoryColumns"></tr>
-                  <tr mat-row *matRowDef="let row; columns: categoryColumns;"></tr>
-                </table>
+
+              <!-- Category Tree View -->
+              <mat-card class="category-tree-card">
+                <div class="category-tree" *ngIf="categoryTree$ | async as tree">
+                  <div class="tree-item main-category"
+                       *ngFor="let mainCategory of tree"
+                       [class.expanded]="mainCategory.expanded">
+
+                    <!-- Main Category -->
+                    <div class="category-header">
+                      <div class="category-info">
+                        <button mat-icon-button
+                                class="expand-btn"
+                                *ngIf="mainCategory.hasChildren"
+                                (click)="toggleCategory(mainCategory)">
+                          <mat-icon>{{ mainCategory.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                        </button>
+                        <mat-icon class="category-icon">{{ getCategoryIcon(mainCategory.slug) }}</mat-icon>
+                        <div class="category-details">
+                          <div class="category-name">{{ mainCategory.name }}</div>
+                          <div class="category-meta">{{ mainCategory.slug }} • {{ mainCategory.description }}</div>
+                        </div>
+                      </div>
+                      <div class="category-actions-inline">
+                        <button mat-icon-button
+                                (click)="openCategoryDialog(null, true, mainCategory.id)"
+                                matTooltip="Thêm danh mục con">
+                          <mat-icon>add_circle_outline</mat-icon>
+                        </button>
+                        <button mat-icon-button
+                                (click)="editCategory(mainCategory)"
+                                matTooltip="Chỉnh sửa">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button
+                                color="warn"
+                                (click)="deleteCategory(mainCategory.id)"
+                                matTooltip="Xóa">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Subcategories -->
+                    <div class="subcategories" *ngIf="mainCategory.expanded && mainCategory.children?.length">
+                      <div class="tree-item subcategory"
+                           *ngFor="let subcategory of mainCategory.children">
+                        <div class="category-header subcategory-header">
+                          <div class="category-info">
+                            <div class="subcategory-indicator"></div>
+                            <mat-icon class="category-icon subcategory-icon">{{ getCategoryIcon(subcategory.slug) }}</mat-icon>
+                            <div class="category-details">
+                              <div class="category-name">{{ subcategory.name }}</div>
+                              <div class="category-meta">{{ subcategory.slug }} • {{ subcategory.description }}</div>
+                            </div>
+                          </div>
+                          <div class="category-actions-inline">
+                            <button mat-icon-button
+                                    (click)="editCategory(subcategory)"
+                                    matTooltip="Chỉnh sửa">
+                              <mat-icon>edit</mat-icon>
+                            </button>
+                            <button mat-icon-button
+                                    color="warn"
+                                    (click)="deleteCategory(subcategory.id)"
+                                    matTooltip="Xóa">
+                              <mat-icon>delete</mat-icon>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" *ngIf="!(categoryTree$ | async)?.length">
+                  <mat-icon class="empty-icon">category</mat-icon>
+                  <h3>Chưa có danh mục nào</h3>
+                  <p>Hãy tạo danh mục đầu tiên để bắt đầu</p>
+                </div>
               </mat-card>
             </div>
           </mat-tab>
@@ -141,6 +193,11 @@ import { PostDialogComponent } from '../../components/post-dialog/post-dialog.co
                     </td>
                   </ng-container>
                   
+                  <ng-container matColumnDef="views">
+                    <th mat-header-cell *matHeaderCellDef>Lượt xem</th>
+                    <td mat-cell *matCellDef="let post">{{ post.views || 0 }}</td>
+                  </ng-container>
+
                   <ng-container matColumnDef="created_at">
                     <th mat-header-cell *matHeaderCellDef>Ngày tạo</th>
                     <td mat-cell *matCellDef="let post">{{ post.created_at | date:'dd/MM/yyyy' }}</td>
@@ -261,19 +318,172 @@ import { PostDialogComponent } from '../../components/post-dialog/post-dialog.co
       color: white;
     }
     
+    /* Category Tree Styles */
+    .category-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .category-tree-card {
+      padding: 0;
+      overflow: visible;
+    }
+
+    .category-tree {
+      padding: 16px;
+    }
+
+    .tree-item {
+      margin-bottom: 8px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .main-category {
+      border: 1px solid #e0e0e0;
+      background: white;
+    }
+
+    .category-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      min-height: 64px;
+      background: white;
+    }
+
+    .main-category .category-header {
+      background: #f8f9fa;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .category-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .expand-btn {
+      color: var(--biscons-blue, #0170B9);
+    }
+
+    .category-icon {
+      font-size: 24px;
+      color: var(--biscons-blue, #0170B9);
+    }
+
+    .subcategory-icon {
+      font-size: 20px;
+      color: #666;
+    }
+
+    .category-details {
+      flex: 1;
+    }
+
+    .category-name {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: var(--dark-blue, #1a365d);
+      margin-bottom: 4px;
+    }
+
+    .category-meta {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .category-actions-inline {
+      display: flex;
+      gap: 4px;
+    }
+
+    .subcategories {
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .subcategory {
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .subcategory:last-child {
+      border-bottom: none;
+    }
+
+    .subcategory-header {
+      background: white;
+      padding: 12px 16px;
+      min-height: auto;
+    }
+
+    .subcategory-indicator {
+      width: 24px;
+      height: 2px;
+      background: var(--biscons-blue, #0170B9);
+      margin-left: 12px;
+    }
+
+    .subcategory .category-name {
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .subcategory .category-meta {
+      font-size: 0.85rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      color: #ddd;
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      margin-bottom: 8px;
+      color: var(--dark-blue, #1a365d);
+    }
+
+    .empty-state p {
+      margin: 0;
+    }
+
     @media (max-width: 768px) {
       .admin-header {
         flex-direction: column;
         gap: 15px;
         text-align: center;
       }
-      
+
       .section-header {
         flex-direction: column;
         gap: 15px;
         align-items: stretch;
       }
-      
+
+      .category-actions {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .category-header {
+        padding: 12px;
+        min-height: auto;
+      }
+
+      .category-actions-inline {
+        flex-direction: column;
+        gap: 2px;
+      }
+
       .data-table-card {
         overflow-x: auto;
       }
@@ -283,11 +493,12 @@ import { PostDialogComponent } from '../../components/post-dialog/post-dialog.co
 })
 export class AdminComponent implements OnInit {
   categories$!: Observable<Category[]>;
+  categoryTree$!: Observable<CategoryTreeItem[]>;
   posts$!: Observable<Post[]>;
   currentUser$: Observable<Admin | null>;
 
   categoryColumns: string[] = ['id', 'name', 'slug', 'description', 'actions'];
-  postColumns: string[] = ['id', 'title', 'category', 'published', 'created_at', 'actions'];
+  postColumns: string[] = ['id', 'title', 'category', 'published', 'views', 'created_at', 'actions'];
 
   constructor(
     private dataService: DataService,
@@ -305,6 +516,9 @@ export class AdminComponent implements OnInit {
 
   loadData(): void {
     this.categories$ = this.dataService.getCategories();
+    this.categoryTree$ = this.categories$.pipe(
+      map(categories => this.dataService.buildCategoryTree(categories))
+    );
     this.posts$ = this.dataService.getPosts();
   }
 
@@ -322,10 +536,15 @@ export class AdminComponent implements OnInit {
   }
 
   // Category methods
-  openCategoryDialog(category?: Category): void {
+  openCategoryDialog(category?: Category | null, isSubcategory: boolean = false, parentId?: number): void {
     const dialogRef = this.dialog.open(CategoryDialogComponent, {
-      width: '500px',
-      data: { category }
+      width: '600px',
+      data: {
+        category,
+        isSubcategory,
+        parentId,
+        allCategories: this.categories$
+      }
     });
 
     dialogRef.afterClosed().subscribe(result => {
@@ -333,6 +552,37 @@ export class AdminComponent implements OnInit {
         this.loadData(); // Reload data after successful save
       }
     });
+  }
+
+  toggleCategory(category: CategoryTreeItem): void {
+    category.expanded = !category.expanded;
+  }
+
+  getCategoryIcon(slug: string): string {
+    const iconMap: { [key: string]: string } = {
+      // Main categories
+      'gioi-thieu': 'info',
+      'du-an-thiet-ke': 'architecture',
+      'cong-trinh-thuc-te': 'business',
+      'dich-vu': 'handyman',
+      'tin-tuc': 'newspaper',
+      'tuyen-dung': 'work',
+      'lien-he': 'contact_page',
+
+      // Subcategories
+      'biet-thu-hien-dai': 'home',
+      'nha-pho-hien-dai': 'apartment',
+      'van-phong': 'business_center',
+      'biet-thu': 'villa',
+      'nha-pho': 'home_work',
+      'thiet-ke': 'draw',
+      'thi-cong': 'construction',
+      'tu-van': 'support_agent',
+
+      // Default icons
+      'default': 'category'
+    };
+    return iconMap[slug] || iconMap['default'];
   }
 
   editCategory(category: Category): void {

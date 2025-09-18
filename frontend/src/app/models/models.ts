@@ -8,6 +8,12 @@ export interface Category {
   name: string;
   slug: string;
   description: string;
+  parent_id?: number | null;
+  parent?: Category;
+  children?: Category[];
+  level: number; // 0 for main categories, 1 for subcategories
+  order_index?: number;
+  is_active: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -21,6 +27,7 @@ export interface Post {
   category_id: number;
   category?: Category;
   published: boolean;
+  views: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -53,4 +60,28 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string;
   admin: Admin;
+}
+
+export interface CreateCategoryRequest {
+  name: string;
+  slug: string;
+  description: string;
+  parent_id?: number | null;
+  order_index?: number;
+  is_active?: boolean;
+}
+
+export interface UpdateCategoryRequest {
+  id: number;
+  name?: string;
+  slug?: string;
+  description?: string;
+  parent_id?: number | null;
+  order_index?: number;
+  is_active?: boolean;
+}
+
+export interface CategoryTreeItem extends Category {
+  expanded?: boolean;
+  hasChildren?: boolean;
 }

@@ -66,7 +66,8 @@ func Logout(c *gin.Context) {
 
 // Categories handlers
 func GetCategories(c *gin.Context) {
-	rows, err := database.DB.Query("SELECT id, name, slug, description, created_at, updated_at FROM categories ORDER BY created_at ASC")
+	rows, err := database.DB.Query(`SELECT id, name, slug, description, parent_id, level, order_index, is_active, created_at, updated_at
+		FROM categories ORDER BY level ASC, order_index ASC, created_at ASC`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch categories"})
 		return
@@ -76,12 +77,20 @@ func GetCategories(c *gin.Context) {
 	var categories []models.Category
 	for rows.Next() {
 		var category models.Category
+		var parentID sql.NullInt64
 		err := rows.Scan(&category.ID, &category.Name, &category.Slug, &category.Description,
+			&parentID, &category.Level, &category.OrderIndex, &category.IsActive,
 			&category.CreatedAt, &category.UpdatedAt)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan category"})
 			return
 		}
+
+		if parentID.Valid {
+			parentIDUint := uint(parentID.Int64)
+			category.ParentID = &parentIDUint
+		}
+
 		categories = append(categories, category)
 	}
 
@@ -95,8 +104,35 @@ func CreateCategory(c *gin.Context) {
 		return
 	}
 
-	result, err := database.DB.Exec("INSERT INTO categories (name, slug, description) VALUES ($1, $2, $3)",
-		category.Name, category.Slug, category.Description)
+	// Calculate level based on parent
+	if category.ParentID != nil {
+		// Get parent level
+		var parentLevel int
+		err := database.DB.QueryRow("SELECT level FROM categories WHERE id = $1", *category.ParentID).Scan(&parentLevel)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parent category"})
+			return
+		}
+		category.Level = parentLevel + 1
+	} else {
+		category.Level = 0
+	}
+
+	// Set default values
+	if category.OrderIndex == 0 {
+		// Get next order index for this level
+		var maxOrder int
+		if category.ParentID != nil {
+			database.DB.QueryRow("SELECT COALESCE(MAX(order_index), 0) FROM categories WHERE parent_id = $1", *category.ParentID).Scan(&maxOrder)
+		} else {
+			database.DB.QueryRow("SELECT COALESCE(MAX(order_index), 0) FROM categories WHERE parent_id IS NULL").Scan(&maxOrder)
+		}
+		category.OrderIndex = maxOrder + 1
+	}
+
+	result, err := database.DB.Exec(`INSERT INTO categories (name, slug, description, parent_id, level, order_index, is_active)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		category.Name, category.Slug, category.Description, category.ParentID, category.Level, category.OrderIndex, category.IsActive)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create category"})
 		return
@@ -116,8 +152,24 @@ func UpdateCategory(c *gin.Context) {
 		return
 	}
 
-	_, err := database.DB.Exec("UPDATE categories SET name = $2, slug = $3, description = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $1",
-		id, category.Name, category.Slug, category.Description)
+	// Calculate level based on parent if parent_id changed
+	if category.ParentID != nil {
+		// Get parent level
+		var parentLevel int
+		err := database.DB.QueryRow("SELECT level FROM categories WHERE id = $1", *category.ParentID).Scan(&parentLevel)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parent category"})
+			return
+		}
+		category.Level = parentLevel + 1
+	} else {
+		category.Level = 0
+	}
+
+	_, err := database.DB.Exec(`UPDATE categories SET name = $2, slug = $3, description = $4, parent_id = $5,
+		level = $6, order_index = $7, is_active = $8, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+		id, category.Name, category.Slug, category.Description, category.ParentID,
+		category.Level, category.OrderIndex, category.IsActive)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update category"})
 		return

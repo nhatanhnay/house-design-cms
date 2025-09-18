@@ -6,7 +6,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Observable, switchMap, of } from 'rxjs';
 import { DataService } from '../../services/data.service';
-import { Post } from '../../models/models';
+import { AuthService } from '../../services/auth.service';
+import { Post, Admin } from '../../models/models';
 
 @Component({
   selector: 'app-category',
@@ -54,9 +55,13 @@ import { Post } from '../../models/models';
                   <mat-icon>event</mat-icon>
                   <span>{{ post.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
                 </div>
-                <div class="post-status" [class.published]="post.published" [class.draft]="!post.published">
+                <div class="post-status" *ngIf="currentUser$ | async" [class.published]="post.published" [class.draft]="!post.published">
                   <mat-icon>{{ post.published ? 'visibility' : 'visibility_off' }}</mat-icon>
                   <span>{{ post.published ? 'Đã xuất bản' : 'Bản nháp' }}</span>
+                </div>
+                <div class="post-views" *ngIf="!(currentUser$ | async)">
+                  <mat-icon>visibility</mat-icon>
+                  <span>{{ post.views || 0 }} lượt xem</span>
                 </div>
               </div>
 
@@ -366,13 +371,15 @@ import { Post } from '../../models/models';
 })
 export class CategoryComponent implements OnInit {
   posts$: Observable<Post[]>;
+  currentUser$: Observable<Admin | null>;
   categoryName = '';
   categoryDescription = '';
   isLoading = true;
 
   constructor(
     private route: ActivatedRoute,
-    private dataService: DataService
+    private dataService: DataService,
+    private authService: AuthService
   ) {
     this.posts$ = this.route.params.pipe(
       switchMap(params => {
@@ -401,6 +408,7 @@ export class CategoryComponent implements OnInit {
         );
       })
     );
+    this.currentUser$ = this.authService.currentUser$;
   }
 
   ngOnInit(): void {

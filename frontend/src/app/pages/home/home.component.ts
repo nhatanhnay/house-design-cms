@@ -6,7 +6,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Observable } from 'rxjs';
 import { DataService } from '../../services/data.service';
-import { Post, Category } from '../../models/models';
+import { AuthService } from '../../services/auth.service';
+import { Post, Category, Admin } from '../../models/models';
 
 @Component({
   selector: 'app-home',
@@ -20,25 +21,67 @@ import { Post, Category } from '../../models/models';
   ],
   template: `
     <div class="home-page">
-      <!-- Hero Section -->
-      <section class="hero primary-bg">
-        <div class="container hero-content">
-          <div class="hero-text">
-            <h1>Thiết Kế Nhà Hiện Đại</h1>
-            <p>Chuyên thiết kế và thi công những ngôi nhà hiện đại, sang trọng với phong cách kiến trúc độc đáo. 
-               Mang đến cho bạn không gian sống hoàn hảo nhất.</p>
-            <div class="hero-buttons">
-              <button mat-raised-button class="btn-primary">
-                Khám Phá Thiết Kế
-              </button>
-              <button mat-stroked-button class="btn-outline">
-                Liên Hệ Tư Vấn
-              </button>
+      <!-- Hero Section with Carousel -->
+      <section class="hero-carousel">
+        <div class="carousel-container">
+          <div class="carousel-slide active">
+            <div class="hero-image-bg"></div>
+            <div class="hero-overlay">
+              <div class="container">
+                <div class="hero-content">
+                  <h1>MMA Architectural Design</h1>
+                  <p>Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo</p>
+                  <div class="hero-stats">
+                    <div class="stat-item">
+                      <div class="stat-number">37</div>
+                      <div class="stat-label">Tỉnh Thành Phủ Sóng</div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-number">500+</div>
+                      <div class="stat-label">Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp</div>
+                    </div>
+                  </div>
+                  <div class="hero-buttons">
+                    <button mat-raised-button class="btn-primary">
+                      Khám Phá Dự Án
+                    </button>
+                    <button mat-stroked-button class="btn-outline">
+                      Liên Hệ Tư Vấn
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="hero-image">
-            <img src="assets/images/hero-house.svg" 
-                 alt="Modern House Design">
+        </div>
+      </section>
+
+      <!-- Main Categories Section -->
+      <section class="main-categories">
+        <div class="container">
+          <h2 class="section-title text-center">Danh Mục Thiết Kế Chính</h2>
+          <div class="categories-grid">
+            <div class="category-item" routerLink="/category/nha-pho-hien-dai">
+              <div class="category-image-placeholder"></div>
+              <div class="category-content">
+                <h3>Nhà Phố Hiện Đại</h3>
+                <p>Thiết kế nhà phố đô thị với phong cách hiện đại, tối ưu không gian</p>
+              </div>
+            </div>
+            <div class="category-item" routerLink="/category/biet-thu-hien-dai">
+              <div class="category-image-placeholder"></div>
+              <div class="category-content">
+                <h3>Biệt Thự Hiện Đại</h3>
+                <p>Biệt thự sang trọng với kiến trúc hiện đại và tiện nghi đầy đủ</p>
+              </div>
+            </div>
+            <div class="category-item" routerLink="/category/van-phong">
+              <div class="category-image-placeholder"></div>
+              <div class="category-content">
+                <h3>Không Gian Văn Phòng</h3>
+                <p>Thiết kế văn phòng chuyên nghiệp, tạo môi trường làm việc tối ưu</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -46,27 +89,27 @@ import { Post, Category } from '../../models/models';
       <!-- Features Section -->
       <section class="features-section">
         <div class="container">
-          <h2 class="section-title text-center">Tại Sao Chọn Chúng Tôi?</h2>
+          <h2 class="section-title text-center">Ưu Thế MMA Architectural Design</h2>
           <div class="features-grid">
             <div class="feature-card">
               <mat-icon class="feature-icon">architecture</mat-icon>
-              <h3>Thiết Kế Độc Đáo</h3>
-              <p>Mỗi công trình đều được thiết kế riêng biệt, phù hợp với nhu cầu và phong cách sống của gia đình bạn.</p>
+              <h3>Thiết Kế Kiến Trúc Độc Đáo</h3>
+              <p>Chuyên gia kiến trúc sư với hơn 10 năm kinh nghiệm, tạo ra những công trình biệt thự và nhà ở đẳng cấp.</p>
             </div>
             <div class="feature-card">
               <mat-icon class="feature-icon">engineering</mat-icon>
-              <h3>Thi Công Chuyên Nghiệp</h3>
-              <p>Đội ngũ kỹ sư và thợ xây giàu kinh nghiệm, cam kết chất lượng và tiến độ công trình.</p>
+              <h3>Thi Công Chất Lượng Cao</h3>
+              <p>Đội ngũ kỹ sư và công nhân tay nghề cao, sử dụng công nghệ hiện đại trong thi công.</p>
             </div>
             <div class="feature-card">
-              <mat-icon class="feature-icon">support_agent</mat-icon>
-              <h3>Hỗ Trợ 24/7</h3>
-              <p>Tư vấn và hỗ trợ khách hàng 24/7 từ khâu thiết kế đến hoàn thiện và bảo hành.</p>
+              <mat-icon class="feature-icon">business</mat-icon>
+              <h3>Dịch Vụ Toàn Diện</h3>
+              <p>Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn giao hoàn thiện.</p>
             </div>
             <div class="feature-card">
               <mat-icon class="feature-icon">verified</mat-icon>
-              <h3>Bảo Hành Dài Hạn</h3>
-              <p>Cam kết bảo hành dài hạn cho tất cả các hạng mục công trình, đảm bảo chất lượng lâu bền.</p>
+              <h3>Uy Tín 37 Tỉnh Thành</h3>
+              <p>Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng.</p>
             </div>
           </div>
         </div>
@@ -75,7 +118,7 @@ import { Post, Category } from '../../models/models';
       <!-- Latest Posts Section -->
       <section class="latest-posts gray-blue-bg">
         <div class="container">
-          <h2 class="section-title text-center">Tin Tức & Dự Án Mới Nhất</h2>
+          <h2 class="section-title text-center">Dự Án & Tin Tức Kiến Trúc</h2>
 
           <!-- Loading State -->
           <div class="loading-state" *ngIf="isLoadingPosts">
@@ -87,7 +130,8 @@ import { Post, Category } from '../../models/models';
           <div class="posts-grid" *ngIf="latestPosts$ | async as posts; else noPostsTemplate">
             <mat-card class="post-card" *ngFor="let post of posts.slice(0, 6)" [routerLink]="'/post/' + post.id">
               <div class="post-image">
-                <img [src]="post.image_url || 'assets/images/placeholder-post.jpg'"
+                <div class="post-image-placeholder" *ngIf="!post.image_url"></div>
+                <img *ngIf="post.image_url" [src]="post.image_url"
                      [alt]="post.title"
                      (error)="onImageError($event)">
                 <div class="post-overlay">
@@ -102,9 +146,13 @@ import { Post, Category } from '../../models/models';
                     <mat-icon>event</mat-icon>
                     <span class="post-date">{{ post.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
                   </div>
-                  <div class="meta-item status" [class.published]="post.published" [class.draft]="!post.published">
+                  <div class="meta-item status" *ngIf="currentUser$ | async" [class.published]="post.published" [class.draft]="!post.published">
                     <mat-icon>{{ post.published ? 'visibility' : 'visibility_off' }}</mat-icon>
                     <span>{{ post.published ? 'Đã xuất bản' : 'Bản nháp' }}</span>
+                  </div>
+                  <div class="meta-item" *ngIf="!(currentUser$ | async)">
+                    <mat-icon>visibility</mat-icon>
+                    <span>{{ post.views || 0 }} lượt xem</span>
                   </div>
                 </div>
                 <div class="read-more">
@@ -119,8 +167,8 @@ import { Post, Category } from '../../models/models';
           <ng-template #noPostsTemplate>
             <div class="no-posts" *ngIf="!isLoadingPosts">
               <mat-icon class="no-posts-icon">article</mat-icon>
-              <h3>Chưa có bài viết nào</h3>
-              <p>Hiện tại chưa có bài viết nào được xuất bản. Hãy quay lại sau nhé!</p>
+              <h3>Chưa có dự án nào</h3>
+              <p>Hiện tại chưa có dự án kiến trúc nào được xuất bản. Hãy quay lại sau để khám phá!</p>
             </div>
           </ng-template>
 
@@ -129,7 +177,7 @@ import { Post, Category } from '../../models/models';
                     routerLink="/category/tin-tuc"
                     class="btn-primary view-all-btn">
               <mat-icon>view_list</mat-icon>
-              Xem Tất Cả Tin Tức
+              Xem Tất Cả Dự Án
             </button>
           </div>
         </div>
@@ -138,7 +186,7 @@ import { Post, Category } from '../../models/models';
       <!-- Categories Section -->
       <section class="categories-section">
         <div class="container">
-          <h2 class="section-title text-center">Khám Phá Danh Mục</h2>
+          <h2 class="section-title text-center">Danh Mục Dự Án</h2>
           <div class="categories-grid" *ngIf="categories$ | async as categories">
             <div class="category-card" 
                  *ngFor="let category of categories"
@@ -155,97 +203,241 @@ import { Post, Category } from '../../models/models';
     </div>
   `,
   styles: [`
+    :host {
+      --biscons-blue: #0170B9;
+      --dark-blue: #1a365d;
+      --light-gray: #f8f9fa;
+      --shadow-light: rgba(1, 112, 185, 0.1);
+    }
+
     .home-page {
       min-height: 100vh;
     }
-    
-    /* Hero Section */
-    .hero {
-      padding: 80px 0;
-      min-height: 60vh;
+
+    /* Hero Carousel Section */
+    .hero-carousel {
+      position: relative;
+      height: 70vh;
+      min-height: 600px;
+      overflow: hidden;
+    }
+
+    .carousel-container {
+      position: relative;
+      height: 100%;
+    }
+
+    .carousel-slide {
+      position: relative;
+      height: 100%;
       display: flex;
       align-items: center;
     }
-    
-    .hero-content {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 40px;
+
+    .hero-image-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, #e0e0e0 0%, #c0c0c0 100%);
+      z-index: 1;
+    }
+
+    .hero-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(1, 112, 185, 0.8) 0%, rgba(26, 54, 93, 0.9) 100%);
+      z-index: 2;
+      display: flex;
       align-items: center;
     }
-    
-    .hero-text h1 {
-      font-size: 3rem;
+
+    .hero-content {
+      color: white;
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .hero-content h1 {
+      font-size: 3.5rem;
       font-weight: 700;
       margin-bottom: 20px;
-      color: white;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     }
-    
-    .hero-text p {
-      font-size: 1.2rem;
+
+    .hero-content p {
+      font-size: 1.3rem;
       line-height: 1.6;
-      margin-bottom: 30px;
-      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 40px;
+      opacity: 0.95;
     }
-    
+
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      margin-bottom: 40px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      opacity: 0.9;
+      max-width: 120px;
+    }
+
     .hero-buttons {
       display: flex;
       gap: 20px;
+      justify-content: center;
     }
-    
+
+    .btn-primary {
+      background: white !important;
+      color: var(--biscons-blue) !important;
+      font-weight: 600;
+      padding: 12px 30px;
+      border-radius: 50px;
+    }
+
     .btn-outline {
       border: 2px solid white !important;
       color: white !important;
+      font-weight: 600;
+      padding: 12px 30px;
+      border-radius: 50px;
     }
-    
-    .hero-image img {
-      width: 100%;
-      height: auto;
-      border-radius: 12px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    }
-    
-    /* Features Section */
-    .features-section {
+
+    /* Main Categories Section */
+    .main-categories {
       padding: 80px 0;
+      background: #f8f9fa;
+    }
+
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 30px;
+      margin-top: 50px;
+    }
+
+    .category-item {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 25px var(--shadow-light);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .category-item:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 15px 35px rgba(1, 112, 185, 0.15);
+    }
+
+    .category-image-placeholder {
+      height: 240px;
+      background: linear-gradient(135deg, #e0e0e0 0%, #c0c0c0 100%);
+      position: relative;
+    }
+
+    .category-image-placeholder::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 60px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+    }
+
+    .category-content {
+      padding: 24px;
+    }
+
+    .category-content h3 {
+      color: var(--dark-blue);
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .category-content p {
+      color: #6c757d;
+      line-height: 1.6;
+      margin: 0;
     }
     
     .section-title {
       font-size: 2.5rem;
       margin-bottom: 50px;
       color: var(--dark-blue);
+      text-align: center;
     }
-    
+
+    /* Features Section */
+    .features-section {
+      padding: 80px 0;
+      background: white;
+    }
+
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 30px;
     }
-    
+
     .feature-card {
       text-align: center;
-      padding: 30px 20px;
+      padding: 40px 24px;
       border-radius: 12px;
       background: white;
-      box-shadow: 0 4px 15px var(--shadow);
-      transition: transform 0.3s ease;
+      box-shadow: 0 8px 25px var(--shadow-light);
+      transition: all 0.3s ease;
+      border: 1px solid #f0f0f0;
     }
-    
+
     .feature-card:hover {
-      transform: translateY(-5px);
+      transform: translateY(-8px);
+      box-shadow: 0 15px 35px rgba(1, 112, 185, 0.15);
     }
-    
+
     .feature-icon {
       font-size: 3rem;
       width: 3rem;
       height: 3rem;
-      color: var(--brown);
-      margin-bottom: 20px;
+      color: var(--biscons-blue);
+      margin-bottom: 24px;
     }
-    
+
     .feature-card h3 {
       color: var(--dark-blue);
-      margin-bottom: 15px;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    .feature-card p {
+      color: #6c757d;
+      line-height: 1.6;
     }
     
     /* Latest Posts Section */
@@ -316,6 +508,25 @@ import { Post, Category } from '../../models/models';
       transition: transform 0.3s ease;
     }
 
+    .post-image-placeholder {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #e0e0e0 0%, #c0c0c0 100%);
+      position: relative;
+    }
+
+    .post-image-placeholder::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+    }
+
     .post-card:hover .post-image img {
       transform: scale(1.05);
     }
@@ -333,7 +544,7 @@ import { Post, Category } from '../../models/models';
       position: absolute;
       top: 15px;
       left: 15px;
-      background: var(--primary-blue, #3498db);
+      background: var(--biscons-blue);
       color: white;
       padding: 6px 12px;
       border-radius: 20px;
@@ -402,7 +613,7 @@ import { Post, Category } from '../../models/models';
       display: flex;
       align-items: center;
       justify-content: space-between;
-      color: var(--primary-blue, #3498db);
+      color: var(--biscons-blue);
       font-weight: 500;
       font-size: 0.9rem;
     }
@@ -451,7 +662,7 @@ import { Post, Category } from '../../models/models';
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: var(--primary-blue, #3498db) !important;
+      background: var(--biscons-blue) !important;
       color: white !important;
       padding: 12px 24px;
       border-radius: 50px;
@@ -460,7 +671,7 @@ import { Post, Category } from '../../models/models';
     }
 
     .view-all-btn:hover {
-      background: #2980b9 !important;
+      background: #015da0 !important;
       transform: translateY(-2px);
     }
     
@@ -500,7 +711,7 @@ import { Post, Category } from '../../models/models';
       font-size: 3rem;
       width: 3rem;
       height: 3rem;
-      color: var(--primary-blue);
+      color: var(--biscons-blue);
     }
     
     .category-card h3 {
@@ -510,22 +721,46 @@ import { Post, Category } from '../../models/models';
     
     /* Responsive Design */
     @media (max-width: 768px) {
-      .latest-posts {
-        padding: 40px 0;
+      .hero-carousel {
+        height: 60vh;
+        min-height: 500px;
       }
 
-      .hero-content {
-        grid-template-columns: 1fr;
-        text-align: center;
+      .hero-content h1 {
+        font-size: 2.5rem;
       }
 
-      .hero-text h1 {
-        font-size: 2.2rem;
+      .hero-content p {
+        font-size: 1.1rem;
+      }
+
+      .hero-stats {
+        flex-direction: column;
+        gap: 30px;
       }
 
       .hero-buttons {
-        justify-content: center;
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .btn-primary,
+      .btn-outline {
+        width: 200px;
+      }
+
+      .main-categories {
+        padding: 60px 0;
+      }
+
+      .categories-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .latest-posts {
+        padding: 60px 0;
       }
 
       .section-title {
@@ -599,12 +834,17 @@ import { Post, Category } from '../../models/models';
 export class HomeComponent implements OnInit {
   latestPosts$: Observable<Post[]>;
   categories$: Observable<Category[]>;
+  currentUser$: Observable<Admin | null>;
   isLoadingPosts = true;
   isLoadingCategories = true;
 
-  constructor(private dataService: DataService) {
+  constructor(
+    private dataService: DataService,
+    private authService: AuthService
+  ) {
     this.latestPosts$ = this.dataService.getPosts();
     this.categories$ = this.dataService.getCategories();
+    this.currentUser$ = this.authService.currentUser$;
   }
 
   ngOnInit(): void {
@@ -632,7 +872,15 @@ export class HomeComponent implements OnInit {
   }
 
   onImageError(event: any): void {
-    event.target.src = 'assets/images/placeholder-post.jpg';
+    const target = event.target;
+    target.style.display = 'none';
+
+    const placeholder = target.parentElement.querySelector('.post-image-placeholder');
+    if (!placeholder) {
+      const placeholderDiv = document.createElement('div');
+      placeholderDiv.className = 'post-image-placeholder';
+      target.parentElement.appendChild(placeholderDiv);
+    }
   }
 
   getCategoryIcon(slug: string): string {
