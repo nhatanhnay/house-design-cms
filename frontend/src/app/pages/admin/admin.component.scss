@@ -266,6 +266,8 @@
       margin-bottom: 8px;
       border-radius: 8px;
       overflow: hidden;
+      display: flex;
+      align-items: center;
     }
 
     .main-category {
@@ -280,6 +282,14 @@
       padding: 16px;
       min-height: 64px;
       background: white;
+      flex: 1;
+    }
+
+    .category-header .mat-icon {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      vertical-align: middle !important;
     }
 
     .main-category .category-header {
@@ -403,9 +413,9 @@
       padding: 8px 4px;
       cursor: grab;
       color: #666;
-      margin-right: 8px;
       border-radius: 4px;
       transition: background-color 0.2s ease;
+      flex-shrink: 0;
     }
 
     .drag-handle:hover {
@@ -464,13 +474,28 @@
     .order-btn {
       width: 28px !important;
       height: 28px !important;
-      line-height: 28px !important;
+      min-width: 28px !important;
+      min-height: 28px !important;
+      padding: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      border-radius: 4px !important;
     }
 
     .order-btn mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      font-size: 18px !important;
+      width: 18px !important;
+      height: 18px !important;
+      line-height: 18px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    .order-btn .mat-mdc-button-touch-target {
+      width: 28px !important;
+      height: 28px !important;
     }
 
     .order-btn:disabled {
@@ -767,11 +792,22 @@
     }
 
     /* Center mat-mdc-button-touch-target */
-    .mat-mdc-button-touch-target {
+    .mat-mdc-button .mat-mdc-button-touch-target {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .mat-mdc-icon-button .mat-mdc-button-touch-target {
+      position: absolute;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      width: 20px !important;
+      height: 20px !important;
     }
 
     /* Handle spacing for elements without the long Material class name */
