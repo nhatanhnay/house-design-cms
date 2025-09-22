@@ -225,6 +225,7 @@ func UpdateCategory(c *gin.Context) {
 	c.JSON(http.StatusOK, category)
 }
 
+
 func DeleteCategory(c *gin.Context) {
 	id := c.Param("id")
 
