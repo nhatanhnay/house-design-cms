@@ -8,11 +8,13 @@ export interface Category {
   name: string;
   slug: string;
   description: string;
+  thumbnail_url?: string;
   parent_id?: number | null;
   parent?: Category;
   children?: Category[];
   level: number; // 0 for main categories, 1 for subcategories
   order_index?: number;
+  display_order?: number;
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -66,6 +68,7 @@ export interface CreateCategoryRequest {
   name: string;
   slug: string;
   description: string;
+  thumbnail_url?: string;
   parent_id?: number | null;
   order_index?: number;
   is_active?: boolean;
@@ -76,6 +79,7 @@ export interface UpdateCategoryRequest {
   name?: string;
   slug?: string;
   description?: string;
+  thumbnail_url?: string;
   parent_id?: number | null;
   order_index?: number;
   is_active?: boolean;
@@ -84,4 +88,16 @@ export interface UpdateCategoryRequest {
 export interface CategoryTreeItem extends Category {
   expanded?: boolean;
   hasChildren?: boolean;
+}
+
+export interface HomeContent {
+  id: number;
+  hero_title: string;
+  hero_description: string;
+  hero_stat1_number: string;
+  hero_stat1_label: string;
+  hero_stat2_number: string;
+  hero_stat2_label: string;
+  created_at?: string;
+  updated_at?: string;
 }

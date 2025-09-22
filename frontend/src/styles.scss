@@ -1,19 +1,28 @@
 /* Color Palette Variables */
 :root {
-  --primary-blue: #72b0e0;
-  --light-blue: #92c2e7;
-  --dark-red: #601516;
-  --brown: #9e7f62;
-  --gray-blue: #a1bbcd;
-  --dark-blue: #283e54;
-  
+  /* New Color Scheme */
+  --main-dark-gray: #3A3A3A;
+  --secondary-silver: #C0C0C0;
+  --secondary-light-gray: #BFBFBF;
+  --accent-copper: #E09543;
+  --text-white: #FFFFFF;
+  --text-light-gray: #BFBFBF;
+
+  /* Legacy compatibility colors (mapped to new scheme) */
+  --primary-blue: #E09543;  /* Now copper */
+  --light-blue: #C0C0C0;   /* Now silver */
+  --dark-red: #3A3A3A;     /* Now dark gray */
+  --brown: #E09543;        /* Now copper */
+  --gray-blue: #BFBFBF;    /* Now light gray */
+  --dark-blue: #3A3A3A;    /* Now dark gray */
+
   /* Additional theme colors */
   --background: #ffffff;
   --surface: #f8f9fa;
-  --text-primary: #212529;
-  --text-secondary: #6c757d;
-  --border: #dee2e6;
-  --shadow: rgba(0, 0, 0, 0.1);
+  --text-primary: #3A3A3A;
+  --text-secondary: #BFBFBF;
+  --border: #C0C0C0;
+  --shadow: rgba(58, 58, 58, 0.1);
 }
 
 /* Global Styles */
@@ -37,23 +46,27 @@ body {
 
 /* Material Design Theme Overrides */
 .mat-toolbar.primary {
-  background: var(--dark-blue) !important;
-  color: white !important;
+  background: var(--main-dark-gray) !important;
+  color: var(--text-white) !important;
 }
 
 .mat-button.primary {
-  background: var(--primary-blue) !important;
-  color: white !important;
+  background: var(--accent-copper) !important;
+  color: var(--text-white) !important;
 }
 
 .mat-raised-button.primary {
-  background: var(--dark-blue) !important;
-  color: white !important;
+  background: var(--accent-copper) !important;
+  color: var(--text-white) !important;
+}
+
+.mat-raised-button.primary:hover {
+  background: var(--main-dark-gray) !important;
 }
 
 .mat-fab.accent {
-  background: var(--brown) !important;
-  color: white !important;
+  background: var(--accent-copper) !important;
+  color: var(--text-white) !important;
 }
 
 /* Card Styles */
@@ -64,39 +77,49 @@ body {
 
 /* Custom Classes */
 .primary-bg {
-  background-color: var(--primary-blue);
-  color: white;
+  background-color: var(--accent-copper);
+  color: var(--text-white);
 }
 
 .dark-bg {
-  background-color: var(--dark-blue);
-  color: white;
+  background-color: var(--main-dark-gray);
+  color: var(--text-white);
 }
 
 .light-bg {
-  background-color: var(--light-blue);
+  background-color: var(--secondary-silver);
   color: var(--text-primary);
 }
 
 .brown-bg {
-  background-color: var(--brown);
-  color: white;
+  background-color: var(--accent-copper);
+  color: var(--text-white);
 }
 
 .gray-blue-bg {
-  background-color: var(--gray-blue);
+  background-color: var(--secondary-light-gray);
   color: var(--text-primary);
 }
 
 .red-bg {
-  background-color: var(--dark-red);
-  color: white;
+  background-color: var(--main-dark-gray);
+  color: var(--text-white);
+}
+
+.copper-bg {
+  background-color: var(--accent-copper);
+  color: var(--text-white);
+}
+
+.silver-bg {
+  background-color: var(--secondary-silver);
+  color: var(--main-dark-gray);
 }
 
 /* Button Variants */
 .btn-primary {
-  background-color: var(--primary-blue);
-  color: white;
+  background-color: var(--accent-copper);
+  color: var(--text-white);
   border: none;
   padding: 12px 24px;
   border-radius: 4px;
@@ -107,15 +130,15 @@ body {
 }
 
 .btn-primary:hover {
-  background-color: var(--dark-blue);
+  background-color: var(--main-dark-gray);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px var(--shadow);
 }
 
 .btn-secondary {
-  background-color: var(--brown);
-  color: white;
-  border: none;
+  background-color: var(--secondary-silver);
+  color: var(--main-dark-gray);
+  border: 2px solid var(--accent-copper);
   padding: 12px 24px;
   border-radius: 4px;
   cursor: pointer;
@@ -125,7 +148,8 @@ body {
 }
 
 .btn-secondary:hover {
-  background-color: var(--dark-red);
+  background-color: var(--accent-copper);
+  color: var(--text-white);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px var(--shadow);
 }
@@ -142,11 +166,27 @@ body {
 }
 
 .text-primary {
-  color: var(--primary-blue);
+  color: var(--accent-copper);
 }
 
 .text-dark {
-  color: var(--dark-blue);
+  color: var(--main-dark-gray);
+}
+
+.text-light {
+  color: var(--text-light-gray);
+}
+
+.text-white {
+  color: var(--text-white);
+}
+
+.text-copper {
+  color: var(--accent-copper);
+}
+
+.text-silver {
+  color: var(--secondary-silver);
 }
 
 .mb-1 { margin-bottom: 0.5rem; }

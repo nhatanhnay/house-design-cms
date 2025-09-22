@@ -68,6 +68,7 @@ func createTables() {
 		name VARCHAR(255) NOT NULL,
 		slug VARCHAR(255) UNIQUE NOT NULL,
 		description TEXT,
+		thumbnail_url VARCHAR(500),
 		parent_id INTEGER REFERENCES categories(id) ON DELETE CASCADE,
 		level INTEGER DEFAULT 0,
 		order_index INTEGER DEFAULT 0,
@@ -129,7 +130,9 @@ func migrateCategoriesTable() {
 		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES categories(id) ON DELETE CASCADE",
 		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 0",
 		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0",
+		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0",
 		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
+		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS thumbnail_url VARCHAR(500)",
 	}
 
 	for _, migration := range migrations {
@@ -138,10 +141,15 @@ func migrateCategoriesTable() {
 		}
 	}
 
-	// Update existing categories to have proper order_index
+	// Update existing categories to have proper order_index and display_order
 	_, err := DB.Exec("UPDATE categories SET order_index = id WHERE order_index = 0")
 	if err != nil {
 		log.Printf("Failed to update order_index: %v", err)
+	}
+
+	_, err = DB.Exec("UPDATE categories SET display_order = id WHERE display_order = 0")
+	if err != nil {
+		log.Printf("Failed to update display_order: %v", err)
 	}
 
 	log.Println("Categories table migration completed")

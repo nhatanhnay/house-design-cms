@@ -1,0 +1,134 @@
+<mat-toolbar class="navbar dark-bg">
+  <div class="container navbar-content">
+    <div class="brand">
+      <a routerLink="/" class="brand-link">
+        <mat-icon>home</mat-icon>
+        <span class="brand-text">MMA Architectural Design</span>
+      </a>
+    </div>
+
+    <nav class="nav-links">
+      <a mat-button routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+        Trang Chủ
+      </a>
+
+      <!-- Main Categories with Hover Dropdowns -->
+      <ng-container *ngFor="let mainCategory of mainCategories; let i = index">
+        <div class="nav-category-wrapper"
+             [class.has-dropdown]="mainCategory.hasChildren"
+             (mouseenter)="onCategoryHover(i)"
+             (mouseleave)="onCategoryLeave()">
+
+          <!-- Category with subcategories - hover dropdown -->
+          <button mat-button
+                  *ngIf="mainCategory.hasChildren"
+                  [matMenuTriggerFor]="categoryMenu"
+                  #trigger="matMenuTrigger"
+                  class="category-dropdown">
+            {{ mainCategory.name }}
+            <mat-icon class="dropdown-arrow">keyboard_arrow_down</mat-icon>
+          </button>
+
+          <!-- Category without subcategories - direct link -->
+          <a mat-button
+             *ngIf="!mainCategory.hasChildren"
+             [routerLink]="'/category/' + mainCategory.slug"
+             routerLinkActive="active">
+            {{ mainCategory.name }}
+          </a>
+
+          <!-- Dropdown menu for subcategories -->
+          <mat-menu #categoryMenu="matMenu"
+                    class="category-submenu">
+            <a mat-menu-item
+               *ngFor="let subcategory of mainCategory.children"
+               [routerLink]="'/category/' + subcategory.slug">
+              <mat-icon>{{ getCategoryIcon(subcategory.slug) }}</mat-icon>
+              <span>{{ subcategory.name }}</span>
+            </a>
+          </mat-menu>
+        </div>
+      </ng-container>
+
+      <!-- Debug info - remove this later -->
+      <div *ngIf="mainCategories.length === 0" style="color: white; padding: 10px;">
+        Loading categories... ({{mainCategories.length}} loaded)
+      </div>
+
+      <a mat-button
+         routerLink="/admin"
+         *ngIf="currentUser$ | async"
+         class="admin-link">
+        <mat-icon>admin_panel_settings</mat-icon>
+        Quản Trị
+      </a>
+
+      <button mat-button
+              *ngIf="currentUser$ | async"
+              (click)="logout()"
+              class="logout-btn">
+        <mat-icon>logout</mat-icon>
+        Đăng Xuất
+      </button>
+    </nav>
+
+    <!-- Mobile menu button -->
+    <button mat-icon-button
+            class="mobile-menu-btn"
+            [matMenuTriggerFor]="mobileMenu">
+      <mat-icon>menu</mat-icon>
+    </button>
+  </div>
+</mat-toolbar>
+
+<!-- Mobile menu -->
+<mat-menu #mobileMenu="matMenu" class="mobile-menu">
+  <a mat-menu-item routerLink="/">
+    <mat-icon>home</mat-icon>
+    <span>Trang Chủ</span>
+  </a>
+
+  <!-- Mobile menu with hierarchical categories -->
+  <ng-container *ngFor="let mainCategory of mainCategories$ | async">
+    <!-- Main category header -->
+    <div mat-menu-item class="mobile-category-header" *ngIf="mainCategory.hasChildren">
+      <mat-icon>{{ getCategoryIcon(mainCategory.slug) }}</mat-icon>
+      <span class="category-header-text">{{ mainCategory.name }}</span>
+    </div>
+
+    <!-- Subcategories -->
+    <a mat-menu-item
+       *ngFor="let subcategory of mainCategory.children"
+       [routerLink]="'/category/' + subcategory.slug"
+       class="mobile-subcategory">
+      <mat-icon class="subcategory-icon">{{ getCategoryIcon(subcategory.slug) }}</mat-icon>
+      <span>{{ subcategory.name }}</span>
+    </a>
+
+    <!-- Direct link if no children -->
+    <a mat-menu-item
+       *ngIf="!mainCategory.hasChildren"
+       [routerLink]="'/category/' + mainCategory.slug">
+      <mat-icon>{{ getCategoryIcon(mainCategory.slug) }}</mat-icon>
+      <span>{{ mainCategory.name }}</span>
+    </a>
+
+    <mat-divider *ngIf="mainCategory.hasChildren"></mat-divider>
+  </ng-container>
+
+  <mat-divider *ngIf="currentUser$ | async"></mat-divider>
+
+  <a mat-menu-item
+     routerLink="/admin"
+     *ngIf="currentUser$ | async">
+    <mat-icon>admin_panel_settings</mat-icon>
+    <span>Quản Trị</span>
+  </a>
+
+  <button mat-menu-item
+          *ngIf="currentUser$ | async"
+          (click)="logout()">
+    <mat-icon>logout</mat-icon>
+    <span>Đăng Xuất</span>
+  </button>
+</mat-menu>

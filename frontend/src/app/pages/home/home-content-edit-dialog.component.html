@@ -1,0 +1,42 @@
+<h2 mat-dialog-title>Chỉnh sửa nội dung trang chủ</h2>
+<mat-dialog-content>
+  <div style="display: flex; flex-direction: column; gap: 16px; min-width: 500px;">
+    <mat-form-field>
+      <mat-label>Tiêu đề chính</mat-label>
+      <input matInput [(ngModel)]="data.hero_title" placeholder="Tiêu đề chính">
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Mô tả</mat-label>
+      <textarea matInput [(ngModel)]="data.hero_description" rows="3" placeholder="Mô tả"></textarea>
+    </mat-form-field>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <mat-form-field>
+        <mat-label>Số liệu 1</mat-label>
+        <input matInput [(ngModel)]="data.hero_stat1_number" placeholder="37">
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Nhãn số liệu 1</mat-label>
+        <input matInput [(ngModel)]="data.hero_stat1_label" placeholder="Tỉnh Thành Phủ Sóng">
+      </mat-form-field>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <mat-form-field>
+        <mat-label>Số liệu 2</mat-label>
+        <input matInput [(ngModel)]="data.hero_stat2_number" placeholder="500+">
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Nhãn số liệu 2</mat-label>
+        <input matInput [(ngModel)]="data.hero_stat2_label" placeholder="Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp">
+      </mat-form-field>
+    </div>
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Hủy</button>
+  <button mat-raised-button [mat-dialog-close]="data" color="primary">Lưu</button>
+</mat-dialog-actions>

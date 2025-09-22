@@ -1,0 +1,159 @@
+
+    <div class="home-page">
+      <!-- Hero Section with Image Slider -->
+      <section class="elementor-section elementor-top-section elementor-element elementor-element-1f70cfb elementor-section-full_width elementor-hidden-mobile elementor-hidden-tablet elementor-section-height-default elementor-section-height-default hero-slider">
+        <div class="elementor-container elementor-column-gap-default slider-container">
+          <div class="elementor-column elementor-col-100 elementor-top-column slide active">
+            <div class="elementor-widget-wrap slide-image-bg"></div>
+            <div class="slide-overlay">
+              <div class="container">
+                <div class="hero-content">
+                  <h1>{{ homeContent?.hero_title || 'MMA Architectural Design' }}</h1>
+                  <p>{{ homeContent?.hero_description || 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo' }}</p>
+                  <div class="hero-stats">
+                    <div class="stat-item">
+                      <div class="stat-number">{{ homeContent?.hero_stat1_number || '37' }}</div>
+                      <div class="stat-label">{{ homeContent?.hero_stat1_label || 'Tỉnh Thành Phủ Sóng' }}</div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-number">{{ homeContent?.hero_stat2_number || '500+' }}</div>
+                      <div class="stat-label">{{ homeContent?.hero_stat2_label || 'Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp' }}</div>
+                    </div>
+                  </div>
+                  <div class="hero-buttons">
+                    <button mat-raised-button class="btn-primary">
+                      Khám Phá Dự Án
+                    </button>
+                    <button mat-stroked-button class="btn-outline">
+                      Liên Hệ Tư Vấn
+                    </button>
+                    <button *ngIf="currentUser$ | async"
+                            mat-mini-fab
+                            class="edit-btn"
+                            (click)="openEditDialog()"
+                            title="Chỉnh sửa nội dung trang chủ">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slider Navigation -->
+          <div class="slider-navigation">
+            <button class="nav-arrow nav-prev" aria-label="Previous slide">
+              <mat-icon>arrow_back</mat-icon>
+            </button>
+            <button class="nav-arrow nav-next" aria-label="Next slide">
+              <mat-icon>arrow_forward</mat-icon>
+            </button>
+          </div>
+
+          <!-- Slider Pagination -->
+          <div class="slider-pagination">
+            <span class="pagination-dot active"></span>
+            <span class="pagination-dot"></span>
+            <span class="pagination-dot"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Priority Design Categories Section -->
+      <section class="elementor-section elementor-top-section elementor-element elementor-element-ab2acbf elementor-section-boxed elementor-section-height-default priority-categories">
+        <div class="elementor-container elementor-column-gap-default container">
+          <h2 class="elementor-heading-title elementor-size-default section-title text-center">HẠNG MỤC THIẾT KẾ TRỌNG ĐIỂM</h2>
+          <div class="categories-grid">
+            <div class="elementor-column elementor-col-33 elementor-top-column category-item" routerLink="/category/nha-pho-hien-dai">
+              <div class="elementor-widget-wrap">
+                <div class="category-image-placeholder"></div>
+                <div class="category-content">
+                  <h3>Nhà phố hiện đại</h3>
+                  <p>Các giải pháp thiết kế được tối ưu hóa cho không gian sống hiện đại, kết hợp hài hòa giữa thẩm mỹ và công năng sử dụng.</p>
+                  <button mat-raised-button class="explore-btn">Khám phá thiết kế</button>
+                </div>
+              </div>
+            </div>
+            <div class="elementor-column elementor-col-33 elementor-top-column category-item" routerLink="/category/biet-thu-hien-dai">
+              <div class="elementor-widget-wrap">
+                <div class="category-image-placeholder"></div>
+                <div class="category-content">
+                  <h3>Biệt thự hiện đại</h3>
+                  <p>Kiến trúc biệt thự đẳng cấp với thiết kế hiện đại, sang trọng, thể hiện phong cách sống tinh tế của gia chủ.</p>
+                  <button mat-raised-button class="explore-btn">Khám phá thiết kế</button>
+                </div>
+              </div>
+            </div>
+            <div class="elementor-column elementor-col-33 elementor-top-column category-item" routerLink="/category/van-phong">
+              <div class="elementor-widget-wrap">
+                <div class="category-image-placeholder"></div>
+                <div class="category-content">
+                  <h3>Văn phòng</h3>
+                  <p>Thiết kế không gian làm việc chuyên nghiệp, thể hiện bản sắc doanh nghiệp và tạo môi trường làm việc hiệu quả.</p>
+                  <button mat-raised-button class="explore-btn">Khám phá thiết kế</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Project Listings Section -->
+      <section class="elementor-section elementor-top-section elementor-element elementor-element-2567bbf elementor-section-full_width elementor-section-height-default project-listings">
+        <div class="elementor-container elementor-column-gap-default container">
+          <!-- Loading State -->
+          <div class="loading-state" *ngIf="isLoadingPosts">
+            <div class="loading-spinner"></div>
+            <p>Đang tải dự án...</p>
+          </div>
+
+          <!-- Projects Grid -->
+          <div class="jet-listing-grid projects-grid" *ngIf="latestPosts$ | async as posts; else noProjectsTemplate">
+            <div class="jet-listing-grid__item jet-listing-dynamic-post project-card" *ngFor="let post of posts.slice(0, 6)" [routerLink]="'/post/' + post.id">
+              <div class="jet-engine-listing-overlay-wrap project-image">
+                <div class="project-image-placeholder"></div>
+                <div class="project-overlay">
+                  <div class="project-category" *ngIf="post.category">{{ post.category.name }}</div>
+                </div>
+              </div>
+              <div class="project-content">
+                <h4 class="elementor-heading-title elementor-size-default project-title">{{ post.title }}</h4>
+                <div class="project-meta">
+                  <span class="project-type">Biệt Thự</span>
+                  <span class="project-location">{{ post.summary || 'Hà Nội' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- No Projects Template -->
+          <ng-template #noProjectsTemplate>
+            <div class="no-projects" *ngIf="!isLoadingPosts">
+              <mat-icon class="no-projects-icon">home_work</mat-icon>
+              <h3>Chưa có dự án nào</h3>
+              <p>Hiện tại chưa có dự án kiến trúc nào được xuất bản. Hãy quay lại sau để khám phá!</p>
+            </div>
+          </ng-template>
+        </div>
+      </section>
+
+      <!-- Additional Categories Section -->
+      <section class="elementor-section elementor-top-section elementor-element elementor-element-eaa2f39 elementor-section-boxed elementor-section-height-default additional-categories">
+        <div class="elementor-container elementor-column-gap-default container">
+          <h2 class="elementor-heading-title elementor-size-default section-title text-center">Danh Mục Dự Án</h2>
+          <div class="categories-grid" *ngIf="categories$ | async as categories">
+            <div class="elementor-column elementor-col-25 elementor-top-column category-card"
+                 *ngFor="let category of categories"
+                 [routerLink]="'/category/' + category.slug">
+              <div class="elementor-widget-wrap">
+                <div class="category-icon">
+                  <mat-icon>{{ getCategoryIcon(category.slug) }}</mat-icon>
+                </div>
+                <h3>{{ category.name }}</h3>
+                <p>{{ category.description }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>

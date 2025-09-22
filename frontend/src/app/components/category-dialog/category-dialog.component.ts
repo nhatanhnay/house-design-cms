@@ -6,6 +6,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable } from 'rxjs';
 import { DataService } from '../../services/data.service';
@@ -21,7 +24,10 @@ import { Category } from '../../models/models';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatSelectModule
+    MatSelectModule,
+    MatProgressBarModule,
+    MatTooltipModule,
+    MatIconModule
   ],
   template: `
     <h2 mat-dialog-title>{{ data.category ? 'Sửa Danh Mục' : (data.isSubcategory ? 'Thêm Danh Mục Con' : 'Thêm Danh Mục Chính') }}</h2>
@@ -61,6 +67,48 @@ import { Category } from '../../models/models';
           <mat-label>Mô tả</mat-label>
           <textarea matInput formControlName="description" rows="3" placeholder="Nhập mô tả danh mục"></textarea>
         </mat-form-field>
+
+        <!-- Thumbnail Upload Section -->
+        <div class="thumbnail-section">
+          <label class="thumbnail-label">Hình đại diện danh mục</label>
+
+          <!-- Current thumbnail display -->
+          <div class="current-thumbnail" *ngIf="categoryForm.get('thumbnail_url')?.value">
+            <img [src]="categoryForm.get('thumbnail_url')?.value"
+                 alt="Category thumbnail"
+                 class="thumbnail-preview">
+            <button type="button"
+                    mat-icon-button
+                    class="remove-thumbnail"
+                    (click)="removeThumbnail()"
+                    matTooltip="Xóa hình đại diện">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <!-- Upload button -->
+          <div class="upload-section">
+            <input type="file"
+                   #fileInput
+                   accept="image/*"
+                   (change)="onThumbnailSelected($event)"
+                   style="display: none;">
+            <button type="button"
+                    mat-stroked-button
+                    class="upload-btn"
+                    (click)="fileInput.click()"
+                    [disabled]="isLoading">
+              <mat-icon>cloud_upload</mat-icon>
+              {{ categoryForm.get('thumbnail_url')?.value ? 'Thay đổi hình đại diện' : 'Tải lên hình đại diện' }}
+            </button>
+          </div>
+
+          <!-- Upload progress -->
+          <div class="upload-progress" *ngIf="uploadProgress > 0 && uploadProgress < 100">
+            <mat-progress-bar [value]="uploadProgress"></mat-progress-bar>
+            <span class="progress-text">Đang tải lên... {{ uploadProgress }}%</span>
+          </div>
+        </div>
       </form>
     </mat-dialog-content>
 
@@ -102,11 +150,68 @@ import { Category } from '../../models/models';
     mat-dialog-actions {
       padding: 16px 24px;
     }
+
+    .thumbnail-section {
+      margin-bottom: 16px;
+    }
+
+    .thumbnail-label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: #666;
+    }
+
+    .current-thumbnail {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+
+    .thumbnail-preview {
+      width: 120px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 2px solid #e0e0e0;
+    }
+
+    .remove-thumbnail {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #f44336;
+      color: white;
+      width: 24px;
+      height: 24px;
+    }
+
+    .upload-section {
+      margin-bottom: 12px;
+    }
+
+    .upload-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .upload-progress {
+      margin-top: 8px;
+    }
+
+    .progress-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+      display: block;
+    }
   `]
 })
 export class CategoryDialogComponent implements OnInit {
   categoryForm: FormGroup;
   isLoading = false;
+  uploadProgress = 0;
   parentCategories$?: Observable<Category[]>;
 
   constructor(
@@ -125,6 +230,7 @@ export class CategoryDialogComponent implements OnInit {
       name: ['', [Validators.required]],
       slug: [''],
       description: [''],
+      thumbnail_url: [''],
       parent_id: [null]
     });
 
@@ -193,6 +299,11 @@ export class CategoryDialogComponent implements OnInit {
         }
       }
 
+      // Add thumbnail_url if provided
+      if (formValue.thumbnail_url) {
+        categoryData.thumbnail_url = formValue.thumbnail_url;
+      }
+
       console.log('Saving category with data:', categoryData);
 
       const operation = this.data.category
@@ -225,5 +336,54 @@ export class CategoryDialogComponent implements OnInit {
       return `Danh mục ID: ${this.data.parentId}`;
     }
     return 'Danh mục đã chọn';
+  }
+
+  onThumbnailSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        this.snackBar.open('Chỉ chấp nhận file hình ảnh!', 'Đóng', { duration: 3000 });
+        return;
+      }
+
+      // Validate file size (5MB max)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        this.snackBar.open('File không được lớn hơn 5MB!', 'Đóng', { duration: 3000 });
+        return;
+      }
+
+      this.uploadThumbnail(file);
+    }
+  }
+
+  uploadThumbnail(file: File): void {
+    const formData = new FormData();
+    formData.append('upload', file);
+
+    this.uploadProgress = 0;
+    this.isLoading = true;
+
+    // Use the existing upload endpoint
+    this.dataService.uploadImage(formData).subscribe({
+      next: (response: any) => {
+        this.uploadProgress = 100;
+        this.categoryForm.patchValue({ thumbnail_url: response.url });
+        this.isLoading = false;
+        this.snackBar.open('Tải lên hình đại diện thành công!', 'Đóng', { duration: 3000 });
+      },
+      error: (error) => {
+        this.uploadProgress = 0;
+        this.isLoading = false;
+        this.snackBar.open('Lỗi khi tải lên hình đại diện!', 'Đóng', { duration: 3000 });
+        console.error('Upload error:', error);
+      }
+    });
+  }
+
+  removeThumbnail(): void {
+    this.categoryForm.patchValue({ thumbnail_url: '' });
+    this.uploadProgress = 0;
   }
 }

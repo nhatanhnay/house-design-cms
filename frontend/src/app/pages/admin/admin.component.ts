@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatTabsModule } from '@angular/material/tabs';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatListModule } from '@angular/material/list';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,8 +10,11 @@ import { MatTableModule } from '@angular/material/table';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { Observable, of, Subject } from 'rxjs';
+import { map, catchError, switchMap, startWith } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { DataService } from '../../services/data.service';
 import { AuthService } from '../../services/auth.service';
@@ -24,481 +28,44 @@ import { PostDialogComponent } from '../../components/post-dialog/post-dialog.co
   imports: [
     CommonModule,
     FormsModule,
-    MatTabsModule,
+    MatSidenavModule,
+    MatListModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
     MatTableModule,
     MatDialogModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatFormFieldModule,
+    MatInputModule,
+    DragDropModule
   ],
-  template: `
-    <div class="admin-page">
-      <div class="container">
-        <div class="admin-header">
-          <h1>Trang Quản Trị</h1>
-          <div class="admin-info" *ngIf="currentUser$ | async as user">
-            <span>Xin chào, <strong>{{ user.username }}</strong></span>
-            <button mat-button (click)="logout()" class="logout-btn">
-              <mat-icon>logout</mat-icon>
-              Đăng Xuất
-            </button>
-          </div>
-        </div>
-
-        <mat-tab-group class="admin-tabs">
-          <!-- Categories Tab -->
-          <mat-tab label="Quản Lý Danh Mục">
-            <div class="tab-content">
-              <div class="section-header">
-                <h2>Danh Mục Hệ Thống</h2>
-                <div class="category-actions">
-                  <button mat-raised-button
-                          color="primary"
-                          (click)="openCategoryDialog()">
-                    <mat-icon>add</mat-icon>
-                    Thêm Danh Mục Chính
-                  </button>
-                  <button mat-stroked-button
-                          color="primary"
-                          (click)="openCategoryDialog(null, true)">
-                    <mat-icon>add_circle_outline</mat-icon>
-                    Thêm Danh Mục Con
-                  </button>
-                </div>
-              </div>
-
-              <!-- Category Tree View -->
-              <mat-card class="category-tree-card">
-                <div class="category-tree" *ngIf="categoryTree$ | async as tree">
-                  <div class="tree-item main-category"
-                       *ngFor="let mainCategory of tree"
-                       [class.expanded]="mainCategory.expanded">
-
-                    <!-- Main Category -->
-                    <div class="category-header">
-                      <div class="category-info">
-                        <button mat-icon-button
-                                class="expand-btn"
-                                *ngIf="mainCategory.hasChildren"
-                                (click)="toggleCategory(mainCategory)">
-                          <mat-icon>{{ mainCategory.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
-                        </button>
-                        <mat-icon class="category-icon">{{ getCategoryIcon(mainCategory.slug) }}</mat-icon>
-                        <div class="category-details">
-                          <div class="category-name">{{ mainCategory.name }}</div>
-                          <div class="category-meta">{{ mainCategory.slug }} • {{ mainCategory.description }}</div>
-                        </div>
-                      </div>
-                      <div class="category-actions-inline">
-                        <button mat-icon-button
-                                (click)="openCategoryDialog(null, true, mainCategory.id)"
-                                matTooltip="Thêm danh mục con">
-                          <mat-icon>add_circle_outline</mat-icon>
-                        </button>
-                        <button mat-icon-button
-                                (click)="editCategory(mainCategory)"
-                                matTooltip="Chỉnh sửa">
-                          <mat-icon>edit</mat-icon>
-                        </button>
-                        <button mat-icon-button
-                                color="warn"
-                                (click)="deleteCategory(mainCategory.id)"
-                                matTooltip="Xóa">
-                          <mat-icon>delete</mat-icon>
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Subcategories -->
-                    <div class="subcategories" *ngIf="mainCategory.expanded && mainCategory.children?.length">
-                      <div class="tree-item subcategory"
-                           *ngFor="let subcategory of mainCategory.children">
-                        <div class="category-header subcategory-header">
-                          <div class="category-info">
-                            <div class="subcategory-indicator"></div>
-                            <mat-icon class="category-icon subcategory-icon">{{ getCategoryIcon(subcategory.slug) }}</mat-icon>
-                            <div class="category-details">
-                              <div class="category-name">{{ subcategory.name }}</div>
-                              <div class="category-meta">{{ subcategory.slug }} • {{ subcategory.description }}</div>
-                            </div>
-                          </div>
-                          <div class="category-actions-inline">
-                            <button mat-icon-button
-                                    (click)="editCategory(subcategory)"
-                                    matTooltip="Chỉnh sửa">
-                              <mat-icon>edit</mat-icon>
-                            </button>
-                            <button mat-icon-button
-                                    color="warn"
-                                    (click)="deleteCategory(subcategory.id)"
-                                    matTooltip="Xóa">
-                              <mat-icon>delete</mat-icon>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Empty State -->
-                <div class="empty-state" *ngIf="!(categoryTree$ | async)?.length">
-                  <mat-icon class="empty-icon">category</mat-icon>
-                  <h3>Chưa có danh mục nào</h3>
-                  <p>Hãy tạo danh mục đầu tiên để bắt đầu</p>
-                </div>
-              </mat-card>
-            </div>
-          </mat-tab>
-
-          <!-- Posts Tab -->
-          <mat-tab label="Quản Lý Bài Viết">
-            <div class="tab-content">
-              <div class="section-header">
-                <h2>Bài Viết</h2>
-                <button mat-raised-button 
-                        color="primary" 
-                        (click)="openPostDialog()">
-                  <mat-icon>add</mat-icon>
-                  Thêm Bài Viết
-                </button>
-              </div>
-              
-              <mat-card class="data-table-card">
-                <table mat-table [dataSource]="(posts$ | async) || []" class="admin-table">
-                  <ng-container matColumnDef="id">
-                    <th mat-header-cell *matHeaderCellDef>ID</th>
-                    <td mat-cell *matCellDef="let post">{{ post.id }}</td>
-                  </ng-container>
-                  
-                  <ng-container matColumnDef="title">
-                    <th mat-header-cell *matHeaderCellDef>Tiêu đề</th>
-                    <td mat-cell *matCellDef="let post">{{ post.title }}</td>
-                  </ng-container>
-                  
-                  <ng-container matColumnDef="category">
-                    <th mat-header-cell *matHeaderCellDef>Danh mục</th>
-                    <td mat-cell *matCellDef="let post">{{ post.category?.name }}</td>
-                  </ng-container>
-                  
-                  <ng-container matColumnDef="published">
-                    <th mat-header-cell *matHeaderCellDef>Trạng thái</th>
-                    <td mat-cell *matCellDef="let post">
-                      <span class="status-badge" 
-                            [class.published]="post.published"
-                            [class.draft]="!post.published">
-                        {{ post.published ? 'Đã xuất bản' : 'Nháp' }}
-                      </span>
-                    </td>
-                  </ng-container>
-                  
-                  <ng-container matColumnDef="views">
-                    <th mat-header-cell *matHeaderCellDef>Lượt xem</th>
-                    <td mat-cell *matCellDef="let post">{{ post.views || 0 }}</td>
-                  </ng-container>
-
-                  <ng-container matColumnDef="created_at">
-                    <th mat-header-cell *matHeaderCellDef>Ngày tạo</th>
-                    <td mat-cell *matCellDef="let post">{{ post.created_at | date:'dd/MM/yyyy' }}</td>
-                  </ng-container>
-                  
-                  <ng-container matColumnDef="actions">
-                    <th mat-header-cell *matHeaderCellDef>Hành động</th>
-                    <td mat-cell *matCellDef="let post">
-                      <button mat-icon-button (click)="editPost(post)">
-                        <mat-icon>edit</mat-icon>
-                      </button>
-                      <button mat-icon-button 
-                              color="warn" 
-                              (click)="deletePost(post.id)">
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                    </td>
-                  </ng-container>
-                  
-                  <tr mat-header-row *matHeaderRowDef="postColumns"></tr>
-                  <tr mat-row *matRowDef="let row; columns: postColumns;"></tr>
-                </table>
-              </mat-card>
-            </div>
-          </mat-tab>
-
-        </mat-tab-group>
-      </div>
-    </div>
-  `,
-  styles: [`
-    .admin-page {
-      padding: 20px 0;
-      min-height: 100vh;
-      background-color: var(--surface);
-    }
-    
-    .admin-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-      padding: 20px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px var(--shadow);
-    }
-    
-    .admin-header h1 {
-      color: var(--dark-blue);
-      margin: 0;
-    }
-    
-    .admin-info {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-    
-    .logout-btn {
-      color: var(--dark-red) !important;
-    }
-    
-    .admin-tabs {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px var(--shadow);
-    }
-    
-    .tab-content {
-      padding: 20px;
-    }
-    
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    
-    .section-header h2 {
-      color: var(--dark-blue);
-      margin: 0;
-    }
-    
-    .data-table-card {
-      overflow: auto;
-    }
-    
-    .admin-table {
-      width: 100%;
-    }
-    
-    .admin-table th {
-      background-color: var(--gray-blue);
-      color: var(--dark-blue);
-      font-weight: 600;
-    }
-    
-    .admin-table td {
-      padding: 12px;
-    }
-    
-    .status-badge {
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 500;
-    }
-    
-    .status-badge.published {
-      background-color: var(--primary-blue);
-      color: white;
-    }
-    
-    .status-badge.draft {
-      background-color: var(--brown);
-      color: white;
-    }
-    
-    /* Category Tree Styles */
-    .category-actions {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .category-tree-card {
-      padding: 0;
-      overflow: visible;
-    }
-
-    .category-tree {
-      padding: 16px;
-    }
-
-    .tree-item {
-      margin-bottom: 8px;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .main-category {
-      border: 1px solid #e0e0e0;
-      background: white;
-    }
-
-    .category-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px;
-      min-height: 64px;
-      background: white;
-    }
-
-    .main-category .category-header {
-      background: #f8f9fa;
-      border-bottom: 1px solid #e0e0e0;
-    }
-
-    .category-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-    }
-
-    .expand-btn {
-      color: var(--biscons-blue, #0170B9);
-    }
-
-    .category-icon {
-      font-size: 24px;
-      color: var(--biscons-blue, #0170B9);
-    }
-
-    .subcategory-icon {
-      font-size: 20px;
-      color: #666;
-    }
-
-    .category-details {
-      flex: 1;
-    }
-
-    .category-name {
-      font-weight: 600;
-      font-size: 1.1rem;
-      color: var(--dark-blue, #1a365d);
-      margin-bottom: 4px;
-    }
-
-    .category-meta {
-      font-size: 0.9rem;
-      color: #666;
-    }
-
-    .category-actions-inline {
-      display: flex;
-      gap: 4px;
-    }
-
-    .subcategories {
-      border-top: 1px solid #e0e0e0;
-    }
-
-    .subcategory {
-      border-bottom: 1px solid #f0f0f0;
-    }
-
-    .subcategory:last-child {
-      border-bottom: none;
-    }
-
-    .subcategory-header {
-      background: white;
-      padding: 12px 16px;
-      min-height: auto;
-    }
-
-    .subcategory-indicator {
-      width: 24px;
-      height: 2px;
-      background: var(--biscons-blue, #0170B9);
-      margin-left: 12px;
-    }
-
-    .subcategory .category-name {
-      font-size: 1rem;
-      font-weight: 500;
-    }
-
-    .subcategory .category-meta {
-      font-size: 0.85rem;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #666;
-    }
-
-    .empty-icon {
-      font-size: 64px;
-      color: #ddd;
-      margin-bottom: 16px;
-    }
-
-    .empty-state h3 {
-      margin-bottom: 8px;
-      color: var(--dark-blue, #1a365d);
-    }
-
-    .empty-state p {
-      margin: 0;
-    }
-
-    @media (max-width: 768px) {
-      .admin-header {
-        flex-direction: column;
-        gap: 15px;
-        text-align: center;
-      }
-
-      .section-header {
-        flex-direction: column;
-        gap: 15px;
-        align-items: stretch;
-      }
-
-      .category-actions {
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .category-header {
-        padding: 12px;
-        min-height: auto;
-      }
-
-      .category-actions-inline {
-        flex-direction: column;
-        gap: 2px;
-      }
-
-      .data-table-card {
-        overflow-x: auto;
-      }
-    }
-
-  `]
+  templateUrl: './admin.component.html',
+  styleUrls: ['./admin.component.scss']
 })
 export class AdminComponent implements OnInit {
-  categories$!: Observable<Category[]>;
-  categoryTree$!: Observable<CategoryTreeItem[]>;
-  posts$!: Observable<Post[]>;
+  categories$: Observable<Category[]>;
+  posts$: Observable<Post[]>;
   currentUser$: Observable<Admin | null>;
-
-  categoryColumns: string[] = ['id', 'name', 'slug', 'description', 'actions'];
+  categoryTree$: Observable<CategoryTreeItem[]>;
+  currentSection: string = 'categories';
   postColumns: string[] = ['id', 'title', 'category', 'published', 'views', 'created_at', 'actions'];
+
+  // Homepage Management Properties
+  homepageImages: string[] = [];
+  homepageVideos: string[] = [];
+  homepageContent: any = {
+    hero_title: '',
+    hero_description: '',
+    hero_stat1_number: '',
+    hero_stat1_label: '',
+    hero_stat2_number: '',
+    hero_stat2_label: ''
+  };
+  originalHomepageContent: any = {};
+  isContentModified: boolean = false;
+
+  private refreshSubject = new Subject<void>();
 
   constructor(
     private dataService: DataService,
@@ -507,51 +74,82 @@ export class AdminComponent implements OnInit {
     private snackBar: MatSnackBar,
     private router: Router
   ) {
+    this.categories$ = this.dataService.getCategories();
+    this.posts$ = this.dataService.getPosts();
     this.currentUser$ = this.authService.currentUser$;
+
+    // Create observable for category tree with refresh capability
+    this.categoryTree$ = this.refreshSubject.pipe(
+      startWith(undefined), // Initial emit
+      switchMap(() =>
+        this.dataService.getCategories().pipe(
+          map(categories => {
+            const tree = this.dataService.buildCategoryTree(categories);
+            return tree.filter(cat => cat.level === 0);
+          }),
+          catchError(error => {
+            console.error('Error loading categories:', error);
+            return of([]);
+          })
+        )
+      )
+    );
   }
 
   ngOnInit(): void {
-    this.loadData();
+    this.loadHomepageContent();
+    this.loadHomepageMedia();
   }
 
-  loadData(): void {
-    this.categories$ = this.dataService.getCategories();
-    this.categoryTree$ = this.categories$.pipe(
-      map(categories => this.dataService.buildCategoryTree(categories))
-    );
-    this.posts$ = this.dataService.getPosts();
+  setCurrentSection(section: string): void {
+    this.currentSection = section;
+    if (section === 'homepage') {
+      this.loadHomepageMedia();
+      this.loadHomepageContent();
+    }
   }
 
-  logout(): void {
-    this.authService.logout().subscribe({
-      next: () => {
-        this.snackBar.open('Đã đăng xuất thành công!', 'Đóng', {
-          duration: 3000
-        });
-      },
-      error: (error) => {
-        console.error('Logout error:', error);
-      }
-    });
+  refreshData(): void {
+    this.refreshSubject.next();
   }
 
-  // Category methods
-  openCategoryDialog(category?: Category | null, isSubcategory: boolean = false, parentId?: number): void {
+  // Category Management
+  openCategoryDialog(category?: Category, isSubcategory: boolean = false, parentId?: number): void {
     const dialogRef = this.dialog.open(CategoryDialogComponent, {
       width: '600px',
       data: {
-        category,
+        category: category || undefined,
         isSubcategory,
-        parentId,
-        allCategories: this.categories$
+        parentId: parentId || undefined,
+        allCategories: this.dataService.getCategories()
       }
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.loadData(); // Reload data after successful save
+        // Only refresh data since the dialog already handles creating/updating the category
+        this.refreshData();
       }
     });
+  }
+
+  editCategory(category: Category): void {
+    this.openCategoryDialog(category, category.level > 0);
+  }
+
+  deleteCategory(id: number): void {
+    if (confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
+      this.dataService.deleteCategory(id).subscribe({
+        next: () => {
+          this.refreshData();
+          this.snackBar.open('Danh mục đã được xóa', 'Đóng', { duration: 3000 });
+        },
+        error: (error) => {
+          console.error('Error deleting category:', error);
+          this.snackBar.open('Lỗi khi xóa danh mục', 'Đóng', { duration: 3000 });
+        }
+      });
+    }
   }
 
   toggleCategory(category: CategoryTreeItem): void {
@@ -560,7 +158,6 @@ export class AdminComponent implements OnInit {
 
   getCategoryIcon(slug: string): string {
     const iconMap: { [key: string]: string } = {
-      // Main categories
       'gioi-thieu': 'info',
       'du-an-thiet-ke': 'architecture',
       'cong-trinh-thuc-te': 'business',
@@ -568,8 +165,6 @@ export class AdminComponent implements OnInit {
       'tin-tuc': 'newspaper',
       'tuyen-dung': 'work',
       'lien-he': 'contact_page',
-
-      // Subcategories
       'biet-thu-hien-dai': 'home',
       'nha-pho-hien-dai': 'apartment',
       'van-phong': 'business_center',
@@ -578,46 +173,123 @@ export class AdminComponent implements OnInit {
       'thiet-ke': 'draw',
       'thi-cong': 'construction',
       'tu-van': 'support_agent',
-
-      // Default icons
       'default': 'category'
     };
     return iconMap[slug] || iconMap['default'];
   }
 
-  editCategory(category: Category): void {
-    this.openCategoryDialog(category);
-  }
-
-  deleteCategory(id: number): void {
-    if (confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
-      this.dataService.deleteCategory(id).subscribe({
-        next: () => {
-          this.snackBar.open('Xóa danh mục thành công!', 'Đóng', {
-            duration: 3000
-          });
-          this.loadData();
-        },
-        error: (error) => {
-          this.snackBar.open('Lỗi khi xóa danh mục!', 'Đóng', {
-            duration: 3000
-          });
-        }
-      });
+  // Category ordering methods
+  moveCategoryUp(category: CategoryTreeItem, tree: CategoryTreeItem[], index: number): void {
+    if (index > 0) {
+      [tree[index], tree[index - 1]] = [tree[index - 1], tree[index]];
+      this.updateCategoryOrder(tree);
     }
   }
 
-  // Post methods
+  moveCategoryDown(category: CategoryTreeItem, tree: CategoryTreeItem[], index: number): void {
+    if (index < tree.length - 1) {
+      [tree[index], tree[index + 1]] = [tree[index + 1], tree[index]];
+      this.updateCategoryOrder(tree);
+    }
+  }
+
+  moveSubcategoryUp(subcategory: CategoryTreeItem, siblings: CategoryTreeItem[], index: number): void {
+    if (index > 0) {
+      [siblings[index], siblings[index - 1]] = [siblings[index - 1], siblings[index]];
+      this.updateSubcategoryOrder(siblings);
+    }
+  }
+
+  moveSubcategoryDown(subcategory: CategoryTreeItem, siblings: CategoryTreeItem[], index: number): void {
+    if (index < siblings.length - 1) {
+      [siblings[index], siblings[index + 1]] = [siblings[index + 1], siblings[index]];
+      this.updateSubcategoryOrder(siblings);
+    }
+  }
+
+  private updateCategoryOrder(tree: CategoryTreeItem[]): void {
+    const orderUpdates = tree.map((item, index) => ({
+      id: item.id,
+      display_order: index + 1
+    }));
+
+    this.dataService.updateCategoryOrder(orderUpdates).subscribe({
+      next: () => {
+        this.snackBar.open('Thứ tự danh mục đã được cập nhật', 'Đóng', { duration: 2000 });
+      },
+      error: (error) => {
+        console.error('Error updating category order:', error);
+        this.snackBar.open('Lỗi khi cập nhật thứ tự', 'Đóng', { duration: 3000 });
+        this.refreshData(); // Reload to restore original order
+      }
+    });
+  }
+
+  private updateSubcategoryOrder(siblings: CategoryTreeItem[]): void {
+    const orderUpdates = siblings.map((item, index) => ({
+      id: item.id,
+      display_order: index + 1
+    }));
+
+    this.dataService.updateCategoryOrder(orderUpdates).subscribe({
+      next: () => {
+        this.snackBar.open('Thứ tự danh mục con đã được cập nhật', 'Đóng', { duration: 2000 });
+      },
+      error: (error) => {
+        console.error('Error updating subcategory order:', error);
+        this.snackBar.open('Lỗi khi cập nhật thứ tự', 'Đóng', { duration: 3000 });
+        this.refreshData(); // Reload to restore original order
+      }
+    });
+  }
+
+  // Drag and drop handlers
+  onCategoryDrop(event: CdkDragDrop<CategoryTreeItem[]>, tree: CategoryTreeItem[]): void {
+    if (event.previousIndex !== event.currentIndex) {
+      moveItemInArray(tree, event.previousIndex, event.currentIndex);
+      this.updateCategoryOrder(tree);
+    }
+  }
+
+  onSubcategoryDrop(event: CdkDragDrop<CategoryTreeItem[]>, siblings: CategoryTreeItem[]): void {
+    if (event.previousIndex !== event.currentIndex) {
+      moveItemInArray(siblings, event.previousIndex, event.currentIndex);
+      this.updateSubcategoryOrder(siblings);
+    }
+  }
+
+  // Post Management
   openPostDialog(post?: Post): void {
     const dialogRef = this.dialog.open(PostDialogComponent, {
       width: '800px',
-      maxWidth: '90vw',
-      data: { post }
+      data: post || null
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.loadData(); // Reload data after successful save
+        if (post) {
+          this.dataService.updatePost(post.id, result).subscribe({
+            next: () => {
+              this.posts$ = this.dataService.getPosts();
+              this.snackBar.open('Bài viết đã được cập nhật', 'Đóng', { duration: 3000 });
+            },
+            error: (error) => {
+              console.error('Error updating post:', error);
+              this.snackBar.open('Lỗi khi cập nhật bài viết', 'Đóng', { duration: 3000 });
+            }
+          });
+        } else {
+          this.dataService.createPost(result).subscribe({
+            next: () => {
+              this.posts$ = this.dataService.getPosts();
+              this.snackBar.open('Bài viết đã được tạo', 'Đóng', { duration: 3000 });
+            },
+            error: (error) => {
+              console.error('Error creating post:', error);
+              this.snackBar.open('Lỗi khi tạo bài viết', 'Đóng', { duration: 3000 });
+            }
+          });
+        }
       }
     });
   }
@@ -630,18 +302,221 @@ export class AdminComponent implements OnInit {
     if (confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
       this.dataService.deletePost(id).subscribe({
         next: () => {
-          this.snackBar.open('Xóa bài viết thành công!', 'Đóng', {
-            duration: 3000
-          });
-          this.loadData();
+          this.posts$ = this.dataService.getPosts();
+          this.snackBar.open('Bài viết đã được xóa', 'Đóng', { duration: 3000 });
         },
         error: (error) => {
-          this.snackBar.open('Lỗi khi xóa bài viết!', 'Đóng', {
-            duration: 3000
-          });
+          console.error('Error deleting post:', error);
+          this.snackBar.open('Lỗi khi xóa bài viết', 'Đóng', { duration: 3000 });
         }
       });
     }
   }
 
+  // Homepage Management Methods
+  loadHomepageMedia(): void {
+    this.dataService.getHomepageMedia().subscribe({
+      next: (response: any) => {
+        this.homepageImages = response.images || [];
+        this.homepageVideos = response.videos || [];
+      },
+      error: (error) => {
+        console.error('Error loading homepage media:', error);
+        this.homepageImages = [];
+        this.homepageVideos = [];
+      }
+    });
+  }
+
+  refreshHomepageMedia(): void {
+    this.loadHomepageMedia();
+    this.snackBar.open('Media đã được làm mới', 'Đóng', { duration: 2000 });
+  }
+
+  uploadHomepageImage(): void {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+
+    input.onchange = (event: any) => {
+      const files = event.target.files;
+      if (files && files.length > 0) {
+        for (let file of files) {
+          const formData = new FormData();
+          formData.append('image', file);
+
+          this.dataService.uploadHomepageImage(formData).subscribe({
+            next: (response) => {
+              this.loadHomepageMedia(); // Refresh the media list
+              this.snackBar.open('Hình ảnh đã được tải lên', 'Đóng', { duration: 3000 });
+            },
+            error: (error) => {
+              console.error('Error uploading image:', error);
+              this.snackBar.open('Lỗi khi tải lên hình ảnh', 'Đóng', { duration: 3000 });
+            }
+          });
+        }
+      }
+    };
+
+    input.click();
+  }
+
+  uploadHomepageVideo(): void {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'video/*';
+    input.multiple = true;
+
+    input.onchange = (event: any) => {
+      const files = event.target.files;
+      if (files && files.length > 0) {
+        for (let file of files) {
+          const formData = new FormData();
+          formData.append('video', file);
+
+          this.dataService.uploadHomepageVideo(formData).subscribe({
+            next: (response) => {
+              this.loadHomepageMedia(); // Refresh the media list
+              this.snackBar.open('Video đã được tải lên', 'Đóng', { duration: 3000 });
+            },
+            error: (error) => {
+              console.error('Error uploading video:', error);
+              this.snackBar.open('Lỗi khi tải lên video', 'Đóng', { duration: 3000 });
+            }
+          });
+        }
+      }
+    };
+
+    input.click();
+  }
+
+  replaceHomepageMedia(mediaUrl: string, type: 'images' | 'videos'): void {
+    const filename = this.getFilename(mediaUrl);
+    const acceptType = type === 'images' ? 'image/*' : 'video/*';
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = acceptType;
+
+    input.onchange = (event: any) => {
+      const file = event.target.files[0];
+      if (file) {
+        const formData = new FormData();
+        formData.append(type === 'images' ? 'image' : 'video', file);
+
+        this.dataService.replaceHomepageMedia(formData, type, filename).subscribe({
+          next: (response) => {
+            this.loadHomepageMedia(); // Refresh the media list
+            this.snackBar.open(`${type === 'images' ? 'Hình ảnh' : 'Video'} đã được thay thế`, 'Đóng', { duration: 3000 });
+          },
+          error: (error) => {
+            console.error('Error replacing media:', error);
+            this.snackBar.open(`Lỗi khi thay thế ${type === 'images' ? 'hình ảnh' : 'video'}`, 'Đóng', { duration: 3000 });
+          }
+        });
+      }
+    };
+
+    input.click();
+  }
+
+  deleteHomepageMedia(mediaUrl: string, type: 'images' | 'videos'): void {
+    const filename = this.getFilename(mediaUrl);
+
+    if (confirm(`Bạn có chắc chắn muốn xóa ${type === 'images' ? 'hình ảnh' : 'video'} này?`)) {
+      this.dataService.deleteHomepageMedia(type, filename).subscribe({
+        next: (response) => {
+          this.loadHomepageMedia(); // Refresh the media list
+          this.snackBar.open(`${type === 'images' ? 'Hình ảnh' : 'Video'} đã được xóa`, 'Đóng', { duration: 3000 });
+        },
+        error: (error) => {
+          console.error('Error deleting media:', error);
+          this.snackBar.open(`Lỗi khi xóa ${type === 'images' ? 'hình ảnh' : 'video'}`, 'Đóng', { duration: 3000 });
+        }
+      });
+    }
+  }
+
+  playVideo(videoUrl: string): void {
+    // Open video in a new tab or modal
+    window.open(videoUrl, '_blank');
+  }
+
+  getFilename(url: string): string {
+    return url.split('/').pop() || '';
+  }
+
+  // Homepage Content Management
+  loadHomepageContent(): void {
+    this.dataService.getHomeContent().subscribe({
+      next: (content) => {
+        this.homepageContent = { ...content };
+        this.originalHomepageContent = { ...content };
+        this.isContentModified = false;
+      },
+      error: (error) => {
+        console.error('Error loading homepage content:', error);
+        // Use default values if API fails
+        this.homepageContent = {
+          hero_title: 'MMA Architectural Design',
+          hero_description: 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo',
+          hero_stat1_number: '37',
+          hero_stat1_label: 'Tỉnh Thành Phủ Sóng',
+          hero_stat2_number: '500+',
+          hero_stat2_label: 'Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp'
+        };
+        this.originalHomepageContent = { ...this.homepageContent };
+        this.isContentModified = false;
+      }
+    });
+  }
+
+  onContentChange(): void {
+    this.isContentModified = JSON.stringify(this.homepageContent) !== JSON.stringify(this.originalHomepageContent);
+  }
+
+  saveHomepageContent(): void {
+    this.dataService.updateHomeContent(this.homepageContent).subscribe({
+      next: (updatedContent) => {
+        this.homepageContent = { ...updatedContent };
+        this.originalHomepageContent = { ...updatedContent };
+        this.isContentModified = false;
+        this.snackBar.open('Nội dung trang chủ đã được lưu', 'Đóng', { duration: 3000 });
+      },
+      error: (error) => {
+        console.error('Error saving homepage content:', error);
+        this.snackBar.open('Lỗi khi lưu nội dung trang chủ', 'Đóng', { duration: 3000 });
+      }
+    });
+  }
+
+  onThumbnailError(event: any): void {
+    // Hide the broken image and show the fallback icon
+    const target = event.target;
+    target.style.display = 'none';
+
+    // Find the parent container and show the fallback icon
+    const container = target.closest('.category-thumbnail-container');
+    if (container) {
+      const iconElement = container.querySelector('mat-icon');
+      if (iconElement) {
+        iconElement.style.display = 'block';
+      }
+    }
+  }
+
+  logout(): void {
+    this.authService.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/']);
+      },
+      error: (error) => {
+        console.error('Logout error:', error);
+        this.router.navigate(['/']);
+      }
+    });
+  }
 }

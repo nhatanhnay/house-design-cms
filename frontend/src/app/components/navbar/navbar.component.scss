@@ -1,0 +1,153 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  height: 64px;
+  background-color: var(--main-dark-gray) !important;
+  color: var(--text-white) !important;
+}
+
+.navbar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+}
+
+.brand-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.brand-text {
+  margin-left: 8px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-links a,
+.nav-links button {
+  color: var(--text-white) !important;
+  font-weight: 400;
+}
+
+.nav-links .active {
+  background-color: var(--accent-copper);
+  border-radius: 4px;
+}
+
+/* Navigation Category Styles */
+.nav-category-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.category-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-white) !important;
+  background: transparent !important;
+  border: none !important;
+  transition: background-color 0.2s ease;
+}
+
+.category-dropdown:hover {
+  background-color: var(--accent-copper) !important;
+  border-radius: 4px;
+}
+
+.dropdown-arrow {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  transition: transform 0.2s ease;
+}
+
+.nav-category-wrapper.has-dropdown:hover .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.admin-link,
+.logout-btn {
+  color: var(--text-white) !important;
+  font-weight: 500 !important;
+}
+
+.mobile-menu-btn {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .nav-links {
+    display: none;
+  }
+
+  .mobile-menu-btn {
+    display: block;
+  }
+
+  .brand-text {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-text {
+    display: none;
+  }
+}
+
+/* Category submenu styling */
+::ng-deep .category-submenu {
+  margin-top: 8px;
+}
+
+::ng-deep .category-submenu .mat-mdc-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
+::ng-deep .category-submenu .mat-mdc-menu-item mat-icon {
+  color: var(--accent-copper);
+  font-size: 20px;
+}
+
+/* Mobile menu styling */
+.mobile-category-header {
+  background-color: var(--secondary-silver) !important;
+  color: var(--main-dark-gray) !important;
+  font-weight: 600 !important;
+  pointer-events: none;
+}
+
+.category-header-text {
+  font-weight: 600;
+  color: var(--main-dark-gray);
+}
+
+.mobile-subcategory {
+  padding-left: 24px !important;
+}
+
+.subcategory-icon {
+  color: var(--accent-copper) !important;
+  font-size: 18px !important;
+}

@@ -66,8 +66,8 @@ func Logout(c *gin.Context) {
 
 // Categories handlers
 func GetCategories(c *gin.Context) {
-	rows, err := database.DB.Query(`SELECT id, name, slug, description, parent_id, level, order_index, is_active, created_at, updated_at
-		FROM categories ORDER BY level ASC, order_index ASC, created_at ASC`)
+	rows, err := database.DB.Query(`SELECT id, name, slug, description, COALESCE(thumbnail_url, '') as thumbnail_url, parent_id, level, order_index, display_order, is_active, created_at, updated_at
+		FROM categories ORDER BY level ASC, display_order ASC, order_index ASC, created_at ASC`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch categories"})
 		return
@@ -78,8 +78,8 @@ func GetCategories(c *gin.Context) {
 	for rows.Next() {
 		var category models.Category
 		var parentID sql.NullInt64
-		err := rows.Scan(&category.ID, &category.Name, &category.Slug, &category.Description,
-			&parentID, &category.Level, &category.OrderIndex, &category.IsActive,
+		err := rows.Scan(&category.ID, &category.Name, &category.Slug, &category.Description, &category.ThumbnailURL,
+			&parentID, &category.Level, &category.OrderIndex, &category.DisplayOrder, &category.IsActive,
 			&category.CreatedAt, &category.UpdatedAt)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan category"})
@@ -104,18 +104,62 @@ func CreateCategory(c *gin.Context) {
 		return
 	}
 
+	// Debug logging
+	fmt.Printf("Creating category - Name: %s, Slug: %s, ParentID: %v\n", category.Name, category.Slug, category.ParentID)
+
+	// Generate slug if not provided
+	if category.Slug == "" {
+		category.Slug = generateSlug(category.Name)
+	}
+
 	// Calculate level based on parent
 	if category.ParentID != nil {
-		// Get parent level
+		// Get parent level and slug for subcategory slug generation
 		var parentLevel int
-		err := database.DB.QueryRow("SELECT level FROM categories WHERE id = $1", *category.ParentID).Scan(&parentLevel)
+		var parentSlug string
+		err := database.DB.QueryRow("SELECT level, slug FROM categories WHERE id = $1", *category.ParentID).Scan(&parentLevel, &parentSlug)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parent category"})
 			return
 		}
 		category.Level = parentLevel + 1
+
+		// Make slug unique for subcategories by prefixing with parent slug (only if not already prefixed)
+		if !strings.HasPrefix(category.Slug, parentSlug+"-") {
+			category.Slug = parentSlug + "-" + category.Slug
+		}
 	} else {
 		category.Level = 0
+	}
+
+	// Check if slug already exists (for new categories only)
+	var existingCount int
+	err := database.DB.QueryRow("SELECT COUNT(*) FROM categories WHERE slug = $1", category.Slug).Scan(&existingCount)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check slug uniqueness"})
+		return
+	}
+
+	// If slug exists, generate a unique one by appending number
+	if existingCount > 0 {
+		fmt.Printf("Slug conflict detected for: %s, generating unique slug\n", category.Slug)
+		originalSlug := category.Slug
+		counter := 1
+		for {
+			category.Slug = fmt.Sprintf("%s-%d", originalSlug, counter)
+			err := database.DB.QueryRow("SELECT COUNT(*) FROM categories WHERE slug = $1", category.Slug).Scan(&existingCount)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check slug uniqueness"})
+				return
+			}
+			if existingCount == 0 {
+				break
+			}
+			counter++
+		}
+		fmt.Printf("Final unique slug: %s\n", category.Slug)
+	} else {
+		fmt.Printf("No slug conflict, using: %s\n", category.Slug)
 	}
 
 	// Set default values
@@ -130,16 +174,16 @@ func CreateCategory(c *gin.Context) {
 		category.OrderIndex = maxOrder + 1
 	}
 
-	result, err := database.DB.Exec(`INSERT INTO categories (name, slug, description, parent_id, level, order_index, is_active)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		category.Name, category.Slug, category.Description, category.ParentID, category.Level, category.OrderIndex, category.IsActive)
+	var newID uint
+	err = database.DB.QueryRow(`INSERT INTO categories (name, slug, description, thumbnail_url, parent_id, level, order_index, is_active)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+		category.Name, category.Slug, category.Description, category.ThumbnailURL, category.ParentID, category.Level, category.OrderIndex, category.IsActive).Scan(&newID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create category"})
 		return
 	}
 
-	id, _ := result.LastInsertId()
-	category.ID = uint(id)
+	category.ID = newID
 
 	c.JSON(http.StatusCreated, category)
 }
@@ -166,9 +210,9 @@ func UpdateCategory(c *gin.Context) {
 		category.Level = 0
 	}
 
-	_, err := database.DB.Exec(`UPDATE categories SET name = $2, slug = $3, description = $4, parent_id = $5,
-		level = $6, order_index = $7, is_active = $8, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-		id, category.Name, category.Slug, category.Description, category.ParentID,
+	_, err := database.DB.Exec(`UPDATE categories SET name = $2, slug = $3, description = $4, thumbnail_url = $5, parent_id = $6,
+		level = $7, order_index = $8, is_active = $9, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+		id, category.Name, category.Slug, category.Description, category.ThumbnailURL, category.ParentID,
 		category.Level, category.OrderIndex, category.IsActive)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update category"})
@@ -191,6 +235,41 @@ func DeleteCategory(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Category deleted successfully"})
+}
+
+func UpdateCategoryOrder(c *gin.Context) {
+	var req models.CategoryOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Begin transaction
+	tx, err := database.DB.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to begin transaction"})
+		return
+	}
+	defer tx.Rollback()
+
+	// Update display order for each category
+	for _, categoryUpdate := range req.Categories {
+		_, err = tx.Exec(`UPDATE categories SET display_order = $1, updated_at = CURRENT_TIMESTAMP
+						  WHERE id = $2`, categoryUpdate.DisplayOrder, categoryUpdate.ID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update category order"})
+			return
+		}
+	}
+
+	// Commit transaction
+	err = tx.Commit()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Category order updated successfully"})
 }
 
 // Posts handlers
@@ -284,16 +363,16 @@ func CreatePost(c *gin.Context) {
 		return
 	}
 
-	result, err := database.DB.Exec(`INSERT INTO posts (title, content, summary, image_url, category_id, published) 
-		VALUES ($1, $2, $3, $4, $5, $6)`,
-		post.Title, post.Content, post.Summary, post.ImageURL, post.CategoryID, post.Published)
+	var newID uint
+	err := database.DB.QueryRow(`INSERT INTO posts (title, content, summary, image_url, category_id, published)
+		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+		post.Title, post.Content, post.Summary, post.ImageURL, post.CategoryID, post.Published).Scan(&newID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
 		return
 	}
 
-	id, _ := result.LastInsertId()
-	post.ID = uint(id)
+	post.ID = newID
 
 	c.JSON(http.StatusCreated, post)
 }
@@ -504,12 +583,13 @@ func CreateArticle(c *gin.Context) {
 		article.AuthorID = authorID.(uint)
 	}
 
-	result, err := database.DB.Exec(`INSERT INTO articles (title, content, summary, featured_image_url,
+	var newID uint
+	err := database.DB.QueryRow(`INSERT INTO articles (title, content, summary, featured_image_url,
 		category_id, published, tags, meta_title, meta_description, slug, author_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
 		article.Title, article.Content, article.Summary, article.FeaturedImageURL,
 		article.CategoryID, article.Published, article.Tags, article.MetaTitle,
-		article.MetaDescription, article.Slug, article.AuthorID)
+		article.MetaDescription, article.Slug, article.AuthorID).Scan(&newID)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
 			c.JSON(http.StatusConflict, gin.H{"error": "Article with this slug already exists"})
@@ -519,8 +599,7 @@ func CreateArticle(c *gin.Context) {
 		return
 	}
 
-	id, _ := result.LastInsertId()
-	article.ID = uint(id)
+	article.ID = newID
 	article.CreatedAt = time.Now()
 	article.UpdatedAt = time.Now()
 
@@ -725,6 +804,322 @@ func UploadVideo(c *gin.Context) {
 	videoURL := fmt.Sprintf("http://localhost:8080/data/uploads/videos/%s", filename)
 	c.JSON(http.StatusOK, gin.H{
 		"url": videoURL,
+	})
+}
+
+// Homepage handlers
+func GetHomepageImages(c *gin.Context) {
+	imagesDir := "./homepage/images"
+	videoDir := "./homepage/videos"
+
+	// Read images directory
+	imageFiles, err := os.ReadDir(imagesDir)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read images directory"})
+		return
+	}
+
+	// Read videos directory
+	videoFiles, err := os.ReadDir(videoDir)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read videos directory"})
+		return
+	}
+
+	var images []string
+	var videos []string
+
+	// Process image files
+	for _, file := range imageFiles {
+		if !file.IsDir() {
+			ext := strings.ToLower(filepath.Ext(file.Name()))
+			if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" || ext == ".webp" {
+				images = append(images, fmt.Sprintf("http://localhost:8080/homepage/images/%s", file.Name()))
+			}
+		}
+	}
+
+	// Process video files
+	for _, file := range videoFiles {
+		if !file.IsDir() {
+			ext := strings.ToLower(filepath.Ext(file.Name()))
+			if ext == ".mp4" || ext == ".avi" || ext == ".mov" || ext == ".wmv" || ext == ".webm" {
+				videos = append(videos, fmt.Sprintf("http://localhost:8080/homepage/videos/%s", file.Name()))
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"images": images,
+		"videos": videos,
+	})
+}
+
+func UploadHomepageImage(c *gin.Context) {
+	// Check authentication
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Parse the multipart form
+	file, header, err := c.Request.FormFile("upload")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
+		return
+	}
+	defer file.Close()
+
+	// Validate file type
+	allowedTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/jpg":  true,
+		"image/png":  true,
+		"image/gif":  true,
+		"image/webp": true,
+	}
+
+	contentType := header.Header.Get("Content-Type")
+	if !allowedTypes[contentType] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only images are allowed."})
+		return
+	}
+
+	// Validate file size (5MB max)
+	const maxSize = 5 * 1024 * 1024 // 5MB
+	if header.Size > maxSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File too large. Maximum size is 5MB."})
+		return
+	}
+
+	// Create homepage images directory if it doesn't exist
+	uploadsDir := "./homepage/images"
+	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+		return
+	}
+
+	// Generate unique filename
+	ext := filepath.Ext(header.Filename)
+	filename := uuid.New().String() + ext
+	filePath := filepath.Join(uploadsDir, filename)
+
+	// Create the file
+	dst, err := os.Create(filePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+	defer dst.Close()
+
+	// Copy the uploaded file to the destination
+	if _, err := io.Copy(dst, file); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+
+	// Return the URL
+	imageURL := fmt.Sprintf("http://localhost:8080/homepage/images/%s", filename)
+	c.JSON(http.StatusOK, gin.H{
+		"url": imageURL,
+		"filename": filename,
+	})
+}
+
+func UploadHomepageVideo(c *gin.Context) {
+	// Check authentication
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Parse the multipart form
+	file, header, err := c.Request.FormFile("upload")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
+		return
+	}
+	defer file.Close()
+
+	// Validate file type
+	allowedTypes := map[string]bool{
+		"video/mp4":  true,
+		"video/avi":  true,
+		"video/mov":  true,
+		"video/wmv":  true,
+		"video/webm": true,
+	}
+
+	contentType := header.Header.Get("Content-Type")
+	if !allowedTypes[contentType] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only videos are allowed."})
+		return
+	}
+
+	// Validate file size (50MB max for videos)
+	const maxSize = 50 * 1024 * 1024 // 50MB
+	if header.Size > maxSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File too large. Maximum size is 50MB."})
+		return
+	}
+
+	// Create homepage videos directory if it doesn't exist
+	uploadsDir := "./homepage/videos"
+	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+		return
+	}
+
+	// Generate unique filename
+	ext := filepath.Ext(header.Filename)
+	filename := uuid.New().String() + ext
+	filePath := filepath.Join(uploadsDir, filename)
+
+	// Create the file
+	dst, err := os.Create(filePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+	defer dst.Close()
+
+	// Copy the uploaded file to the destination
+	if _, err := io.Copy(dst, file); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+
+	// Return the URL
+	videoURL := fmt.Sprintf("http://localhost:8080/homepage/videos/%s", filename)
+	c.JSON(http.StatusOK, gin.H{
+		"url": videoURL,
+		"filename": filename,
+	})
+}
+
+func DeleteHomepageMedia(c *gin.Context) {
+	// Check authentication
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	filename := c.Param("filename")
+	mediaType := c.Param("type") // "images" or "videos"
+
+	if mediaType != "images" && mediaType != "videos" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid media type. Must be 'images' or 'videos'"})
+		return
+	}
+
+	filePath := filepath.Join("./homepage", mediaType, filename)
+
+	// Check if file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		return
+	}
+
+	// Delete the file
+	if err := os.Remove(filePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete file"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "File deleted successfully"})
+}
+
+func ReplaceHomepageMedia(c *gin.Context) {
+	// Check authentication
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	oldFilename := c.Param("filename")
+	mediaType := c.Param("type") // "images" or "videos"
+
+	if mediaType != "images" && mediaType != "videos" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid media type. Must be 'images' or 'videos'"})
+		return
+	}
+
+	// Parse the multipart form for new file
+	file, header, err := c.Request.FormFile("upload")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
+		return
+	}
+	defer file.Close()
+
+	// Validate file type based on media type
+	var allowedTypes map[string]bool
+	var maxSize int64
+
+	if mediaType == "images" {
+		allowedTypes = map[string]bool{
+			"image/jpeg": true,
+			"image/jpg":  true,
+			"image/png":  true,
+			"image/gif":  true,
+			"image/webp": true,
+		}
+		maxSize = 5 * 1024 * 1024 // 5MB
+	} else {
+		allowedTypes = map[string]bool{
+			"video/mp4":  true,
+			"video/avi":  true,
+			"video/mov":  true,
+			"video/wmv":  true,
+			"video/webm": true,
+		}
+		maxSize = 50 * 1024 * 1024 // 50MB
+	}
+
+	contentType := header.Header.Get("Content-Type")
+	if !allowedTypes[contentType] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type for " + mediaType})
+		return
+	}
+
+	// Validate file size
+	if header.Size > maxSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File too large"})
+		return
+	}
+
+	oldFilePath := filepath.Join("./homepage", mediaType, oldFilename)
+
+	// Check if old file exists
+	if _, err := os.Stat(oldFilePath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Original file not found"})
+		return
+	}
+
+	// Create the file (overwrite the old one)
+	dst, err := os.Create(oldFilePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to replace file"})
+		return
+	}
+	defer dst.Close()
+
+	// Copy the uploaded file to the destination
+	if _, err := io.Copy(dst, file); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+
+	// Return the URL
+	mediaURL := fmt.Sprintf("http://localhost:8080/homepage/%s/%s", mediaType, oldFilename)
+	c.JSON(http.StatusOK, gin.H{
+		"url": mediaURL,
+		"filename": oldFilename,
+		"message": "File replaced successfully",
 	})
 }
 

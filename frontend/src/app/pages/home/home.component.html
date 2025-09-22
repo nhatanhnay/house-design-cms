@@ -1,0 +1,200 @@
+<div class="home-page">
+  <!-- Hero Carousel Section -->
+  <section class="hero-carousel">
+    <div class="carousel-container">
+      <div class="carousel-slide" *ngFor="let image of homepageImages; let i = index"
+        [class.active]="i === currentSlideIndex" [style.background-image]="'url(' + image + ')'">
+      </div>
+
+      <!-- Carousel Navigation -->
+      <div class="carousel-nav" *ngIf="homepageImages.length > 1">
+        <button class="carousel-prev" (click)="previousSlide()" [disabled]="homepageImages.length <= 1">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button class="carousel-next" (click)="nextSlide()" [disabled]="homepageImages.length <= 1">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+
+      <!-- Carousel Indicators -->
+      <div class="carousel-indicators" *ngIf="homepageImages.length > 1">
+        <button *ngFor="let image of homepageImages; let i = index" class="indicator"
+          [class.active]="i === currentSlideIndex" (click)="goToSlide(i)">
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hero Content Section - Separate section between carousel and main-categories -->
+  <section class="hero-content-section">
+    <div class="container">
+      <div class="hero-content">
+        <h1>{{ homeContent?.hero_title || 'MMA Architectural Design' }}</h1>
+        <p>{{ homeContent?.hero_description || 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến
+          trúc độc đáo' }}</p>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <div class="stat-number">{{ homeContent?.hero_stat1_number || '37' }}</div>
+            <div class="stat-label">{{ homeContent?.hero_stat1_label || 'Tỉnh Thành Phủ Sóng' }}</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">{{ homeContent?.hero_stat2_number || '500+' }}</div>
+            <div class="stat-label">{{ homeContent?.hero_stat2_label || 'Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp' }}</div>
+          </div>
+        </div>
+        <div class="hero-buttons">
+          <button mat-raised-button class="btn-primary">
+            Khám Phá Dự Án
+          </button>
+          <button mat-stroked-button class="btn-outline">
+            Liên Hệ Tư Vấn
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Categories Section -->
+  <section class="main-categories">
+    <div class="container">
+      <h2 class="section-title text-center">Danh Mục Chính</h2>
+      <div class="categories-grid" *ngIf="mainCategories$ | async as mainCategories">
+        <div class="category-item" *ngFor="let category of mainCategories" [routerLink]="'/category/' + category.slug">
+          <div class="category-image">
+            <img *ngIf="category.thumbnail_url"
+                 [src]="category.thumbnail_url"
+                 [alt]="category.name"
+                 class="category-thumbnail"
+                 (error)="onImageError($event)">
+            <div *ngIf="!category.thumbnail_url" class="category-image-placeholder"></div>
+          </div>
+          <div class="category-content">
+            <h3>{{ category.name }}</h3>
+            <p>{{ category.description || 'Khám phá các thiết kế trong danh mục này' }}</p>
+          </div>
+        </div>
+      </div>
+      <!-- Loading state for main categories -->
+      <div class="loading-state" *ngIf="isLoadingCategories">
+        <div class="loading-spinner"></div>
+        <p>Đang tải danh mục...</p>
+      </div>
+      <!-- Empty state if no main categories -->
+      <div class="no-categories" *ngIf="!(mainCategories$ | async)?.length && !isLoadingCategories">
+        <mat-icon class="no-categories-icon">category</mat-icon>
+        <h3>Chưa có danh mục nào</h3>
+        <p>Hiện tại chưa có danh mục thiết kế nào được tạo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features-section">
+    <div class="container">
+      <h2 class="section-title text-center">Ưu Thế MMA Architectural Design</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <mat-icon class="feature-icon">architecture</mat-icon>
+          <h3>Thiết Kế Kiến Trúc Độc Đáo</h3>
+          <p>Chuyên gia kiến trúc sư với hơn 10 năm kinh nghiệm, tạo ra những công trình biệt thự và nhà ở đẳng cấp.</p>
+        </div>
+        <div class="feature-card">
+          <mat-icon class="feature-icon">engineering</mat-icon>
+          <h3>Thi Công Chất Lượng Cao</h3>
+          <p>Đội ngũ kỹ sư và công nhân tay nghề cao, sử dụng công nghệ hiện đại trong thi công.</p>
+        </div>
+        <div class="feature-card">
+          <mat-icon class="feature-icon">business</mat-icon>
+          <h3>Dịch Vụ Toàn Diện</h3>
+          <p>Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn giao hoàn thiện.</p>
+        </div>
+        <div class="feature-card">
+          <mat-icon class="feature-icon">verified</mat-icon>
+          <h3>Uy Tín 37 Tỉnh Thành</h3>
+          <p>Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Latest Posts Section -->
+  <section class="latest-posts gray-blue-bg">
+    <div class="container">
+      <h2 class="section-title text-center">Dự Án & Tin Tức Kiến Trúc</h2>
+
+      <!-- Loading State -->
+      <div class="loading-state" *ngIf="isLoadingPosts">
+        <div class="loading-spinner"></div>
+        <p>Đang tải bài viết...</p>
+      </div>
+
+      <!-- Posts Grid -->
+      <div class="posts-grid" *ngIf="latestPosts$ | async as posts; else noPostsTemplate">
+        <mat-card class="post-card" *ngFor="let post of posts.slice(0, 6)" [routerLink]="'/post/' + post.id">
+          <div class="post-image">
+            <div class="post-image-placeholder" *ngIf="!post.image_url"></div>
+            <img *ngIf="post.image_url" [src]="post.image_url" [alt]="post.title" (error)="onImageError($event)">
+            <div class="post-overlay">
+              <div class="post-category" *ngIf="post.category">{{ post.category.name }}</div>
+            </div>
+          </div>
+          <mat-card-content class="post-content">
+            <h3 class="post-title">{{ post.title }}</h3>
+            <p class="post-summary">{{ post.summary || 'Không có mô tả' }}</p>
+            <div class="post-meta">
+              <div class="meta-item">
+                <mat-icon>event</mat-icon>
+                <span class="post-date">{{ post.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <div class="meta-item status" *ngIf="currentUser$ | async" [class.published]="post.published"
+                [class.draft]="!post.published">
+                <mat-icon>{{ post.published ? 'visibility' : 'visibility_off' }}</mat-icon>
+                <span>{{ post.published ? 'Đã xuất bản' : 'Bản nháp' }}</span>
+              </div>
+              <div class="meta-item" *ngIf="!(currentUser$ | async)">
+                <mat-icon>visibility</mat-icon>
+                <span>{{ post.views || 0 }} lượt xem</span>
+              </div>
+            </div>
+            <div class="read-more">
+              <span>Xem chi tiết</span>
+              <mat-icon>arrow_forward</mat-icon>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- No Posts Template -->
+      <ng-template #noPostsTemplate>
+        <div class="no-posts" *ngIf="!isLoadingPosts">
+          <mat-icon class="no-posts-icon">article</mat-icon>
+          <h3>Chưa có dự án nào</h3>
+          <p>Hiện tại chưa có dự án kiến trúc nào được xuất bản. Hãy quay lại sau để khám phá!</p>
+        </div>
+      </ng-template>
+
+      <div class="text-center mt-4" *ngIf="(latestPosts$ | async)?.length">
+        <button mat-raised-button routerLink="/category/tin-tuc" class="btn-primary view-all-btn">
+          <mat-icon>view_list</mat-icon>
+          Xem Tất Cả Dự Án
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Categories Section -->
+  <section class="categories-section">
+    <div class="container">
+      <h2 class="section-title text-center">Danh Mục Dự Án</h2>
+      <div class="categories-grid" *ngIf="categories$ | async as categories">
+        <div class="category-card" *ngFor="let category of categories" [routerLink]="'/category/' + category.slug">
+          <div class="category-icon">
+            <mat-icon>{{ getCategoryIcon(category.slug) }}</mat-icon>
+          </div>
+          <h3>{{ category.name }}</h3>
+          <p>{{ category.description }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

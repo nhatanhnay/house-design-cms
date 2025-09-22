@@ -11,18 +11,20 @@ type Admin struct {
 }
 
 type Category struct {
-	ID          uint      `json:"id" gorm:"primaryKey"`
-	Name        string    `json:"name" gorm:"not null"`
-	Slug        string    `json:"slug" gorm:"unique;not null"`
-	Description string    `json:"description"`
-	ParentID    *uint     `json:"parent_id" gorm:"default:null"`
-	Parent      *Category `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
-	Children    []Category `json:"children,omitempty" gorm:"foreignKey:ParentID"`
-	Level       int       `json:"level" gorm:"default:0"`
-	OrderIndex  int       `json:"order_index" gorm:"default:0"`
-	IsActive    bool      `json:"is_active" gorm:"default:true"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID           uint      `json:"id" gorm:"primaryKey"`
+	Name         string    `json:"name" gorm:"not null"`
+	Slug         string    `json:"slug" gorm:"unique;not null"`
+	Description  string    `json:"description"`
+	ThumbnailURL string    `json:"thumbnail_url"`
+	ParentID     *uint     `json:"parent_id" gorm:"default:null"`
+	Parent       *Category `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
+	Children     []Category `json:"children,omitempty" gorm:"foreignKey:ParentID"`
+	Level        int       `json:"level" gorm:"default:0"`
+	OrderIndex   int       `json:"order_index" gorm:"default:0"`
+	DisplayOrder int       `json:"display_order" gorm:"default:0"`
+	IsActive     bool      `json:"is_active" gorm:"default:true"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type Post struct {
@@ -66,4 +68,13 @@ type LoginRequest struct {
 type LoginResponse struct {
 	Token string `json:"token"`
 	Admin Admin  `json:"admin"`
+}
+
+type CategoryOrderUpdate struct {
+	ID           uint `json:"id" binding:"required"`
+	DisplayOrder int  `json:"display_order" binding:"required"`
+}
+
+type CategoryOrderRequest struct {
+	Categories []CategoryOrderUpdate `json:"categories" binding:"required"`
 }

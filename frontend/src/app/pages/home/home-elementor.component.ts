@@ -1,19 +1,18 @@
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
+import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { HomeContentEditDialog } from './home-content-edit-dialog.component';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { Admin, Category, HomeContent, Post } from '../../models/models';
-import { AuthService } from '../../services/auth.service';
 import { DataService } from '../../services/data.service';
+import { AuthService } from '../../services/auth.service';
+import { Post, Category, Admin, HomeContent } from '../../models/models';
 
 @Component({
   selector: 'app-home',
@@ -29,22 +28,16 @@ import { DataService } from '../../services/data.service';
     MatInputModule,
     FormsModule
   ],
-  templateUrl: './home.component.html',
-  styleUrls: ['./home.component.scss']
+  templateUrl: './home-elementor.component.html',
+  styleUrls: ['./home-elementor.component.scss']
 })
-export class HomeComponent implements OnInit, OnDestroy {
+export class HomeComponent implements OnInit {
   latestPosts$: Observable<Post[]>;
   categories$: Observable<Category[]>;
-  mainCategories$: Observable<Category[]>;
   currentUser$: Observable<Admin | null>;
   homeContent: HomeContent | null = null;
   isLoadingPosts = true;
   isLoadingCategories = true;
-
-  // Homepage carousel properties
-  homepageImages: string[] = [];
-  currentSlideIndex: number = 0;
-  private carouselInterval: any;
 
   constructor(
     private dataService: DataService,
@@ -53,15 +46,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   ) {
     this.latestPosts$ = this.dataService.getPosts();
     this.categories$ = this.dataService.getCategories();
-    this.mainCategories$ = this.dataService.getCategories().pipe(
-      map(categories => categories.filter(category => category.level === 0))
-    );
     this.currentUser$ = this.authService.currentUser$;
   }
 
   ngOnInit(): void {
-    this.loadHomepageMedia();
-
     this.latestPosts$.subscribe({
       next: (posts) => {
         this.isLoadingPosts = false;
@@ -120,65 +108,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     return iconMap[slug] || 'category';
   }
 
-  // Homepage carousel methods
-  loadHomepageMedia(): void {
-    this.dataService.getHomepageMedia().subscribe({
-      next: (response: any) => {
-        this.homepageImages = response.images || [];
-        if (this.homepageImages.length > 0) {
-          this.startCarouselAutoPlay();
-        }
-        console.log('Homepage media loaded:', this.homepageImages.length + ' images');
-      },
-      error: (error) => {
-        console.error('Error loading homepage media:', error);
-        // Set default placeholder image if API fails
-        this.homepageImages = [];
-      }
-    });
-  }
-
-  startCarouselAutoPlay(): void {
-    if (this.homepageImages.length > 1) {
-      this.carouselInterval = setInterval(() => {
-        this.nextSlide();
-      }, 5000); // Change slide every 5 seconds
-    }
-  }
-
-  stopCarouselAutoPlay(): void {
-    if (this.carouselInterval) {
-      clearInterval(this.carouselInterval);
-    }
-  }
-
-  nextSlide(): void {
-    if (this.homepageImages.length > 0) {
-      this.currentSlideIndex = (this.currentSlideIndex + 1) % this.homepageImages.length;
-    }
-  }
-
-  previousSlide(): void {
-    if (this.homepageImages.length > 0) {
-      this.currentSlideIndex = this.currentSlideIndex === 0
-        ? this.homepageImages.length - 1
-        : this.currentSlideIndex - 1;
-    }
-  }
-
-  goToSlide(index: number): void {
-    if (index >= 0 && index < this.homepageImages.length) {
-      this.currentSlideIndex = index;
-      // Restart autoplay after manual navigation
-      this.stopCarouselAutoPlay();
-      setTimeout(() => this.startCarouselAutoPlay(), 3000);
-    }
-  }
-
-  ngOnDestroy(): void {
-    this.stopCarouselAutoPlay();
-  }
-
   openEditDialog(): void {
     const dialogRef = this.dialog.open(HomeContentEditDialog, {
       width: '600px',
@@ -188,7 +117,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         hero_stat1_number: '37',
         hero_stat1_label: 'Tỉnh Thành Phủ Sóng',
         hero_stat2_number: '500+',
-        hero_stat2_label: 'Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp'
+        hero_stat2_label: 'Dự Án Biệt Thư/Nhà Ở Chuyên Nghiệp'
       }
     });
 
@@ -207,4 +136,3 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 }
-

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Category, Post, Article, CreateCategoryRequest, UpdateCategoryRequest, CategoryTreeItem } from '../models/models';
+import { Category, Post, Article, CreateCategoryRequest, UpdateCategoryRequest, CategoryTreeItem, HomeContent } from '../models/models';
 
 @Injectable({
   providedIn: 'root'
@@ -24,6 +24,7 @@ export class DataService {
           parent_id: apiCategory.parent_id || null,
           level: apiCategory.level || 0,
           order_index: apiCategory.order_index || 0,
+          display_order: apiCategory.display_order || 0,
           is_active: apiCategory.is_active !== undefined ? apiCategory.is_active : true,
           created_at: apiCategory.created_at,
           updated_at: apiCategory.updated_at
@@ -77,7 +78,14 @@ export class DataService {
       }
     });
 
-    return tree.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+    // Sort children arrays by display_order as well
+    tree.forEach(parent => {
+      if (parent.children && parent.children.length > 0) {
+        parent.children.sort((a, b) => (a.display_order || a.order_index || 0) - (b.display_order || b.order_index || 0));
+      }
+    });
+
+    return tree.sort((a, b) => (a.display_order || a.order_index || 0) - (b.display_order || b.order_index || 0));
   }
 
   createCategory(category: CreateCategoryRequest): Observable<Category> {
@@ -95,6 +103,11 @@ export class DataService {
   // Reorder categories
   reorderCategories(categoryOrders: Array<{id: number, order_index: number}>): Observable<any> {
     return this.http.put(`${this.apiUrl}/categories/reorder`, { categories: categoryOrders });
+  }
+
+  // Update category display order
+  updateCategoryOrder(orderUpdates: Array<{id: number, display_order: number}>): Observable<any> {
+    return this.http.put(`${this.apiUrl}/categories/update-order`, { categories: orderUpdates });
   }
 
   // Posts
@@ -167,5 +180,40 @@ export class DataService {
 
   deleteArticle(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/articles/${id}`);
+  }
+
+  // Home Content
+  getHomeContent(): Observable<HomeContent> {
+    return this.http.get<HomeContent>(`${this.apiUrl}/home-content`);
+  }
+
+  updateHomeContent(content: Partial<HomeContent>): Observable<HomeContent> {
+    return this.http.put<HomeContent>(`${this.apiUrl}/home-content`, content);
+  }
+
+  // Homepage Media Management
+  getHomepageMedia(): Observable<{images: string[], videos: string[]}> {
+    return this.http.get<{images: string[], videos: string[]}>(`${this.apiUrl}/homepage/media`);
+  }
+
+  uploadHomepageImage(formData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/homepage/upload-image`, formData);
+  }
+
+  uploadHomepageVideo(formData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/homepage/upload-video`, formData);
+  }
+
+  replaceHomepageMedia(formData: FormData, type: string, filename: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/homepage/${type}/${filename}`, formData);
+  }
+
+  deleteHomepageMedia(type: string, filename: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/homepage/${type}/${filename}`);
+  }
+
+  // General image upload for category thumbnails and other purposes
+  uploadImage(formData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/upload`, formData);
   }
 }

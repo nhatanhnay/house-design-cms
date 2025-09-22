@@ -28,7 +28,7 @@ func main() {
 
 	// CORS middleware
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:4200"},
+		AllowOrigins:     []string{"http://localhost:4200", "http://localhost:4201"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -51,6 +51,7 @@ func main() {
 		api.GET("/posts/:id", handlers.GetPost)
 		api.GET("/articles", handlers.GetArticles)
 		api.GET("/articles/:identifier", handlers.GetArticle)
+		api.GET("/homepage/media", handlers.GetHomepageImages)
 
 		// Protected routes (require authentication)
 		protected := api.Group("/")
@@ -59,6 +60,7 @@ func main() {
 			// Categories management
 			protected.POST("/categories", handlers.CreateCategory)
 			protected.PUT("/categories/:id", handlers.UpdateCategory)
+			protected.PUT("/categories/update-order", handlers.UpdateCategoryOrder)
 			protected.DELETE("/categories/:id", handlers.DeleteCategory)
 
 			// Posts management
@@ -74,11 +76,18 @@ func main() {
 			// Media uploads
 			protected.POST("/upload", handlers.UploadImage)
 			protected.POST("/upload-video", handlers.UploadVideo)
+
+			// Homepage media management
+			protected.POST("/homepage/upload-image", handlers.UploadHomepageImage)
+			protected.POST("/homepage/upload-video", handlers.UploadHomepageVideo)
+			protected.DELETE("/homepage/:type/:filename", handlers.DeleteHomepageMedia)
+			protected.PUT("/homepage/:type/:filename", handlers.ReplaceHomepageMedia)
 		}
 	}
 
 	// Serve static files for uploaded media
 	r.Static("/data", "./data")
+	r.Static("/homepage", "./homepage")
 
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {
