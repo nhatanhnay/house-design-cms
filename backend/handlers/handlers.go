@@ -890,42 +890,71 @@ func GetHomepageImages(c *gin.Context) {
 	imagesDir := "./homepage/images"
 	videoDir := "./homepage/videos"
 
-	// Read images directory
-	imageFiles, err := os.ReadDir(imagesDir)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read images directory"})
+	fmt.Printf("🔍 KIỂM TRA MEDIA HOMEPAGE:\n")
+	fmt.Printf("   📁 Thư mục images: %s\n", imagesDir)
+	fmt.Printf("   📁 Thư mục videos: %s\n", videoDir)
+
+	// Tạo thư mục nếu chưa tồn tại
+	if err := os.MkdirAll(imagesDir, 0755); err != nil {
+		fmt.Printf("❌ Lỗi tạo thư mục images: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể tạo thư mục images"})
+		return
+	}
+	if err := os.MkdirAll(videoDir, 0755); err != nil {
+		fmt.Printf("❌ Lỗi tạo thư mục videos: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể tạo thư mục videos"})
 		return
 	}
 
-	// Read videos directory
+	// Lấy base URL một lần duy nhất
+	baseURL := getBaseURL(c)
+	fmt.Printf("   🌐 Base URL: %s\n", baseURL)
+
+	// Đọc thư mục images
+	imageFiles, err := os.ReadDir(imagesDir)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể đọc thư mục images"})
+		return
+	}
+
+	// Đọc thư mục videos
 	videoFiles, err := os.ReadDir(videoDir)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read videos directory"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể đọc thư mục videos"})
 		return
 	}
 
 	var images []string
 	var videos []string
 
-	// Process image files
+	// Xử lý file images
 	for _, file := range imageFiles {
 		if !file.IsDir() {
 			ext := strings.ToLower(filepath.Ext(file.Name()))
 			if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" || ext == ".webp" {
-				baseURL := getBaseURL(c)
 				images = append(images, fmt.Sprintf("%s/homepage/images/%s", baseURL, file.Name()))
 			}
 		}
 	}
 
-	// Process video files
+	// Xử lý file videos
 	for _, file := range videoFiles {
 		if !file.IsDir() {
 			ext := strings.ToLower(filepath.Ext(file.Name()))
 			if ext == ".mp4" || ext == ".avi" || ext == ".mov" || ext == ".wmv" || ext == ".webm" {
-				baseURL := getBaseURL(c)
 				videos = append(videos, fmt.Sprintf("%s/homepage/videos/%s", baseURL, file.Name()))
 			}
+		}
+	}
+
+	fmt.Printf("📊 KẾT QUẢ QUÉT MEDIA:\n")
+	fmt.Printf("   🖼️  Tổng images: %d files\n", len(images))
+	fmt.Printf("   🎥 Tổng videos: %d files\n", len(videos))
+
+	if len(images) > 0 {
+		fmt.Printf("   📋 Danh sách images:\n")
+		for i, img := range images {
+			fmt.Printf("      %d. %s\n", i+1, img)
 		}
 	}
 
@@ -1002,6 +1031,14 @@ func UploadHomepageImage(c *gin.Context) {
 	// Return the URL
 	baseURL := getBaseURL(c)
 	imageURL := fmt.Sprintf("%s/homepage/images/%s", baseURL, filename)
+
+	// Debug logging tiếng Việt
+	fmt.Printf("✅ UPLOAD THÀNH CÔNG:\n")
+	fmt.Printf("   📁 Thư mục lưu: %s\n", uploadsDir)
+	fmt.Printf("   📄 Tên file: %s\n", filename)
+	fmt.Printf("   🌐 Base URL: %s\n", baseURL)
+	fmt.Printf("   🔗 URL trả về: %s\n", imageURL)
+
 	c.JSON(http.StatusOK, gin.H{
 		"url": imageURL,
 		"filename": filename,
