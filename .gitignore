@@ -45,5 +45,4 @@ temp/
 /backend/vendor/
 
 # Data uploads (keep structure but ignore uploaded files)
-/backend/data/uploads/*
 !/backend/data/uploads/.gitkeep

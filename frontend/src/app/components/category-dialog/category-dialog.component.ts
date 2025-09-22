@@ -49,7 +49,18 @@ import { Category } from '../../models/models';
           <input matInput formControlName="slug" placeholder="Nhập slug (tự động tạo từ tên)">
         </mat-form-field>
 
-        <mat-form-field appearance="fill" class="full-width" *ngIf="data.isSubcategory && !data.parentId">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Loại danh mục</mat-label>
+          <mat-select formControlName="category_type" (selectionChange)="onCategoryTypeChange($event)">
+            <mat-option value="product">Sản phẩm (có thể có danh mục con)</mat-option>
+            <mat-option value="news">Tin tức (chỉ chứa bài viết)</mat-option>
+          </mat-select>
+          <mat-error *ngIf="categoryForm.get('category_type')?.hasError('required')">
+            Phải chọn loại danh mục
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width" *ngIf="data.isSubcategory && !data.parentId && categoryForm.get('category_type')?.value === 'product'">
           <mat-label>Danh mục cha</mat-label>
           <mat-select formControlName="parent_id" placeholder="Chọn danh mục cha">
             <mat-option *ngFor="let category of parentCategories$ | async" [value]="category.id">
@@ -60,6 +71,11 @@ import { Category } from '../../models/models';
             Phải chọn danh mục cha
           </mat-error>
         </mat-form-field>
+
+        <div *ngIf="categoryForm.get('category_type')?.value === 'news'" class="category-type-info">
+          <mat-icon>info</mat-icon>
+          <span>Danh mục tin tức không thể có danh mục con. Chỉ có thể chứa các bài viết.</span>
+        </div>
 
         <div *ngIf="data.isSubcategory && data.parentId" class="parent-info">
           <strong>Danh mục cha:</strong> {{ getParentCategoryName() }}
@@ -223,6 +239,24 @@ import { Category } from '../../models/models';
       border-radius: 8px;
       border-left: 4px solid #1976d2;
     }
+
+    .category-type-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      background-color: #e3f2fd;
+      border-radius: 8px;
+      border-left: 4px solid #2196f3;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #1565c0;
+    }
+
+    .category-type-info mat-icon {
+      color: #2196f3;
+      font-size: 20px;
+    }
   `]
 })
 export class CategoryDialogComponent implements OnInit {
@@ -248,6 +282,7 @@ export class CategoryDialogComponent implements OnInit {
       slug: [''],
       description: [''],
       thumbnail_url: [''],
+      category_type: ['product', [Validators.required]], // Mặc định là product
       parent_id: [null],
       is_active: [true]  // Đảm bảo danh mục mới luôn được tạo ở trạng thái hoạt động
     });
@@ -263,7 +298,17 @@ export class CategoryDialogComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.data.category) {
-      this.categoryForm.patchValue(this.data.category);
+      console.log('Editing category:', this.data.category);
+      this.categoryForm.patchValue({
+        name: this.data.category.name,
+        slug: this.data.category.slug,
+        description: this.data.category.description,
+        thumbnail_url: this.data.category.thumbnail_url || '',
+        category_type: this.data.category.category_type || 'product',
+        parent_id: this.data.category.parent_id,
+        is_active: this.data.category.is_active
+      });
+      console.log('Form values after patch:', this.categoryForm.value);
     }
 
     // Set parent_id if provided
@@ -304,6 +349,7 @@ export class CategoryDialogComponent implements OnInit {
         name: formValue.name,
         slug: formValue.slug,
         description: formValue.description,
+        category_type: formValue.category_type || 'product',
         is_active: formValue.is_active !== undefined ? formValue.is_active : true
       };
 
@@ -323,7 +369,9 @@ export class CategoryDialogComponent implements OnInit {
         categoryData.thumbnail_url = formValue.thumbnail_url;
       }
 
+      console.log('Form value before saving:', formValue);
       console.log('Saving category with data:', categoryData);
+      console.log('Is editing existing category:', !!this.data.category);
 
       const operation = this.data.category
         ? this.dataService.updateCategory(this.data.category.id, categoryData)
@@ -346,6 +394,21 @@ export class CategoryDialogComponent implements OnInit {
         }
       });
     }
+  }
+
+  onCategoryTypeChange(event: any): void {
+    const categoryType = event.value;
+
+    // If changing to news, clear parent_id and remove subcategory restrictions
+    if (categoryType === 'news') {
+      this.categoryForm.patchValue({ parent_id: null });
+      this.categoryForm.get('parent_id')?.clearValidators();
+    } else if (categoryType === 'product' && this.data.isSubcategory && !this.data.parentId) {
+      // If changing to product and it's a subcategory dialog, add validators back
+      this.categoryForm.get('parent_id')?.setValidators([Validators.required]);
+    }
+
+    this.categoryForm.get('parent_id')?.updateValueAndValidity();
   }
 
   getParentCategoryName(): string {

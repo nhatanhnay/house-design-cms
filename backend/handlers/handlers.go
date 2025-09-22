@@ -66,8 +66,8 @@ func Logout(c *gin.Context) {
 
 // Categories handlers
 func GetCategories(c *gin.Context) {
-	rows, err := database.DB.Query(`SELECT id, name, slug, description, COALESCE(thumbnail_url, '') as thumbnail_url, parent_id, level, order_index, display_order, is_active, created_at, updated_at
-		FROM categories ORDER BY level ASC, display_order ASC, order_index ASC, created_at ASC`)
+	rows, err := database.DB.Query(`SELECT id, name, slug, description, COALESCE(thumbnail_url, '') as thumbnail_url, COALESCE(category_type, 'product') as category_type, parent_id, level, order_index, display_order, is_active, created_at, updated_at
+		FROM categories ORDER BY category_type ASC, level ASC, display_order ASC, order_index ASC, created_at ASC`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch categories"})
 		return
@@ -79,7 +79,7 @@ func GetCategories(c *gin.Context) {
 		var category models.Category
 		var parentID sql.NullInt64
 		err := rows.Scan(&category.ID, &category.Name, &category.Slug, &category.Description, &category.ThumbnailURL,
-			&parentID, &category.Level, &category.OrderIndex, &category.DisplayOrder, &category.IsActive,
+			&category.CategoryType, &parentID, &category.Level, &category.OrderIndex, &category.DisplayOrder, &category.IsActive,
 			&category.CreatedAt, &category.UpdatedAt)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan category"})
@@ -175,9 +175,9 @@ func CreateCategory(c *gin.Context) {
 	}
 
 	var newID uint
-	err = database.DB.QueryRow(`INSERT INTO categories (name, slug, description, thumbnail_url, parent_id, level, order_index, is_active)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-		category.Name, category.Slug, category.Description, category.ThumbnailURL, category.ParentID, category.Level, category.OrderIndex, category.IsActive).Scan(&newID)
+	err = database.DB.QueryRow(`INSERT INTO categories (name, slug, description, thumbnail_url, category_type, parent_id, level, order_index, is_active)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+		category.Name, category.Slug, category.Description, category.ThumbnailURL, category.CategoryType, category.ParentID, category.Level, category.OrderIndex, category.IsActive).Scan(&newID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create category"})
 		return
@@ -196,6 +196,41 @@ func UpdateCategory(c *gin.Context) {
 		return
 	}
 
+	// Debug log to check received data
+	fmt.Printf("Updating category ID: %s with data: %+v\n", id, category)
+
+	// Get existing category to handle partial updates
+	var existingCategory models.Category
+	err := database.DB.QueryRow(`SELECT name, slug, description, COALESCE(thumbnail_url, '') as thumbnail_url,
+		COALESCE(category_type, 'product') as category_type, parent_id, level, order_index, is_active
+		FROM categories WHERE id = $1`, id).Scan(
+		&existingCategory.Name, &existingCategory.Slug, &existingCategory.Description,
+		&existingCategory.ThumbnailURL, &existingCategory.CategoryType, &existingCategory.ParentID,
+		&existingCategory.Level, &existingCategory.OrderIndex, &existingCategory.IsActive)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+		return
+	}
+
+	// Update only non-empty fields
+	if category.Name != "" {
+		existingCategory.Name = category.Name
+	}
+	if category.Slug != "" {
+		existingCategory.Slug = category.Slug
+	}
+	if category.Description != "" {
+		existingCategory.Description = category.Description
+	}
+	if category.ThumbnailURL != "" {
+		existingCategory.ThumbnailURL = category.ThumbnailURL
+	}
+	if category.CategoryType != "" {
+		existingCategory.CategoryType = category.CategoryType
+	}
+	// Always update is_active as it can be false
+	existingCategory.IsActive = category.IsActive
+
 	// Calculate level based on parent if parent_id changed
 	if category.ParentID != nil {
 		// Get parent level
@@ -205,24 +240,29 @@ func UpdateCategory(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parent category"})
 			return
 		}
-		category.Level = parentLevel + 1
-	} else {
-		category.Level = 0
+		existingCategory.Level = parentLevel + 1
+		existingCategory.ParentID = category.ParentID
+	} else if category.ParentID == nil {
+		existingCategory.Level = 0
+		existingCategory.ParentID = nil
 	}
 
-	_, err := database.DB.Exec(`UPDATE categories SET name = $2, slug = $3, description = $4, thumbnail_url = $5, parent_id = $6,
-		level = $7, order_index = $8, is_active = $9, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-		id, category.Name, category.Slug, category.Description, category.ThumbnailURL, category.ParentID,
-		category.Level, category.OrderIndex, category.IsActive)
+	fmt.Printf("Final category data before update: %+v\n", existingCategory)
+
+	_, err = database.DB.Exec(`UPDATE categories SET name = $2, slug = $3, description = $4, thumbnail_url = $5, category_type = $6, parent_id = $7,
+		level = $8, order_index = $9, is_active = $10, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+		id, existingCategory.Name, existingCategory.Slug, existingCategory.Description, existingCategory.ThumbnailURL,
+		existingCategory.CategoryType, existingCategory.ParentID, existingCategory.Level, existingCategory.OrderIndex, existingCategory.IsActive)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update category"})
 		return
 	}
 
 	categoryID, _ := strconv.ParseUint(id, 10, 32)
-	category.ID = uint(categoryID)
+	existingCategory.ID = uint(categoryID)
 
-	c.JSON(http.StatusOK, category)
+	fmt.Printf("Returning updated category: %+v\n", existingCategory)
+	c.JSON(http.StatusOK, existingCategory)
 }
 
 

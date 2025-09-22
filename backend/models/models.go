@@ -16,6 +16,7 @@ type Category struct {
 	Slug         string    `json:"slug" gorm:"unique;not null"`
 	Description  string    `json:"description"`
 	ThumbnailURL string    `json:"thumbnail_url"`
+	CategoryType string    `json:"category_type" gorm:"default:'product'"` // 'product' or 'news'
 	ParentID     *uint     `json:"parent_id" gorm:"default:null"`
 	Parent       *Category `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
 	Children     []Category `json:"children,omitempty" gorm:"foreignKey:ParentID"`

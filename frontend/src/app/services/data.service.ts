@@ -46,6 +46,7 @@ export class DataService {
           slug: apiCategory.slug,
           description: apiCategory.description,
           thumbnail_url: apiCategory.thumbnail_url,
+          category_type: apiCategory.category_type || 'product',
           parent_id: apiCategory.parent_id || null,
           level: apiCategory.level || 0,
           order_index: apiCategory.order_index || 0,

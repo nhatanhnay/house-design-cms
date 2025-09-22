@@ -89,7 +89,7 @@
                         <div class="category-info">
                           <button mat-icon-button
                                   class="expand-btn"
-                                  *ngIf="mainCategory.hasChildren"
+                                  *ngIf="mainCategory.hasChildren && mainCategory.category_type === 'product'"
                                   (click)="toggleCategory(mainCategory)">
                             <mat-icon>{{ mainCategory.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
                           </button>
@@ -108,7 +108,12 @@
                               {{ mainCategory.name }}
                               <span *ngIf="!mainCategory.is_active" class="inactive-badge">(Inactive)</span>
                             </div>
-                            <div class="category-meta">{{ mainCategory.slug }} • {{ mainCategory.description }} • Level: {{ mainCategory.level }}</div>
+                            <div class="category-meta">
+                              <span class="category-type-badge" [class]="'type-' + mainCategory.category_type">
+                                {{ mainCategory.category_type === 'product' ? 'Sản phẩm' : 'Tin tức' }}
+                              </span>
+                              {{ mainCategory.slug }} • {{ mainCategory.description }} • Level: {{ mainCategory.level }}
+                            </div>
                           </div>
                         </div>
                         <div class="category-actions-inline">
@@ -132,6 +137,7 @@
 
                           <!-- Regular Actions -->
                           <button mat-icon-button
+                                  *ngIf="mainCategory.category_type === 'product'"
                                   (click)="openCategoryDialog(undefined, true, mainCategory.id)"
                                   matTooltip="Thêm danh mục con">
                             <mat-icon>add_circle_outline</mat-icon>
@@ -151,7 +157,7 @@
                       </div>
 
                       <!-- Subcategories -->
-                      <div class="subcategories" *ngIf="mainCategory.expanded && mainCategory.children?.length">
+                      <div class="subcategories" *ngIf="mainCategory.expanded && mainCategory.children?.length && mainCategory.category_type === 'product'">
                         <div cdkDropList
                              class="subcategory-drop-list"
                              (cdkDropListDropped)="onSubcategoryDrop($event, mainCategory.children!)">

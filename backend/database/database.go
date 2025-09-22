@@ -69,6 +69,7 @@ func createTables() {
 		slug VARCHAR(255) UNIQUE NOT NULL,
 		description TEXT,
 		thumbnail_url VARCHAR(500),
+		category_type VARCHAR(50) DEFAULT 'product',
 		parent_id INTEGER REFERENCES categories(id) ON DELETE CASCADE,
 		level INTEGER DEFAULT 0,
 		order_index INTEGER DEFAULT 0,
@@ -133,6 +134,7 @@ func migrateCategoriesTable() {
 		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0",
 		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
 		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS thumbnail_url VARCHAR(500)",
+		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS category_type VARCHAR(50) DEFAULT 'product'",
 	}
 
 	for _, migration := range migrations {
