@@ -1,16 +1,16 @@
-import { Component, OnInit, ViewChildren, QueryList, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { MatToolbarModule } from '@angular/material/toolbar';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
-import { MatDividerModule } from '@angular/material/divider';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { RouterModule } from '@angular/router';
+
+
 import { Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
-import { DataService } from '../../services/data.service';
+import { catchError, map } from 'rxjs/operators';
+import { Admin, Category, CategoryTreeItem } from '../../models/models';
 import { AuthService } from '../../services/auth.service';
-import { Category, Admin, CategoryTreeItem } from '../../models/models';
+import { DataService } from '../../services/data.service';
 
 @Component({
   selector: 'app-navbar',
@@ -20,24 +20,21 @@ import { Category, Admin, CategoryTreeItem } from '../../models/models';
     RouterModule,
     MatToolbarModule,
     MatButtonModule,
-    MatIconModule,
-    MatMenuModule,
-    MatDividerModule
+    MatIconModule
   ],
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.scss']
 })
-export class NavbarComponent implements OnInit {
-  @ViewChildren(MatMenuTrigger) triggers!: QueryList<MatMenuTrigger>;
-
+export class NavbarComponent implements OnInit, OnDestroy {
   categories$: Observable<Category[]>;
   mainCategories$: Observable<CategoryTreeItem[]>;
   currentUser$: Observable<Admin | null>;
 
   // Add property to hold categories directly
   mainCategories: CategoryTreeItem[] = [];
-
-  private closeTimeout: any;
+  
+  // Mobile menu state
+  isMobileMenuOpen: boolean = false;
 
   constructor(
     private dataService: DataService,
@@ -80,50 +77,7 @@ export class NavbarComponent implements OnInit {
   }
 
 
-  onCategoryHover(index: number): void {
-    this.cancelCloseMenu();
 
-    if (this.triggers && this.mainCategories[index]?.hasChildren) {
-      console.log('Hovering over category index:', index);
-      console.log('Category:', this.mainCategories[index]);
-      console.log('Total triggers:', this.triggers.length);
-
-      // Find the correct trigger based on categories with children
-      const categoriesWithChildren = this.mainCategories.filter(cat => cat.hasChildren);
-      const currentCategory = this.mainCategories[index];
-      const triggerIndex = categoriesWithChildren.findIndex(cat => cat.id === currentCategory.id);
-
-      console.log('Categories with children:', categoriesWithChildren);
-      console.log('Trigger index found:', triggerIndex);
-
-      if (triggerIndex >= 0) {
-        const trigger = this.triggers.toArray()[triggerIndex];
-        console.log('Trigger found:', trigger);
-        if (trigger && !trigger.menuOpen) {
-          trigger.openMenu();
-        }
-      }
-    }
-  }
-
-  onCategoryLeave(): void {
-    this.closeTimeout = setTimeout(() => {
-      if (this.triggers) {
-        this.triggers.forEach(trigger => {
-          if (trigger.menuOpen) {
-            trigger.closeMenu();
-          }
-        });
-      }
-    }, 200);
-  }
-
-  cancelCloseMenu(): void {
-    if (this.closeTimeout) {
-      clearTimeout(this.closeTimeout);
-      this.closeTimeout = null;
-    }
-  }
 
   getCategoryIcon(slug: string): string {
     const iconMap: { [key: string]: string } = {
@@ -150,6 +104,19 @@ export class NavbarComponent implements OnInit {
       'default': 'category'
     };
     return iconMap[slug] || iconMap['default'];
+  }
+
+  ngOnDestroy(): void {
+    // No cleanup needed for CSS-only hover
+  }
+
+  // Mobile menu methods
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen = false;
   }
 
   logout(): void {

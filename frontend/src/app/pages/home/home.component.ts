@@ -34,7 +34,6 @@ import { DataService } from '../../services/data.service';
 })
 export class HomeComponent implements OnInit, OnDestroy {
   latestPosts$: Observable<Post[]>;
-  categories$: Observable<Category[]>;
   mainCategories$: Observable<Category[]>;
   currentUser$: Observable<Admin | null>;
   homeContent: HomeContent | null = null;
@@ -52,7 +51,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     private dialog: MatDialog
   ) {
     this.latestPosts$ = this.dataService.getPosts();
-    this.categories$ = this.dataService.getCategories();
     this.mainCategories$ = this.dataService.getCategories().pipe(
       map(categories => categories.filter(category => category.level === 0))
     );
@@ -73,14 +71,14 @@ export class HomeComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.categories$.subscribe({
+    this.mainCategories$.subscribe({
       next: (categories) => {
         this.isLoadingCategories = false;
-        console.log('Categories loaded:', categories.length);
+        console.log('Main categories loaded:', categories.length);
       },
       error: (error) => {
         this.isLoadingCategories = false;
-        console.error('Error loading categories:', error);
+        console.error('Error loading main categories:', error);
       }
     });
 
@@ -110,15 +108,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  getCategoryIcon(slug: string): string {
-    const iconMap: { [key: string]: string } = {
-      'mau-thiet-ke': 'home',
-      'tin-tuc': 'newspaper',
-      'san-pham': 'inventory',
-      'bao-chi': 'article'
-    };
-    return iconMap[slug] || 'category';
-  }
 
   // Homepage carousel methods
   loadHomepageMedia(): void {

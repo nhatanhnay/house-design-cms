@@ -46,3 +46,11 @@ temp/
 
 # Data uploads (keep structure but ignore uploaded files)
 !/backend/data/uploads/.gitkeep
+!/backend/data/uploads/images/*
+/backend/data/uploads/images/*
+!/backend/data/uploads/videos/*
+/backend/data/uploads/videos/*
+!/backend/homepage/images/*
+/backend/homepage/images/*
+!/backend/homepage/videos/*
+/backend/homepage/videos/*
