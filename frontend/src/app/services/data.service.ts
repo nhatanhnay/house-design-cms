@@ -21,6 +21,7 @@ export class DataService {
           name: apiCategory.name,
           slug: apiCategory.slug,
           description: apiCategory.description,
+          thumbnail_url: apiCategory.thumbnail_url,
           parent_id: apiCategory.parent_id || null,
           level: apiCategory.level || 0,
           order_index: apiCategory.order_index || 0,
