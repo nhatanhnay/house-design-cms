@@ -77,12 +77,16 @@
   font-weight: 700;
   margin-top: 30px;
   margin-bottom: 20px;
-  color: var(--text-white);
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
   position: relative;
-  background: linear-gradient(45deg, #FFF176, #FFF59D, #FFEE58, #FFF176, #FFF59D);
-  background-size: 200% 200%;
-  animation: metallicShine 3s ease-in-out infinite;
+
+  /* Continuous left-to-right gradient wave */
+  background: linear-gradient(40deg,
+    white 10%,
+    #FFDC00 20%,
+    white 30%);
+  background-size: 200% 100%;
+  animation: gradientWave 3s ease-in-out infinite;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -94,15 +98,14 @@
   }
 }
 
-@keyframes metallicShine {
+@keyframes gradientWave {
   0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
+    background-position: 100% 0%;
+    filter: brightness(1.2) contrast(1.1);
   }
   100% {
-    background-position: 0% 50%;
+    background-position: -100% 0%;
+    filter: brightness(1.2) contrast(1.1);
   }
 }
 
