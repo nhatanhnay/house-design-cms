@@ -1,26 +1,12 @@
 
 .admin-page {
       min-height: calc(100vh - 64px);
-      margin-top: 64px;
+      margin-top: 0;
       background-color: #f5f5f5;
       display: flex;
       flex-direction: column;
     }
     
-    .admin-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      background: white;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      z-index: 10;
-    }
-    
-    .admin-header h1 {
-      color: var(--dark-blue);
-      margin: 0;
-    }
     
     .admin-info {
       display: flex;
@@ -29,7 +15,7 @@
     }
     
     .logout-btn {
-      color: var(--dark-red) !important;
+      color: var(--main-dark-gray) !important;
     }
     
     .admin-content {
@@ -120,7 +106,7 @@
     .admin-sidebar mat-list-item.active,
     .admin-sidebar .mat-mdc-list-item.active,
     .admin-sidebar .mdc-list-item.active {
-      background-color: var(--biscons-blue, #0170B9) !important;
+      background-color: var(--accent-copper) !important;
       color: white !important;
     }
 
@@ -133,14 +119,14 @@
     .admin-sidebar mat-list-item mat-icon,
     .admin-sidebar .mat-mdc-list-item mat-icon,
     .admin-sidebar .mdc-list-item mat-icon {
-      color: var(--biscons-blue, #0170B9);
+      color: var(--accent-copper);
       margin-right: 12px;
     }
 
     .admin-sidebar mat-list-item:hover:not(.active) mat-icon,
     .admin-sidebar .mat-mdc-list-item:hover:not(.active) mat-icon,
     .admin-sidebar .mdc-list-item:hover:not(.active) mat-icon {
-      color: var(--biscons-blue, #0170B9);
+      color: var(--accent-copper);
     }
 
     /* Remove Material Design ripple effects that might interfere */
@@ -167,7 +153,7 @@
     .admin-sidebar mat-list-item.active:focus,
     .admin-sidebar .mat-mdc-list-item.active:focus,
     .admin-sidebar .mdc-list-item.active:focus {
-      background-color: var(--biscons-blue, #0170B9) !important;
+      background-color: var(--accent-copper) !important;
     }
 
     .main-content {
@@ -197,7 +183,7 @@
     }
     
     .section-header h2 {
-      color: var(--dark-blue);
+      color: var(--accent-copper);
       margin: 0;
     }
     
@@ -210,8 +196,8 @@
     }
     
     .admin-table th {
-      background-color: var(--gray-blue);
-      color: var(--dark-blue);
+      background-color: var(--secondary-light-gray);
+      color: var(--main-dark-gray);
       font-weight: 600;
     }
     
@@ -227,12 +213,12 @@
     }
     
     .status-badge.published {
-      background-color: var(--primary-blue);
+      background-color: var(--accent-copper);
       color: white;
     }
     
     .status-badge.draft {
-      background-color: var(--brown);
+      background-color: var(--main-dark-gray);
       color: white;
     }
     
@@ -241,6 +227,30 @@
       display: flex;
       gap: 12px;
       align-items: center;
+    }
+
+    .category-actions .mat-mdc-raised-button.mat-primary {
+      background-color: var(--accent-copper) !important;
+      color: white !important;
+      border-color: var(--accent-copper) !important;
+    }
+
+    .category-actions .mat-mdc-raised-button.mat-primary:hover {
+      background-color: var(--main-dark-gray) !important;
+    }
+
+    .category-actions .mat-mdc-outlined-button.mat-primary,
+    .category-actions .mat-stroked-button.mat-primary {
+      color: var(--accent-copper) !important;
+      border-color: var(--accent-copper) !important;
+      background-color: transparent !important;
+    }
+
+    .category-actions .mat-mdc-outlined-button.mat-primary:hover,
+    .category-actions .mat-stroked-button.mat-primary:hover {
+      background-color: var(--accent-copper) !important;
+      color: white !important;
+      border-color: var(--accent-copper) !important;
     }
 
     .category-tree-card {
@@ -285,12 +295,12 @@
     }
 
     .expand-btn {
-      color: var(--biscons-blue, #0170B9);
+      color: var(--accent-copper);
     }
 
     .category-icon {
       font-size: 24px;
-      color: var(--biscons-blue, #0170B9);
+      color: var(--accent-copper);
     }
 
     .subcategory-icon {
@@ -315,7 +325,7 @@
       transition: border-color 0.2s ease;
 
       &:hover {
-        border-color: var(--biscons-blue, #0170B9);
+        border-color: var(--accent-copper);
       }
     }
 
@@ -331,7 +341,7 @@
     .category-name {
       font-weight: 600;
       font-size: 1.1rem;
-      color: var(--dark-blue, #1a365d);
+      color: var(--main-dark-gray);
       margin-bottom: 4px;
     }
 
@@ -366,7 +376,7 @@
     .subcategory-indicator {
       width: 24px;
       height: 2px;
-      background: var(--biscons-blue, #0170B9);
+      background: var(--accent-copper);
       margin-left: 12px;
     }
 
@@ -400,7 +410,7 @@
 
     .drag-handle:hover {
       background-color: #f0f0f0;
-      color: var(--biscons-blue, #0170B9);
+      color: var(--accent-copper);
     }
 
     .drag-handle:active {
@@ -511,7 +521,7 @@
 
     .empty-state h3 {
       margin-bottom: 8px;
-      color: var(--dark-blue, #1a365d);
+      color: var(--main-dark-gray);
     }
 
     .empty-state p {
@@ -574,7 +584,7 @@
 
     .media-section-header h3 {
       margin: 0;
-      color: var(--dark-blue);
+      color: var(--main-dark-gray);
     }
 
     .media-grid {
@@ -648,16 +658,16 @@
     }
 
     .play-btn {
-      background: rgba(1, 112, 185, 0.9);
+      background: rgba(224, 149, 67, 0.9);
       color: white;
     }
 
     .play-btn:hover {
-      background: var(--biscons-blue);
+      background: var(--accent-copper);
     }
 
     .replace-btn {
-      color: var(--biscons-blue);
+      color: var(--accent-copper);
     }
 
     .delete-btn {
@@ -756,6 +766,20 @@
       }
     }
 
+    /* Center mat-mdc-button-touch-target */
+    .mat-mdc-button-touch-target {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Handle spacing for elements without the long Material class name */
+    .admin-sidebar .mat-list-item:not(.mat-mdc-tooltip-trigger):not(.mdc-icon-button):not(.mat-mdc-icon-button):not(.mat-unthemed):not(.mat-mdc-button-base):not(.ng-star-inserted) {
+      margin-left: 0;
+      padding-left: 16px;
+    }
+
     @media (max-width: 480px) {
       .admin-sidenav-container {
         flex-direction: column;
@@ -816,7 +840,7 @@
 
     .content-section-header h3 {
       margin: 0;
-      color: var(--dark-blue);
+      color: var(--main-dark-gray);
     }
 
     .content-form {

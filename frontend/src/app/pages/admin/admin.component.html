@@ -1,515 +1,422 @@
-
 <div class="admin-page">
-      <!-- Header -->
-      <div class="admin-header">
-        <h1>Trang Quản Trị</h1>
-        <div class="admin-info" *ngIf="currentUser$ | async as user">
-          <span>Xin chào, <strong>{{ user.username }}</strong></span>
-          <button mat-button (click)="logout()" class="logout-btn">
-            <mat-icon>logout</mat-icon>
-            Đăng Xuất
-          </button>
-        </div>
-      </div>
 
-      <!-- Main Content with Sidebar -->
-      <div class="admin-content">
-        <!-- Sidebar -->
-        <mat-sidenav-container class="admin-sidenav-container">
-          <mat-sidenav mode="side" opened class="admin-sidebar">
-            <mat-nav-list>
-              <mat-list-item (click)="setCurrentSection('categories')"
-                           [class.active]="currentSection === 'categories'">
-                <mat-icon matListIcon>category</mat-icon>
-                <span matLine>Quản Lý Danh Mục</span>
-              </mat-list-item>
+  <!-- Main Content with Sidebar -->
+  <div class="admin-content">
+    <!-- Sidebar -->
+    <mat-sidenav-container class="admin-sidenav-container">
+      <mat-sidenav mode="side" opened class="admin-sidebar">
+        <mat-nav-list>
+          <mat-list-item (click)="setCurrentSection('categories')" [class.active]="currentSection === 'categories'">
+            <mat-icon matListIcon>category</mat-icon>
+            <span matLine>Quản Lý Danh Mục</span>
+          </mat-list-item>
 
-              <mat-list-item (click)="setCurrentSection('posts')"
-                           [class.active]="currentSection === 'posts'">
-                <mat-icon matListIcon>article</mat-icon>
-                <span matLine>Quản Lý Bài Viết</span>
-              </mat-list-item>
+          <mat-list-item (click)="setCurrentSection('posts')" [class.active]="currentSection === 'posts'">
+            <mat-icon matListIcon>article</mat-icon>
+            <span matLine>Quản Lý Bài Viết</span>
+          </mat-list-item>
 
-              <mat-list-item (click)="setCurrentSection('media')"
-                           [class.active]="currentSection === 'media'">
-                <mat-icon matListIcon>perm_media</mat-icon>
-                <span matLine>Quản Lý Media</span>
-              </mat-list-item>
+          <mat-list-item (click)="setCurrentSection('media')" [class.active]="currentSection === 'media'">
+            <mat-icon matListIcon>perm_media</mat-icon>
+            <span matLine>Quản Lý Media</span>
+          </mat-list-item>
 
-              <mat-list-item (click)="setCurrentSection('homepage')"
-                           [class.active]="currentSection === 'homepage'">
-                <mat-icon matListIcon>home</mat-icon>
-                <span matLine>Quản Lý Trang Chủ</span>
-              </mat-list-item>
-            </mat-nav-list>
-          </mat-sidenav>
+          <mat-list-item (click)="setCurrentSection('homepage')" [class.active]="currentSection === 'homepage'">
+            <mat-icon matListIcon>home</mat-icon>
+            <span matLine>Quản Lý Trang Chủ</span>
+          </mat-list-item>
+        </mat-nav-list>
+      </mat-sidenav>
 
-          <!-- Main Content Area -->
-          <mat-sidenav-content class="main-content">
+      <!-- Main Content Area -->
+      <mat-sidenav-content class="main-content">
 
-            <!-- Categories Section -->
-            <div *ngIf="currentSection === 'categories'" class="content-section">
-              <div class="section-header">
-                <h2>Danh Mục Hệ Thống</h2>
-                <div class="category-actions">
-                  <button mat-raised-button
-                          color="primary"
-                          (click)="openCategoryDialog()">
-                    <mat-icon>add</mat-icon>
-                    Thêm Danh Mục Chính
-                  </button>
-                  <button mat-stroked-button
-                          color="primary"
-                          (click)="openCategoryDialog(undefined, true)">
-                    <mat-icon>add_circle_outline</mat-icon>
-                    Thêm Danh Mục Con
-                  </button>
-                </div>
-              </div>
+        <!-- Categories Section -->
+        <div *ngIf="currentSection === 'categories'" class="content-section">
+          <div class="section-header">
+            <h2>Danh Mục Hệ Thống</h2>
+            <div class="category-actions">
+              <button mat-raised-button color="primary" (click)="openCategoryDialog()">
+                <mat-icon>add</mat-icon>
+                Thêm Danh Mục Chính
+              </button>
+            </div>
+          </div>
 
-              <!-- Category Tree View -->
-              <mat-card class="category-tree-card">
-                <div class="category-tree" *ngIf="categoryTree$ | async as tree">
-                  <div cdkDropList
-                       class="category-drop-list"
-                       (cdkDropListDropped)="onCategoryDrop($event, tree)">
-                    <div class="tree-item main-category"
-                         *ngFor="let mainCategory of tree; let i = index"
-                         [class.expanded]="mainCategory.expanded"
-                         cdkDrag
-                         [cdkDragData]="mainCategory">
+          <!-- Category Tree View -->
+          <mat-card class="category-tree-card">
+            <div class="category-tree" *ngIf="categoryTree$ | async as tree">
+              <div cdkDropList class="category-drop-list" (cdkDropListDropped)="onCategoryDrop($event, tree)">
+                <div class="tree-item main-category" *ngFor="let mainCategory of tree; let i = index"
+                  [class.expanded]="mainCategory.expanded" cdkDrag [cdkDragData]="mainCategory">
 
-                      <!-- Drag Handle -->
-                      <div class="drag-handle" cdkDragHandle>
-                        <mat-icon>drag_indicator</mat-icon>
+                  <!-- Drag Handle -->
+                  <div class="drag-handle" cdkDragHandle>
+                    <mat-icon>drag_indicator</mat-icon>
+                  </div>
+
+                  <!-- Main Category -->
+                  <div class="category-header">
+                    <div class="category-info">
+                      <button mat-icon-button class="expand-btn"
+                        *ngIf="mainCategory.hasChildren && mainCategory.category_type === 'product'"
+                        (click)="toggleCategory(mainCategory)">
+                        <mat-icon>{{ mainCategory.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                      </button>
+                      <!-- Category Thumbnail or Icon -->
+                      <div class="category-thumbnail-container">
+                        <img *ngIf="mainCategory.thumbnail_url" [src]="mainCategory.thumbnail_url"
+                          [alt]="mainCategory.name" class="category-thumbnail" (error)="onThumbnailError($event)">
+                        <mat-icon *ngIf="!mainCategory.thumbnail_url" class="category-icon">{{
+                          getCategoryIcon(mainCategory.slug) }}</mat-icon>
                       </div>
-
-                      <!-- Main Category -->
-                      <div class="category-header">
-                        <div class="category-info">
-                          <button mat-icon-button
-                                  class="expand-btn"
-                                  *ngIf="mainCategory.hasChildren && mainCategory.category_type === 'product'"
-                                  (click)="toggleCategory(mainCategory)">
-                            <mat-icon>{{ mainCategory.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
-                          </button>
-                          <!-- Category Thumbnail or Icon -->
-                          <div class="category-thumbnail-container">
-                            <img *ngIf="mainCategory.thumbnail_url"
-                                 [src]="mainCategory.thumbnail_url"
-                                 [alt]="mainCategory.name"
-                                 class="category-thumbnail"
-                                 (error)="onThumbnailError($event)">
-                            <mat-icon *ngIf="!mainCategory.thumbnail_url"
-                                      class="category-icon">{{ getCategoryIcon(mainCategory.slug) }}</mat-icon>
-                          </div>
-                          <div class="category-details">
-                            <div class="category-name">
-                              {{ mainCategory.name }}
-                              <span *ngIf="!mainCategory.is_active" class="inactive-badge">(Inactive)</span>
-                            </div>
-                            <div class="category-meta">
-                              <span class="category-type-badge" [class]="'type-' + mainCategory.category_type">
-                                {{ mainCategory.category_type === 'product' ? 'Sản phẩm' : 'Tin tức' }}
-                              </span>
-                              {{ mainCategory.slug }} • {{ mainCategory.description }} • Level: {{ mainCategory.level }}
-                            </div>
-                          </div>
+                      <div class="category-details">
+                        <div class="category-name">
+                          {{ mainCategory.name }}
+                          <span *ngIf="!mainCategory.is_active" class="inactive-badge">(Inactive)</span>
                         </div>
-                        <div class="category-actions-inline">
-                          <!-- Order Controls -->
-                          <div class="order-controls">
-                            <button mat-icon-button
-                                    class="order-btn"
-                                    [disabled]="i === 0"
-                                    (click)="moveCategoryUp(mainCategory, tree, i)"
-                                    matTooltip="Di chuyển lên">
-                              <mat-icon>keyboard_arrow_up</mat-icon>
-                            </button>
-                            <button mat-icon-button
-                                    class="order-btn"
-                                    [disabled]="i === tree.length - 1"
-                                    (click)="moveCategoryDown(mainCategory, tree, i)"
-                                    matTooltip="Di chuyển xuống">
-                              <mat-icon>keyboard_arrow_down</mat-icon>
-                            </button>
-                          </div>
-
-                          <!-- Regular Actions -->
-                          <button mat-icon-button
-                                  *ngIf="mainCategory.category_type === 'product'"
-                                  (click)="openCategoryDialog(undefined, true, mainCategory.id)"
-                                  matTooltip="Thêm danh mục con">
-                            <mat-icon>add_circle_outline</mat-icon>
-                          </button>
-                          <button mat-icon-button
-                                  (click)="editCategory(mainCategory)"
-                                  matTooltip="Chỉnh sửa">
-                            <mat-icon>edit</mat-icon>
-                          </button>
-                          <button mat-icon-button
-                                  color="warn"
-                                  (click)="deleteCategory(mainCategory.id)"
-                                  matTooltip="Xóa">
-                            <mat-icon>delete</mat-icon>
-                          </button>
-                        </div>
-                      </div>
-
-                      <!-- Subcategories -->
-                      <div class="subcategories" *ngIf="mainCategory.expanded && mainCategory.children?.length && mainCategory.category_type === 'product'">
-                        <div cdkDropList
-                             class="subcategory-drop-list"
-                             (cdkDropListDropped)="onSubcategoryDrop($event, mainCategory.children!)">
-                          <div class="tree-item subcategory"
-                               *ngFor="let subcategory of mainCategory.children; let j = index"
-                               cdkDrag
-                               [cdkDragData]="subcategory">
-
-                            <!-- Subcategory Drag Handle -->
-                            <div class="drag-handle subcategory-drag" cdkDragHandle>
-                              <mat-icon>drag_indicator</mat-icon>
-                            </div>
-
-                            <div class="category-header subcategory-header">
-                              <div class="category-info">
-                                <div class="subcategory-indicator"></div>
-                                <!-- Subcategory Thumbnail or Icon -->
-                                <div class="category-thumbnail-container">
-                                  <img *ngIf="subcategory.thumbnail_url"
-                                       [src]="subcategory.thumbnail_url"
-                                       [alt]="subcategory.name"
-                                       class="category-thumbnail subcategory-thumbnail"
-                                       (error)="onThumbnailError($event)">
-                                  <mat-icon *ngIf="!subcategory.thumbnail_url"
-                                            class="category-icon subcategory-icon">{{ getCategoryIcon(subcategory.slug) }}</mat-icon>
-                                </div>
-                                <div class="category-details">
-                                  <div class="category-name">
-                                    {{ subcategory.name }}
-                                    <span *ngIf="!subcategory.is_active" class="inactive-badge">(Inactive)</span>
-                                  </div>
-                                  <div class="category-meta">{{ subcategory.slug }} • {{ subcategory.description }} • Level: {{ subcategory.level }}</div>
-                                </div>
-                              </div>
-                              <div class="category-actions-inline">
-                                <!-- Subcategory Order Controls -->
-                                <div class="order-controls">
-                                  <button mat-icon-button
-                                          class="order-btn"
-                                          [disabled]="j === 0"
-                                          (click)="moveSubcategoryUp(subcategory, mainCategory.children!, j)"
-                                          matTooltip="Di chuyển lên">
-                                    <mat-icon>keyboard_arrow_up</mat-icon>
-                                  </button>
-                                  <button mat-icon-button
-                                          class="order-btn"
-                                          [disabled]="j === (mainCategory.children?.length || 0) - 1"
-                                          (click)="moveSubcategoryDown(subcategory, mainCategory.children!, j)"
-                                          matTooltip="Di chuyển xuống">
-                                    <mat-icon>keyboard_arrow_down</mat-icon>
-                                  </button>
-                                </div>
-
-                                <!-- Regular Subcategory Actions -->
-                                <button mat-icon-button
-                                        (click)="editCategory(subcategory)"
-                                        matTooltip="Chỉnh sửa">
-                                  <mat-icon>edit</mat-icon>
-                                </button>
-                                <button mat-icon-button
-                                        color="warn"
-                                        (click)="deleteCategory(subcategory.id)"
-                                        matTooltip="Xóa">
-                                  <mat-icon>delete</mat-icon>
-                                </button>
-                              </div>
-                            </div>
-                          </div>
+                        <div class="category-meta">
+                          <span class="category-type-badge" [class]="'type-' + mainCategory.category_type">
+                            {{ mainCategory.category_type === 'product' ? 'Sản phẩm' : 'Tin tức' }}
+                          </span>
+                          {{ mainCategory.slug }} • {{ mainCategory.description }} • Level: {{ mainCategory.level }}
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
+                    <div class="category-actions-inline">
+                      <!-- Order Controls -->
+                      <div class="order-controls">
+                        <button mat-icon-button class="order-btn" [disabled]="i === 0"
+                          (click)="moveCategoryUp(mainCategory, tree, i)" matTooltip="Di chuyển lên">
+                          <mat-icon>keyboard_arrow_up</mat-icon>
+                        </button>
+                        <button mat-icon-button class="order-btn" [disabled]="i === tree.length - 1"
+                          (click)="moveCategoryDown(mainCategory, tree, i)" matTooltip="Di chuyển xuống">
+                          <mat-icon>keyboard_arrow_down</mat-icon>
+                        </button>
+                      </div>
 
-                <!-- Empty State -->
-                <div class="empty-state" *ngIf="!(categoryTree$ | async)?.length">
-                  <mat-icon class="empty-icon">category</mat-icon>
-                  <h3>Chưa có danh mục nào</h3>
-                  <p>Hãy tạo danh mục đầu tiên để bắt đầu</p>
-                </div>
-              </mat-card>
-            </div>
-
-            <!-- Posts Section -->
-            <div *ngIf="currentSection === 'posts'" class="content-section">
-              <div class="section-header">
-                <h2>Bài Viết</h2>
-                <button mat-raised-button
-                        color="primary"
-                        (click)="openPostDialog()">
-                  <mat-icon>add</mat-icon>
-                  Thêm Bài Viết
-                </button>
-              </div>
-
-              <mat-card class="data-table-card">
-                <table mat-table [dataSource]="(posts$ | async) || []" class="admin-table">
-                  <ng-container matColumnDef="id">
-                    <th mat-header-cell *matHeaderCellDef>ID</th>
-                    <td mat-cell *matCellDef="let post">{{ post.id }}</td>
-                  </ng-container>
-
-                  <ng-container matColumnDef="title">
-                    <th mat-header-cell *matHeaderCellDef>Tiêu đề</th>
-                    <td mat-cell *matCellDef="let post">{{ post.title }}</td>
-                  </ng-container>
-
-                  <ng-container matColumnDef="category">
-                    <th mat-header-cell *matHeaderCellDef>Danh mục</th>
-                    <td mat-cell *matCellDef="let post">{{ post.category?.name }}</td>
-                  </ng-container>
-
-                  <ng-container matColumnDef="published">
-                    <th mat-header-cell *matHeaderCellDef>Trạng thái</th>
-                    <td mat-cell *matCellDef="let post">
-                      <span class="status-badge"
-                            [class.published]="post.published"
-                            [class.draft]="!post.published">
-                        {{ post.published ? 'Đã xuất bản' : 'Nháp' }}
-                      </span>
-                    </td>
-                  </ng-container>
-
-                  <ng-container matColumnDef="views">
-                    <th mat-header-cell *matHeaderCellDef>Lượt xem</th>
-                    <td mat-cell *matCellDef="let post">{{ post.views || 0 }}</td>
-                  </ng-container>
-
-                  <ng-container matColumnDef="created_at">
-                    <th mat-header-cell *matHeaderCellDef>Ngày tạo</th>
-                    <td mat-cell *matCellDef="let post">{{ post.created_at | date:'dd/MM/yyyy' }}</td>
-                  </ng-container>
-
-                  <ng-container matColumnDef="actions">
-                    <th mat-header-cell *matHeaderCellDef>Hành động</th>
-                    <td mat-cell *matCellDef="let post">
-                      <button mat-icon-button (click)="editPost(post)">
+                      <!-- Regular Actions -->
+                      <button mat-icon-button *ngIf="mainCategory.category_type === 'product'"
+                        (click)="openCategoryDialog(undefined, true, mainCategory.id)" matTooltip="Thêm danh mục con">
+                        <mat-icon>add_circle_outline</mat-icon>
+                      </button>
+                      <button mat-icon-button (click)="editCategory(mainCategory)" matTooltip="Chỉnh sửa">
                         <mat-icon>edit</mat-icon>
                       </button>
-                      <button mat-icon-button
-                              color="warn"
-                              (click)="deletePost(post.id)">
+                      <button mat-icon-button color="warn" (click)="deleteCategory(mainCategory.id)" matTooltip="Xóa">
                         <mat-icon>delete</mat-icon>
                       </button>
-                    </td>
-                  </ng-container>
+                    </div>
+                  </div>
 
-                  <tr mat-header-row *matHeaderRowDef="postColumns"></tr>
-                  <tr mat-row *matRowDef="let row; columns: postColumns;"></tr>
-                </table>
-              </mat-card>
-            </div>
+                  <!-- Subcategories -->
+                  <div class="subcategories"
+                    *ngIf="mainCategory.expanded && mainCategory.children?.length && mainCategory.category_type === 'product'">
+                    <div cdkDropList class="subcategory-drop-list"
+                      (cdkDropListDropped)="onSubcategoryDrop($event, mainCategory.children!)">
+                      <div class="tree-item subcategory"
+                        *ngFor="let subcategory of mainCategory.children; let j = index" cdkDrag
+                        [cdkDragData]="subcategory">
 
-            <!-- Media Section -->
-            <div *ngIf="currentSection === 'media'" class="content-section">
-              <div class="section-header">
-                <h2>Quản Lý Media</h2>
-                <button mat-raised-button
-                        color="primary">
-                  <mat-icon>cloud_upload</mat-icon>
-                  Tải Lên Media
-                </button>
-              </div>
+                        <!-- Subcategory Drag Handle -->
+                        <div class="drag-handle subcategory-drag" cdkDragHandle>
+                          <mat-icon>drag_indicator</mat-icon>
+                        </div>
 
-              <mat-card class="data-table-card">
-                <p>Tính năng quản lý media đang được phát triển...</p>
-              </mat-card>
-            </div>
+                        <div class="category-header subcategory-header">
+                          <div class="category-info">
+                            <div class="subcategory-indicator"></div>
+                            <!-- Subcategory Thumbnail or Icon -->
+                            <div class="category-thumbnail-container">
+                              <img *ngIf="subcategory.thumbnail_url" [src]="subcategory.thumbnail_url"
+                                [alt]="subcategory.name" class="category-thumbnail subcategory-thumbnail"
+                                (error)="onThumbnailError($event)">
+                              <mat-icon *ngIf="!subcategory.thumbnail_url" class="category-icon subcategory-icon">{{
+                                getCategoryIcon(subcategory.slug) }}</mat-icon>
+                            </div>
+                            <div class="category-details">
+                              <div class="category-name">
+                                {{ subcategory.name }}
+                                <span *ngIf="!subcategory.is_active" class="inactive-badge">(Inactive)</span>
+                              </div>
+                              <div class="category-meta">{{ subcategory.slug }} • {{ subcategory.description }} • Level:
+                                {{ subcategory.level }}</div>
+                            </div>
+                          </div>
+                          <div class="category-actions-inline">
+                            <!-- Subcategory Order Controls -->
+                            <div class="order-controls">
+                              <button mat-icon-button class="order-btn" [disabled]="j === 0"
+                                (click)="moveSubcategoryUp(subcategory, mainCategory.children!, j)"
+                                matTooltip="Di chuyển lên">
+                                <mat-icon>keyboard_arrow_up</mat-icon>
+                              </button>
+                              <button mat-icon-button class="order-btn"
+                                [disabled]="j === (mainCategory.children?.length || 0) - 1"
+                                (click)="moveSubcategoryDown(subcategory, mainCategory.children!, j)"
+                                matTooltip="Di chuyển xuống">
+                                <mat-icon>keyboard_arrow_down</mat-icon>
+                              </button>
+                            </div>
 
-            <!-- Homepage Management Section -->
-            <div *ngIf="currentSection === 'homepage'" class="content-section">
-              <div class="section-header">
-                <h2>Quản Lý Trang Chủ</h2>
-                <div class="homepage-actions">
-                  <button mat-raised-button
-                          color="primary"
-                          (click)="uploadHomepageImage()">
-                    <mat-icon>add_photo_alternate</mat-icon>
-                    Thêm Hình Ảnh
-                  </button>
-                  <button mat-stroked-button
-                          color="primary"
-                          (click)="uploadHomepageVideo()">
-                    <mat-icon>videocam</mat-icon>
-                    Thêm Video
-                  </button>
-                </div>
-              </div>
-
-              <!-- Images Section -->
-              <mat-card class="homepage-media-card">
-                <div class="media-section-header">
-                  <h3>Hình Ảnh Trang Chủ</h3>
-                  <button mat-icon-button (click)="refreshHomepageMedia()">
-                    <mat-icon>refresh</mat-icon>
-                  </button>
-                </div>
-
-                <div class="media-grid" *ngIf="homepageImages.length > 0; else noImages">
-                  <div class="media-item" *ngFor="let image of homepageImages; let i = index">
-                    <div class="media-preview">
-                      <img [src]="image" [alt]="'Homepage image ' + (i + 1)" loading="lazy">
-                      <div class="media-overlay">
-                        <button mat-icon-button
-                                class="overlay-btn replace-btn"
-                                (click)="replaceHomepageMedia(image, 'images')"
-                                matTooltip="Thay thế">
-                          <mat-icon>swap_horiz</mat-icon>
-                        </button>
-                        <button mat-icon-button
-                                class="overlay-btn delete-btn"
-                                (click)="deleteHomepageMedia(image, 'images')"
-                                matTooltip="Xóa">
-                          <mat-icon>delete</mat-icon>
-                        </button>
+                            <!-- Regular Subcategory Actions -->
+                            <button mat-icon-button (click)="editCategory(subcategory)" matTooltip="Chỉnh sửa">
+                              <mat-icon>edit</mat-icon>
+                            </button>
+                            <button mat-icon-button color="warn" (click)="deleteCategory(subcategory.id)"
+                              matTooltip="Xóa">
+                              <mat-icon>delete</mat-icon>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div class="media-info">
-                      <span class="media-filename">{{ getFilename(image) }}</span>
-                    </div>
                   </div>
                 </div>
-
-                <ng-template #noImages>
-                  <div class="empty-media-state">
-                    <mat-icon>photo_library</mat-icon>
-                    <p>Chưa có hình ảnh nào</p>
-                  </div>
-                </ng-template>
-              </mat-card>
-
-              <!-- Videos Section -->
-              <mat-card class="homepage-media-card">
-                <div class="media-section-header">
-                  <h3>Video Trang Chủ</h3>
-                  <button mat-icon-button (click)="refreshHomepageMedia()">
-                    <mat-icon>refresh</mat-icon>
-                  </button>
-                </div>
-
-                <div class="media-grid" *ngIf="homepageVideos.length > 0; else noVideos">
-                  <div class="media-item" *ngFor="let video of homepageVideos; let i = index">
-                    <div class="media-preview video-preview">
-                      <video [src]="video" preload="metadata" muted>
-                        Trình duyệt không hỗ trợ video
-                      </video>
-                      <div class="media-overlay">
-                        <button mat-icon-button
-                                class="overlay-btn play-btn"
-                                (click)="playVideo(video)"
-                                matTooltip="Phát">
-                          <mat-icon>play_arrow</mat-icon>
-                        </button>
-                        <button mat-icon-button
-                                class="overlay-btn replace-btn"
-                                (click)="replaceHomepageMedia(video, 'videos')"
-                                matTooltip="Thay thế">
-                          <mat-icon>swap_horiz</mat-icon>
-                        </button>
-                        <button mat-icon-button
-                                class="overlay-btn delete-btn"
-                                (click)="deleteHomepageMedia(video, 'videos')"
-                                matTooltip="Xóa">
-                          <mat-icon>delete</mat-icon>
-                        </button>
-                      </div>
-                    </div>
-                    <div class="media-info">
-                      <span class="media-filename">{{ getFilename(video) }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <ng-template #noVideos>
-                  <div class="empty-media-state">
-                    <mat-icon>video_library</mat-icon>
-                    <p>Chưa có video nào</p>
-                  </div>
-                </ng-template>
-              </mat-card>
-
-              <!-- Hero Content Management Section -->
-              <mat-card class="homepage-content-card">
-                <div class="content-section-header">
-                  <h3>Nội Dung Trang Chủ</h3>
-                  <button mat-raised-button
-                          color="primary"
-                          (click)="saveHomepageContent()"
-                          [disabled]="!isContentModified">
-                    <mat-icon>save</mat-icon>
-                    Lưu Thay Đổi
-                  </button>
-                </div>
-
-                <div class="content-form">
-                  <mat-form-field appearance="fill" class="full-width">
-                    <mat-label>Tiêu đề chính</mat-label>
-                    <input matInput
-                           [(ngModel)]="homepageContent.hero_title"
-                           (ngModelChange)="onContentChange()"
-                           placeholder="Nhập tiêu đề chính">
-                  </mat-form-field>
-
-                  <mat-form-field appearance="fill" class="full-width">
-                    <mat-label>Mô tả</mat-label>
-                    <textarea matInput
-                              [(ngModel)]="homepageContent.hero_description"
-                              (ngModelChange)="onContentChange()"
-                              rows="3"
-                              placeholder="Nhập mô tả trang chủ"></textarea>
-                  </mat-form-field>
-
-                  <div class="stats-row">
-                    <mat-form-field appearance="fill">
-                      <mat-label>Số liệu 1</mat-label>
-                      <input matInput
-                             [(ngModel)]="homepageContent.hero_stat1_number"
-                             (ngModelChange)="onContentChange()"
-                             placeholder="37">
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                      <mat-label>Nhãn số liệu 1</mat-label>
-                      <input matInput
-                             [(ngModel)]="homepageContent.hero_stat1_label"
-                             (ngModelChange)="onContentChange()"
-                             placeholder="Tỉnh Thành Phủ Sóng">
-                    </mat-form-field>
-                  </div>
-
-                  <div class="stats-row">
-                    <mat-form-field appearance="fill">
-                      <mat-label>Số liệu 2</mat-label>
-                      <input matInput
-                             [(ngModel)]="homepageContent.hero_stat2_number"
-                             (ngModelChange)="onContentChange()"
-                             placeholder="500+">
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                      <mat-label>Nhãn số liệu 2</mat-label>
-                      <input matInput
-                             [(ngModel)]="homepageContent.hero_stat2_label"
-                             (ngModelChange)="onContentChange()"
-                             placeholder="Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp">
-                    </mat-form-field>
-                  </div>
-                </div>
-              </mat-card>
+              </div>
             </div>
 
-          </mat-sidenav-content>
-        </mat-sidenav-container>
-      </div>
-    </div>
+            <!-- Empty State -->
+            <div class="empty-state" *ngIf="!(categoryTree$ | async)?.length">
+              <mat-icon class="empty-icon">category</mat-icon>
+              <h3>Chưa có danh mục nào</h3>
+              <p>Hãy tạo danh mục đầu tiên để bắt đầu</p>
+            </div>
+          </mat-card>
+        </div>
+
+        <!-- Posts Section -->
+        <div *ngIf="currentSection === 'posts'" class="content-section">
+          <div class="section-header">
+            <h2>Bài Viết</h2>
+            <button mat-raised-button color="primary" (click)="openPostDialog()">
+              <mat-icon>add</mat-icon>
+              Thêm Bài Viết
+            </button>
+          </div>
+
+          <mat-card class="data-table-card">
+            <table mat-table [dataSource]="(posts$ | async) || []" class="admin-table">
+              <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef>ID</th>
+                <td mat-cell *matCellDef="let post">{{ post.id }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="title">
+                <th mat-header-cell *matHeaderCellDef>Tiêu đề</th>
+                <td mat-cell *matCellDef="let post">{{ post.title }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="category">
+                <th mat-header-cell *matHeaderCellDef>Danh mục</th>
+                <td mat-cell *matCellDef="let post">{{ post.category?.name }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="published">
+                <th mat-header-cell *matHeaderCellDef>Trạng thái</th>
+                <td mat-cell *matCellDef="let post">
+                  <span class="status-badge" [class.published]="post.published" [class.draft]="!post.published">
+                    {{ post.published ? 'Đã xuất bản' : 'Nháp' }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="views">
+                <th mat-header-cell *matHeaderCellDef>Lượt xem</th>
+                <td mat-cell *matCellDef="let post">{{ post.views || 0 }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="created_at">
+                <th mat-header-cell *matHeaderCellDef>Ngày tạo</th>
+                <td mat-cell *matCellDef="let post">{{ post.created_at | date:'dd/MM/yyyy' }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Hành động</th>
+                <td mat-cell *matCellDef="let post">
+                  <button mat-icon-button (click)="editPost(post)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="deletePost(post.id)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="postColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: postColumns;"></tr>
+            </table>
+          </mat-card>
+        </div>
+
+        <!-- Media Section -->
+        <div *ngIf="currentSection === 'media'" class="content-section">
+          <div class="section-header">
+            <h2>Quản Lý Media</h2>
+            <button mat-raised-button color="primary">
+              <mat-icon>cloud_upload</mat-icon>
+              Tải Lên Media
+            </button>
+          </div>
+
+          <mat-card class="data-table-card">
+            <p>Tính năng quản lý media đang được phát triển...</p>
+          </mat-card>
+        </div>
+
+        <!-- Homepage Management Section -->
+        <div *ngIf="currentSection === 'homepage'" class="content-section">
+          <div class="section-header">
+            <h2>Quản Lý Trang Chủ</h2>
+            <div class="homepage-actions">
+              <button mat-raised-button color="primary" (click)="uploadHomepageImage()">
+                <mat-icon>add_photo_alternate</mat-icon>
+                Thêm Hình Ảnh
+              </button>
+              <button mat-stroked-button color="primary" (click)="uploadHomepageVideo()">
+                <mat-icon>videocam</mat-icon>
+                Thêm Video
+              </button>
+            </div>
+          </div>
+
+          <!-- Images Section -->
+          <mat-card class="homepage-media-card">
+            <div class="media-section-header">
+              <h3>Hình Ảnh Trang Chủ</h3>
+              <button mat-icon-button (click)="refreshHomepageMedia()">
+                <mat-icon>refresh</mat-icon>
+              </button>
+            </div>
+
+            <div class="media-grid" *ngIf="homepageImages.length > 0; else noImages">
+              <div class="media-item" *ngFor="let image of homepageImages; let i = index">
+                <div class="media-preview">
+                  <img [src]="image" [alt]="'Homepage image ' + (i + 1)" loading="lazy">
+                  <div class="media-overlay">
+                    <button mat-icon-button class="overlay-btn replace-btn"
+                      (click)="replaceHomepageMedia(image, 'images')" matTooltip="Thay thế">
+                      <mat-icon>swap_horiz</mat-icon>
+                    </button>
+                    <button mat-icon-button class="overlay-btn delete-btn"
+                      (click)="deleteHomepageMedia(image, 'images')" matTooltip="Xóa">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <div class="media-info">
+                  <span class="media-filename">{{ getFilename(image) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noImages>
+              <div class="empty-media-state">
+                <mat-icon>photo_library</mat-icon>
+                <p>Chưa có hình ảnh nào</p>
+              </div>
+            </ng-template>
+          </mat-card>
+
+          <!-- Videos Section -->
+          <mat-card class="homepage-media-card">
+            <div class="media-section-header">
+              <h3>Video Trang Chủ</h3>
+              <button mat-icon-button (click)="refreshHomepageMedia()">
+                <mat-icon>refresh</mat-icon>
+              </button>
+            </div>
+
+            <div class="media-grid" *ngIf="homepageVideos.length > 0; else noVideos">
+              <div class="media-item" *ngFor="let video of homepageVideos; let i = index">
+                <div class="media-preview video-preview">
+                  <video [src]="video" preload="metadata" muted>
+                    Trình duyệt không hỗ trợ video
+                  </video>
+                  <div class="media-overlay">
+                    <button mat-icon-button class="overlay-btn play-btn" (click)="playVideo(video)" matTooltip="Phát">
+                      <mat-icon>play_arrow</mat-icon>
+                    </button>
+                    <button mat-icon-button class="overlay-btn replace-btn"
+                      (click)="replaceHomepageMedia(video, 'videos')" matTooltip="Thay thế">
+                      <mat-icon>swap_horiz</mat-icon>
+                    </button>
+                    <button mat-icon-button class="overlay-btn delete-btn"
+                      (click)="deleteHomepageMedia(video, 'videos')" matTooltip="Xóa">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <div class="media-info">
+                  <span class="media-filename">{{ getFilename(video) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noVideos>
+              <div class="empty-media-state">
+                <mat-icon>video_library</mat-icon>
+                <p>Chưa có video nào</p>
+              </div>
+            </ng-template>
+          </mat-card>
+
+          <!-- Hero Content Management Section -->
+          <mat-card class="homepage-content-card">
+            <div class="content-section-header">
+              <h3>Nội Dung Trang Chủ</h3>
+              <button mat-raised-button color="primary" (click)="saveHomepageContent()" [disabled]="!isContentModified">
+                <mat-icon>save</mat-icon>
+                Lưu Thay Đổi
+              </button>
+            </div>
+
+            <div class="content-form">
+              <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Tiêu đề chính</mat-label>
+                <input matInput [(ngModel)]="homepageContent.hero_title" (ngModelChange)="onContentChange()"
+                  placeholder="Nhập tiêu đề chính">
+              </mat-form-field>
+
+              <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Mô tả</mat-label>
+                <textarea matInput [(ngModel)]="homepageContent.hero_description" (ngModelChange)="onContentChange()"
+                  rows="3" placeholder="Nhập mô tả trang chủ"></textarea>
+              </mat-form-field>
+
+              <div class="stats-row">
+                <mat-form-field appearance="fill">
+                  <mat-label>Số liệu 1</mat-label>
+                  <input matInput [(ngModel)]="homepageContent.hero_stat1_number" (ngModelChange)="onContentChange()"
+                    placeholder="37">
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                  <mat-label>Nhãn số liệu 1</mat-label>
+                  <input matInput [(ngModel)]="homepageContent.hero_stat1_label" (ngModelChange)="onContentChange()"
+                    placeholder="Tỉnh Thành Phủ Sóng">
+                </mat-form-field>
+              </div>
+
+              <div class="stats-row">
+                <mat-form-field appearance="fill">
+                  <mat-label>Số liệu 2</mat-label>
+                  <input matInput [(ngModel)]="homepageContent.hero_stat2_number" (ngModelChange)="onContentChange()"
+                    placeholder="500+">
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                  <mat-label>Nhãn số liệu 2</mat-label>
+                  <input matInput [(ngModel)]="homepageContent.hero_stat2_label" (ngModelChange)="onContentChange()"
+                    placeholder="Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp">
+                </mat-form-field>
+              </div>
+            </div>
+          </mat-card>
+        </div>
+
+      </mat-sidenav-content>
+    </mat-sidenav-container>
+  </div>
+</div>
