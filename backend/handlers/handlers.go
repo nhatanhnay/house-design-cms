@@ -20,6 +20,28 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Helper function to generate dynamic base URL
+func getBaseURL(c *gin.Context) string {
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
+	}
+
+	// Check for X-Forwarded-Proto header (common in reverse proxy setups)
+	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	}
+
+	host := c.Request.Host
+
+	// Check for X-Forwarded-Host header (common in reverse proxy setups)
+	if forwardedHost := c.GetHeader("X-Forwarded-Host"); forwardedHost != "" {
+		host = forwardedHost
+	}
+
+	return fmt.Sprintf("%s://%s", scheme, host)
+}
+
 func Login(c *gin.Context) {
 	var loginReq models.LoginRequest
 	if err := c.ShouldBindJSON(&loginReq); err != nil {
@@ -781,7 +803,8 @@ func UploadImage(c *gin.Context) {
 	}
 
 	// Return the URL in CKEditor format
-	imageURL := fmt.Sprintf("http://localhost:8080/data/uploads/images/%s", filename)
+	baseURL := getBaseURL(c)
+	imageURL := fmt.Sprintf("%s/homepage/images/%s", baseURL, filename)
 	fmt.Printf("Upload successful, returning URL: %s\n", imageURL)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -855,7 +878,8 @@ func UploadVideo(c *gin.Context) {
 	}
 
 	// Return the URL
-	videoURL := fmt.Sprintf("http://localhost:8080/data/uploads/videos/%s", filename)
+	baseURL := getBaseURL(c)
+	videoURL := fmt.Sprintf("%s/data/uploads/videos/%s", baseURL, filename)
 	c.JSON(http.StatusOK, gin.H{
 		"url": videoURL,
 	})
@@ -888,7 +912,8 @@ func GetHomepageImages(c *gin.Context) {
 		if !file.IsDir() {
 			ext := strings.ToLower(filepath.Ext(file.Name()))
 			if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" || ext == ".webp" {
-				images = append(images, fmt.Sprintf("http://localhost:8080/homepage/images/%s", file.Name()))
+				baseURL := getBaseURL(c)
+				images = append(images, fmt.Sprintf("%s/homepage/images/%s", baseURL, file.Name()))
 			}
 		}
 	}
@@ -898,7 +923,8 @@ func GetHomepageImages(c *gin.Context) {
 		if !file.IsDir() {
 			ext := strings.ToLower(filepath.Ext(file.Name()))
 			if ext == ".mp4" || ext == ".avi" || ext == ".mov" || ext == ".wmv" || ext == ".webm" {
-				videos = append(videos, fmt.Sprintf("http://localhost:8080/homepage/videos/%s", file.Name()))
+				baseURL := getBaseURL(c)
+				videos = append(videos, fmt.Sprintf("%s/homepage/videos/%s", baseURL, file.Name()))
 			}
 		}
 	}
@@ -974,7 +1000,8 @@ func UploadHomepageImage(c *gin.Context) {
 	}
 
 	// Return the URL
-	imageURL := fmt.Sprintf("http://localhost:8080/homepage/images/%s", filename)
+	baseURL := getBaseURL(c)
+	imageURL := fmt.Sprintf("%s/homepage/images/%s", baseURL, filename)
 	c.JSON(http.StatusOK, gin.H{
 		"url": imageURL,
 		"filename": filename,
@@ -1046,7 +1073,8 @@ func UploadHomepageVideo(c *gin.Context) {
 	}
 
 	// Return the URL
-	videoURL := fmt.Sprintf("http://localhost:8080/homepage/videos/%s", filename)
+	baseURL := getBaseURL(c)
+	videoURL := fmt.Sprintf("%s/homepage/videos/%s", baseURL, filename)
 	c.JSON(http.StatusOK, gin.H{
 		"url": videoURL,
 		"filename": filename,
@@ -1169,7 +1197,8 @@ func ReplaceHomepageMedia(c *gin.Context) {
 	}
 
 	// Return the URL
-	mediaURL := fmt.Sprintf("http://localhost:8080/homepage/%s/%s", mediaType, oldFilename)
+	baseURL := getBaseURL(c)
+	mediaURL := fmt.Sprintf("%s/homepage/%s/%s", baseURL, mediaType, oldFilename)
 	c.JSON(http.StatusOK, gin.H{
 		"url": mediaURL,
 		"filename": oldFilename,
