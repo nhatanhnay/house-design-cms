@@ -212,28 +212,30 @@ func UpdateCategory(c *gin.Context) {
 		return
 	}
 
-	// Update only non-empty fields
+	// Update fields - always update these core fields from request
 	if category.Name != "" {
 		existingCategory.Name = category.Name
 	}
 	if category.Slug != "" {
 		existingCategory.Slug = category.Slug
 	}
-	if category.Description != "" {
-		existingCategory.Description = category.Description
-	}
-	if category.ThumbnailURL != "" {
-		existingCategory.ThumbnailURL = category.ThumbnailURL
-	}
+	// Always update these fields even if empty (user might want to clear them)
+	existingCategory.Description = category.Description
+	existingCategory.ThumbnailURL = category.ThumbnailURL
+
+	// Always update category_type - this is critical for the fix
 	if category.CategoryType != "" {
 		existingCategory.CategoryType = category.CategoryType
+		fmt.Printf("Updated CategoryType to: %s\n", category.CategoryType)
 	}
+
 	// Always update is_active as it can be false
 	existingCategory.IsActive = category.IsActive
 
-	// Calculate level based on parent if parent_id changed
+	// Handle parent_id updates - check if it's being set in the request
+	// Note: We need to distinguish between nil (not provided) and explicitly null
 	if category.ParentID != nil {
-		// Get parent level
+		// Setting a parent
 		var parentLevel int
 		err := database.DB.QueryRow("SELECT level FROM categories WHERE id = $1", *category.ParentID).Scan(&parentLevel)
 		if err != nil {
@@ -242,9 +244,20 @@ func UpdateCategory(c *gin.Context) {
 		}
 		existingCategory.Level = parentLevel + 1
 		existingCategory.ParentID = category.ParentID
-	} else if category.ParentID == nil {
+		fmt.Printf("Setting parent_id to: %v, level: %d\n", *category.ParentID, existingCategory.Level)
+	}
+
+	// Force business rules: News categories cannot have parents
+	if existingCategory.CategoryType == "news" {
 		existingCategory.Level = 0
 		existingCategory.ParentID = nil
+		fmt.Printf("Forcing news category to have no parent\n")
+	}
+
+	// If no parent is set and it's a product category, make it a main category
+	if existingCategory.ParentID == nil && existingCategory.CategoryType == "product" {
+		existingCategory.Level = 0
+		fmt.Printf("Setting product category as main category (level 0)\n")
 	}
 
 	fmt.Printf("Final category data before update: %+v\n", existingCategory)

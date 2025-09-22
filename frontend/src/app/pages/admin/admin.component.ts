@@ -84,16 +84,17 @@ export class AdminComponent implements OnInit {
       switchMap(() =>
         this.dataService.getCategories().pipe(
           map(categories => {
-            console.log('All categories loaded:', categories);
+            console.log('🔄 Refreshing categories - All loaded:', categories.length, 'categories');
+            console.log('📊 Category details:', categories.map(c => ({id: c.id, name: c.name, type: c.category_type, active: c.is_active})));
             const tree = this.dataService.buildCategoryTree(categories);
-            console.log('Built tree:', tree);
+            console.log('🌳 Built tree:', tree.length, 'root items');
             // Filter for main categories (level 0 or no parent_id)
             const mainCategories = tree.filter(cat => cat.level === 0 || !cat.parent_id);
-            console.log('Main categories after filter:', mainCategories);
+            console.log('🎯 Main categories after filter:', mainCategories.length, 'items');
             return mainCategories;
           }),
           catchError(error => {
-            console.error('Error loading categories:', error);
+            console.error('❌ Error loading categories:', error);
             return of([]);
           })
         )
@@ -131,9 +132,15 @@ export class AdminComponent implements OnInit {
     });
 
     dialogRef.afterClosed().subscribe(result => {
+      console.log('🔄 Dialog closed with result:', result);
       if (result) {
-        // Only refresh data since the dialog already handles creating/updating the category
+        console.log('✅ Refreshing category data after successful operation');
+        // Force refresh data since the dialog already handles creating/updating the category
         this.refreshData();
+        // Also refresh the standalone categories observable for backwards compatibility
+        this.categories$ = this.dataService.getCategories();
+      } else {
+        console.log('❌ Dialog closed without result (cancelled)');
       }
     });
   }

@@ -348,13 +348,22 @@ export class CategoryDialogComponent implements OnInit {
       const categoryData: any = {
         name: formValue.name,
         slug: formValue.slug,
-        description: formValue.description,
+        description: formValue.description || '',
         category_type: formValue.category_type || 'product',
         is_active: formValue.is_active !== undefined ? formValue.is_active : true
       };
 
-      // Add parent_id for subcategories
-      if (this.data.isSubcategory) {
+      // Ensure category_type is always sent
+      if (!categoryData.category_type) {
+        categoryData.category_type = 'product';
+      }
+
+      // Handle parent_id based on category type
+      if (categoryData.category_type === 'news') {
+        // News categories should never have parents
+        categoryData.parent_id = null;
+      } else if (this.data.isSubcategory || formValue.parent_id) {
+        // Product categories can have parents
         if (this.data.parentId) {
           // Parent ID was provided (inline add button)
           categoryData.parent_id = this.data.parentId;
@@ -362,6 +371,9 @@ export class CategoryDialogComponent implements OnInit {
           // Parent ID was selected from dropdown (top add button)
           categoryData.parent_id = formValue.parent_id;
         }
+      } else {
+        // Explicitly set to null for main categories
+        categoryData.parent_id = null;
       }
 
       // Add thumbnail_url if provided
@@ -369,9 +381,13 @@ export class CategoryDialogComponent implements OnInit {
         categoryData.thumbnail_url = formValue.thumbnail_url;
       }
 
-      console.log('Form value before saving:', formValue);
-      console.log('Saving category with data:', categoryData);
-      console.log('Is editing existing category:', !!this.data.category);
+      console.log('💾 SAVE TRIGGERED');
+      console.log('📋 Form value before saving:', formValue);
+      console.log('📦 Category data prepared:', categoryData);
+      console.log('✏️ Is editing existing category:', !!this.data.category);
+      console.log('🆔 Category ID:', this.data.category?.id);
+      console.log('🏷️ Original category type:', this.data.category?.category_type);
+      console.log('🔄 New category type:', categoryData.category_type);
 
       const operation = this.data.category
         ? this.dataService.updateCategory(this.data.category.id, categoryData)
@@ -380,6 +396,9 @@ export class CategoryDialogComponent implements OnInit {
       operation.subscribe({
         next: (result) => {
           this.isLoading = false;
+          console.log('✅ SUCCESS: Category saved successfully');
+          console.log('📤 Server response:', result);
+          console.log('🆔 Response category type:', result?.category_type);
           this.snackBar.open(
             this.data.category ? 'Cập nhật danh mục thành công!' : 'Thêm danh mục thành công!',
             'Đóng',
@@ -389,8 +408,9 @@ export class CategoryDialogComponent implements OnInit {
         },
         error: (error) => {
           this.isLoading = false;
+          console.error('❌ ERROR saving category:', error);
+          console.error('📤 Error details:', error.error);
           this.snackBar.open('Có lỗi xảy ra!', 'Đóng', { duration: 3000 });
-          console.error('Error saving category:', error);
         }
       });
     }
@@ -398,17 +418,21 @@ export class CategoryDialogComponent implements OnInit {
 
   onCategoryTypeChange(event: any): void {
     const categoryType = event.value;
+    console.log('⚡ Category type changed to:', categoryType);
 
     // If changing to news, clear parent_id and remove subcategory restrictions
     if (categoryType === 'news') {
+      console.log('🗞️ Setting to news type - clearing parent_id');
       this.categoryForm.patchValue({ parent_id: null });
       this.categoryForm.get('parent_id')?.clearValidators();
     } else if (categoryType === 'product' && this.data.isSubcategory && !this.data.parentId) {
       // If changing to product and it's a subcategory dialog, add validators back
+      console.log('📦 Setting to product type - adding parent validation');
       this.categoryForm.get('parent_id')?.setValidators([Validators.required]);
     }
 
     this.categoryForm.get('parent_id')?.updateValueAndValidity();
+    console.log('📝 Form state after category type change:', this.categoryForm.value);
   }
 
   getParentCategoryName(): string {

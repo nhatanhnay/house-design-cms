@@ -38,9 +38,12 @@ export class DataService {
 
   // Categories
   getCategories(): Observable<Category[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/categories`).pipe(
-      map(apiCategories =>
-        apiCategories.map(apiCategory => ({
+    // Add cache-busting timestamp to prevent HTTP caching issues
+    const cacheBuster = new Date().getTime();
+    return this.http.get<any[]>(`${this.apiUrl}/categories?_t=${cacheBuster}`).pipe(
+      map(apiCategories => {
+        console.log('🔄 DataService: Raw categories from API:', apiCategories?.length);
+        return apiCategories.map(apiCategory => ({
           id: apiCategory.id,
           name: apiCategory.name,
           slug: apiCategory.slug,
@@ -55,7 +58,7 @@ export class DataService {
           created_at: apiCategory.created_at,
           updated_at: apiCategory.updated_at
         } as Category))
-      )
+      })
     );
   }
 
