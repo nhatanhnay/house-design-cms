@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 
 	"house-design-backend/config"
 	"house-design-backend/database"
@@ -26,9 +27,21 @@ func main() {
 	// Initialize Gin router
 	r := gin.Default()
 
-	// CORS middleware
+	// CORS middleware - use AllowOriginFunc to accept http/https forms of the public IP
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:4200", "http://localhost:4201", "http://157.66.26.139:4200", "http://157.66.26.139"},
+		AllowOriginFunc: func(origin string) bool {
+			// allow localhost dev origins
+			if origin == "http://localhost:4200" || origin == "http://localhost:4201" {
+				return true
+			}
+
+			// allow the public IP over http/https and with/without port
+			if strings.HasPrefix(origin, "http://157.66.26.139") || strings.HasPrefix(origin, "https://157.66.26.139") {
+				return true
+			}
+
+			return false
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},

@@ -104,8 +104,11 @@
                                       class="category-icon">{{ getCategoryIcon(mainCategory.slug) }}</mat-icon>
                           </div>
                           <div class="category-details">
-                            <div class="category-name">{{ mainCategory.name }}</div>
-                            <div class="category-meta">{{ mainCategory.slug }} • {{ mainCategory.description }}</div>
+                            <div class="category-name">
+                              {{ mainCategory.name }}
+                              <span *ngIf="!mainCategory.is_active" class="inactive-badge">(Inactive)</span>
+                            </div>
+                            <div class="category-meta">{{ mainCategory.slug }} • {{ mainCategory.description }} • Level: {{ mainCategory.level }}</div>
                           </div>
                         </div>
                         <div class="category-actions-inline">
@@ -176,8 +179,11 @@
                                             class="category-icon subcategory-icon">{{ getCategoryIcon(subcategory.slug) }}</mat-icon>
                                 </div>
                                 <div class="category-details">
-                                  <div class="category-name">{{ subcategory.name }}</div>
-                                  <div class="category-meta">{{ subcategory.slug }} • {{ subcategory.description }}</div>
+                                  <div class="category-name">
+                                    {{ subcategory.name }}
+                                    <span *ngIf="!subcategory.is_active" class="inactive-badge">(Inactive)</span>
+                                  </div>
+                                  <div class="category-meta">{{ subcategory.slug }} • {{ subcategory.description }} • Level: {{ subcategory.level }}</div>
                                 </div>
                               </div>
                               <div class="category-actions-inline">

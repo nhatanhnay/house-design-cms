@@ -27,6 +27,13 @@ export class DataService {
     } else {
       this.apiUrl = envUrl;
     }
+
+    // Debug: print the resolved API URL so we can confirm runtime detection
+    // in production when served from a public IP.
+    // This log is safe to keep during diagnosing; remove later if desired.
+    if (typeof console !== 'undefined') {
+      console.log('DataService: resolved apiUrl =', this.apiUrl);
+    }
   }
 
   // Categories

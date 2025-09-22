@@ -9,6 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable } from 'rxjs';
 import { DataService } from '../../services/data.service';
@@ -27,7 +28,8 @@ import { Category } from '../../models/models';
     MatSelectModule,
     MatProgressBarModule,
     MatTooltipModule,
-    MatIconModule
+    MatIconModule,
+    MatCheckboxModule
   ],
   template: `
     <h2 mat-dialog-title>{{ data.category ? 'Sửa Danh Mục' : (data.isSubcategory ? 'Thêm Danh Mục Con' : 'Thêm Danh Mục Chính') }}</h2>
@@ -108,6 +110,13 @@ import { Category } from '../../models/models';
             <mat-progress-bar [value]="uploadProgress"></mat-progress-bar>
             <span class="progress-text">Đang tải lên... {{ uploadProgress }}%</span>
           </div>
+        </div>
+
+        <!-- Active Status Checkbox -->
+        <div class="status-section">
+          <mat-checkbox formControlName="is_active" color="primary">
+            Kích hoạt danh mục (hiển thị cho người dùng)
+          </mat-checkbox>
         </div>
       </form>
     </mat-dialog-content>
@@ -206,6 +215,14 @@ import { Category } from '../../models/models';
       margin-top: 4px;
       display: block;
     }
+
+    .status-section {
+      margin-top: 16px;
+      padding: 12px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #1976d2;
+    }
   `]
 })
 export class CategoryDialogComponent implements OnInit {
@@ -231,7 +248,8 @@ export class CategoryDialogComponent implements OnInit {
       slug: [''],
       description: [''],
       thumbnail_url: [''],
-      parent_id: [null]
+      parent_id: [null],
+      is_active: [true]  // Đảm bảo danh mục mới luôn được tạo ở trạng thái hoạt động
     });
 
     // Set up parent categories for subcategory creation
@@ -285,7 +303,8 @@ export class CategoryDialogComponent implements OnInit {
       const categoryData: any = {
         name: formValue.name,
         slug: formValue.slug,
-        description: formValue.description
+        description: formValue.description,
+        is_active: formValue.is_active !== undefined ? formValue.is_active : true
       };
 
       // Add parent_id for subcategories

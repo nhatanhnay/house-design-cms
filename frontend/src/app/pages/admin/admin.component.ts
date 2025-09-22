@@ -84,8 +84,13 @@ export class AdminComponent implements OnInit {
       switchMap(() =>
         this.dataService.getCategories().pipe(
           map(categories => {
+            console.log('All categories loaded:', categories);
             const tree = this.dataService.buildCategoryTree(categories);
-            return tree.filter(cat => cat.level === 0);
+            console.log('Built tree:', tree);
+            // Filter for main categories (level 0 or no parent_id)
+            const mainCategories = tree.filter(cat => cat.level === 0 || !cat.parent_id);
+            console.log('Main categories after filter:', mainCategories);
+            return mainCategories;
           }),
           catchError(error => {
             console.error('Error loading categories:', error);
