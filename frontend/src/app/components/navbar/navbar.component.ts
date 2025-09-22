@@ -53,7 +53,9 @@ export class NavbarComponent implements OnInit {
         console.log('Categories from API:', categories);
         // Filter only active categories for navbar display
         const activeCategories = categories.filter(cat => cat.is_active);
+        console.log('Active categories filtered:', activeCategories);
         const tree = this.dataService.buildCategoryTree(activeCategories);
+        console.log('Built category tree:', tree);
         const mainCategories = tree.filter(cat => cat.level === 0);
         console.log('Active main categories filtered:', mainCategories);
         return mainCategories;
@@ -82,9 +84,24 @@ export class NavbarComponent implements OnInit {
     this.cancelCloseMenu();
 
     if (this.triggers && this.mainCategories[index]?.hasChildren) {
-      const trigger = this.triggers.toArray()[index];
-      if (trigger && !trigger.menuOpen) {
-        trigger.openMenu();
+      console.log('Hovering over category index:', index);
+      console.log('Category:', this.mainCategories[index]);
+      console.log('Total triggers:', this.triggers.length);
+
+      // Find the correct trigger based on categories with children
+      const categoriesWithChildren = this.mainCategories.filter(cat => cat.hasChildren);
+      const currentCategory = this.mainCategories[index];
+      const triggerIndex = categoriesWithChildren.findIndex(cat => cat.id === currentCategory.id);
+
+      console.log('Categories with children:', categoriesWithChildren);
+      console.log('Trigger index found:', triggerIndex);
+
+      if (triggerIndex >= 0) {
+        const trigger = this.triggers.toArray()[triggerIndex];
+        console.log('Trigger found:', trigger);
+        if (trigger && !trigger.menuOpen) {
+          trigger.openMenu();
+        }
       }
     }
   }

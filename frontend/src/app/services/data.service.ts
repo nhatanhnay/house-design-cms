@@ -1,16 +1,33 @@
-import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Category, Post, Article, CreateCategoryRequest, UpdateCategoryRequest, CategoryTreeItem, HomeContent } from '../models/models';
+import { environment } from '../../environments/environment';
+import { Article, Category, CategoryTreeItem, CreateCategoryRequest, HomeContent, Post, UpdateCategoryRequest } from '../models/models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DataService {
-  private apiUrl = 'http://localhost:8080/api';
+  private apiUrl: string;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    // Runtime detection: if the environment apiUrl points to localhost but the
+    // app is accessed from a non-localhost host (e.g. public IP or domain),
+    // automatically switch to that host on port 8080 so no rebuild is required.
+    const envUrl = environment.apiUrl || '';
+    const host = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : '';
+
+    const isEnvLocalhost = envUrl.includes('localhost') || envUrl.includes('127.0.0.1');
+    const isRunningLocally = host === 'localhost' || host === '127.0.0.1' || host === '';
+
+    if (isEnvLocalhost && !isRunningLocally) {
+      // Assume backend listens on the same host at port 8080
+      this.apiUrl = `${window.location.protocol}//${host}:8080/api`;
+    } else {
+      this.apiUrl = envUrl;
+    }
+  }
 
   // Categories
   getCategories(): Observable<Category[]> {

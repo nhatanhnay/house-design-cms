@@ -262,34 +262,13 @@ export class AdminComponent implements OnInit {
   openPostDialog(post?: Post): void {
     const dialogRef = this.dialog.open(PostDialogComponent, {
       width: '800px',
-      data: post || null
+      data: { post: post || null }
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        if (post) {
-          this.dataService.updatePost(post.id, result).subscribe({
-            next: () => {
-              this.posts$ = this.dataService.getPosts();
-              this.snackBar.open('Bài viết đã được cập nhật', 'Đóng', { duration: 3000 });
-            },
-            error: (error) => {
-              console.error('Error updating post:', error);
-              this.snackBar.open('Lỗi khi cập nhật bài viết', 'Đóng', { duration: 3000 });
-            }
-          });
-        } else {
-          this.dataService.createPost(result).subscribe({
-            next: () => {
-              this.posts$ = this.dataService.getPosts();
-              this.snackBar.open('Bài viết đã được tạo', 'Đóng', { duration: 3000 });
-            },
-            error: (error) => {
-              console.error('Error creating post:', error);
-              this.snackBar.open('Lỗi khi tạo bài viết', 'Đóng', { duration: 3000 });
-            }
-          });
-        }
+        // Refresh the posts list since the dialog handles the create/update operations
+        this.posts$ = this.dataService.getPosts();
       }
     });
   }
@@ -344,7 +323,7 @@ export class AdminComponent implements OnInit {
       if (files && files.length > 0) {
         for (let file of files) {
           const formData = new FormData();
-          formData.append('image', file);
+          formData.append('upload', file);
 
           this.dataService.uploadHomepageImage(formData).subscribe({
             next: (response) => {
@@ -374,7 +353,7 @@ export class AdminComponent implements OnInit {
       if (files && files.length > 0) {
         for (let file of files) {
           const formData = new FormData();
-          formData.append('video', file);
+          formData.append('upload', file);
 
           this.dataService.uploadHomepageVideo(formData).subscribe({
             next: (response) => {

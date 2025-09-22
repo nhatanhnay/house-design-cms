@@ -204,12 +204,74 @@ body {
 .p-3 { padding: 1.5rem; }
 .p-4 { padding: 2rem; }
 
+/* CKEditor 5 List Fixes */
+.ck-content {
+  ul, ol {
+    margin: 1em 0 !important;
+    padding-left: 2em !important;
+  }
+
+  ul li {
+    list-style-type: disc !important;
+    margin: 0.5em 0 !important;
+  }
+
+  ol li {
+    list-style-type: decimal !important;
+    margin: 0.5em 0 !important;
+  }
+
+  ul ul li {
+    list-style-type: circle !important;
+  }
+
+  ul ul ul li {
+    list-style-type: square !important;
+  }
+
+  /* Ensure list markers are visible */
+  li::marker {
+    color: inherit !important;
+  }
+}
+
+/* Apply same fixes to Angular's ::ng-deep for better compatibility */
+::ng-deep .ck-content {
+  ul, ol {
+    margin: 1em 0 !important;
+    padding-left: 2em !important;
+  }
+
+  ul li {
+    list-style-type: disc !important;
+    margin: 0.5em 0 !important;
+  }
+
+  ol li {
+    list-style-type: decimal !important;
+    margin: 0.5em 0 !important;
+  }
+
+  ul ul li {
+    list-style-type: circle !important;
+  }
+
+  ul ul ul li {
+    list-style-type: square !important;
+  }
+
+  /* Ensure list markers are visible */
+  li::marker {
+    color: inherit !important;
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .container {
     padding: 0 15px;
   }
-  
+
   .btn-primary,
   .btn-secondary {
     padding: 10px 20px;

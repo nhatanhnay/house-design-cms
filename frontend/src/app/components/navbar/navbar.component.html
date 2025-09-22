@@ -13,42 +13,41 @@
       </a>
 
       <!-- Main Categories with Hover Dropdowns -->
-      <ng-container *ngFor="let mainCategory of mainCategories; let i = index">
-        <div class="nav-category-wrapper"
-             [class.has-dropdown]="mainCategory.hasChildren"
-             (mouseenter)="onCategoryHover(i)"
-             (mouseleave)="onCategoryLeave()">
+      <div class="nav-category-wrapper"
+           *ngFor="let mainCategory of mainCategories; let i = index"
+           [class.has-dropdown]="mainCategory.hasChildren"
+           (mouseenter)="onCategoryHover(i)"
+           (mouseleave)="onCategoryLeave()">
 
-          <!-- Category with subcategories - hover dropdown -->
-          <button mat-button
-                  *ngIf="mainCategory.hasChildren"
-                  [matMenuTriggerFor]="categoryMenu"
-                  #trigger="matMenuTrigger"
-                  class="category-dropdown">
-            {{ mainCategory.name }}
-            <mat-icon class="dropdown-arrow">keyboard_arrow_down</mat-icon>
-          </button>
+        <!-- Category with subcategories - hover dropdown -->
+        <button mat-button
+                *ngIf="mainCategory.hasChildren"
+                [matMenuTriggerFor]="categoryMenu"
+                #trigger="matMenuTrigger"
+                class="category-dropdown">
+          {{ mainCategory.name }}
+          <mat-icon class="dropdown-arrow">keyboard_arrow_down</mat-icon>
+        </button>
 
-          <!-- Category without subcategories - direct link -->
-          <a mat-button
-             *ngIf="!mainCategory.hasChildren"
-             [routerLink]="'/category/' + mainCategory.slug"
-             routerLinkActive="active">
-            {{ mainCategory.name }}
+        <!-- Category without subcategories - direct link -->
+        <a mat-button
+           *ngIf="!mainCategory.hasChildren"
+           [routerLink]="'/category/' + mainCategory.slug"
+           routerLinkActive="active">
+          {{ mainCategory.name }}
+        </a>
+
+        <!-- Dropdown menu for subcategories -->
+        <mat-menu #categoryMenu="matMenu"
+                  class="category-submenu">
+          <a mat-menu-item
+             *ngFor="let subcategory of mainCategory.children"
+             [routerLink]="'/category/' + subcategory.slug">
+            <mat-icon>{{ getCategoryIcon(subcategory.slug) }}</mat-icon>
+            <span>{{ subcategory.name }}</span>
           </a>
-
-          <!-- Dropdown menu for subcategories -->
-          <mat-menu #categoryMenu="matMenu"
-                    class="category-submenu">
-            <a mat-menu-item
-               *ngFor="let subcategory of mainCategory.children"
-               [routerLink]="'/category/' + subcategory.slug">
-              <mat-icon>{{ getCategoryIcon(subcategory.slug) }}</mat-icon>
-              <span>{{ subcategory.name }}</span>
-            </a>
-          </mat-menu>
-        </div>
-      </ng-container>
+        </mat-menu>
+      </div>
 
       <!-- Debug info - remove this later -->
       <div *ngIf="mainCategories.length === 0" style="color: white; padding: 10px;">
