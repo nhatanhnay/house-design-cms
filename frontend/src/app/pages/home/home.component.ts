@@ -96,7 +96,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 
-  onImageError(event: any): void {
+  onImageError(event: any, imageUrl?: string): void {
+    console.error('Image failed to load:', imageUrl);
     const target = event.target;
     target.style.display = 'none';
 
@@ -108,12 +109,16 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
+  onImageLoad(event: any, imageUrl?: string): void {
+    console.log('Image loaded successfully:', imageUrl);
+  }
 
   // Homepage carousel methods
   loadHomepageMedia(): void {
     this.dataService.getHomepageMedia().subscribe({
       next: (response: any) => {
         this.homepageImages = response.images || [];
+        console.log('Image URLs received:', this.homepageImages);
         if (this.homepageImages.length > 0) {
           this.startCarouselAutoPlay();
         }

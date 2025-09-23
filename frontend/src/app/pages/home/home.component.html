@@ -3,7 +3,11 @@
   <section class="hero-carousel">
     <div class="carousel-container">
       <div class="carousel-slide" *ngFor="let image of homepageImages; let i = index"
-        [class.active]="i === currentSlideIndex" [style.background-image]="'url(' + image + ')'">
+        [class.active]="i === currentSlideIndex">
+        <img [src]="image" [alt]="'Homepage image ' + (i + 1)"
+             (error)="onImageError($event, image)"
+             (load)="onImageLoad($event, image)"
+             style="width: 100%; height: 100%; object-fit: cover;">
       </div>
 
       <!-- Carousel Navigation -->

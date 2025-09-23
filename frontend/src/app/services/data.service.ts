@@ -29,6 +29,7 @@ export class DataService {
       this.apiUrl = envUrl;
     }
 
+    console.log('DataService API URL resolved to:', this.apiUrl);
   }
 
   // Categories
