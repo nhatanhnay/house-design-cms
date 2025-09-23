@@ -86,7 +86,16 @@ export class AdminComponent implements OnInit {
           map(categories => {
             console.log('🔄 Refreshing categories - All loaded:', categories.length, 'categories');
             console.log('📊 Category details:', categories.map(c => ({id: c.id, name: c.name, type: c.category_type, active: c.is_active})));
-            const tree = this.dataService.buildCategoryTree(categories);
+
+            // Convert image URLs for all categories
+            const processedCategories = categories.map(category => {
+              if (category.thumbnail_url) {
+                category.thumbnail_url = this.convertImageUrl(category.thumbnail_url);
+              }
+              return category;
+            });
+
+            const tree = this.dataService.buildCategoryTree(processedCategories);
             console.log('🌳 Built tree:', tree.length, 'root items');
             // Filter for main categories (level 0 or no parent_id)
             const mainCategories = tree.filter(cat => cat.level === 0 || !cat.parent_id);
@@ -497,6 +506,37 @@ export class AdminComponent implements OnInit {
         iconElement.style.display = 'block';
       }
     }
+  }
+
+  // Convert absolute backend URLs to relative URLs for proxy support
+  private convertImageUrl = (url: string): string => {
+    if (!url) return url;
+
+    console.log('Admin - Original URL:', url);
+
+    // Handle localhost URLs
+    if (url.startsWith('http://localhost:8080/')) {
+      const converted = url.replace('http://localhost:8080/', '/');
+      console.log('Admin - Converted localhost URL:', converted);
+      return converted;
+    }
+
+    // Handle HTTPS backend URLs
+    if (url.startsWith('https://') && url.includes(':8080/')) {
+      const converted = url.replace(/https:\/\/[^\/]+:8080\//, '/');
+      console.log('Admin - Converted HTTPS URL:', converted);
+      return converted;
+    }
+
+    // Handle HTTP backend URLs with any domain
+    if (url.startsWith('http://') && url.includes(':8080/')) {
+      const converted = url.replace(/http:\/\/[^\/]+:8080\//, '/');
+      console.log('Admin - Converted HTTP URL:', converted);
+      return converted;
+    }
+
+    console.log('Admin - URL not converted:', url);
+    return url;
   }
 
   logout(): void {
