@@ -115,8 +115,9 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("Server starting on :%s", port)
-	if err := r.Run(":" + port); err != nil {
+	address := "0.0.0.0:" + port
+	log.Printf("Server starting on %s", address)
+	if err := r.Run(address); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
 }
