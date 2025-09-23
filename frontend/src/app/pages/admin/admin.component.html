@@ -50,19 +50,14 @@
                 <div class="tree-item main-category" *ngFor="let mainCategory of tree; let i = index"
                   [class.expanded]="mainCategory.expanded" cdkDrag [cdkDragData]="mainCategory">
 
-                  <!-- Drag Handle -->
-                  <div class="drag-handle" cdkDragHandle>
-                    <mat-icon>drag_indicator</mat-icon>
-                  </div>
-
                   <!-- Main Category -->
                   <div class="category-header">
                     <div class="category-info">
-                      <button mat-icon-button class="expand-btn"
-                        *ngIf="mainCategory.hasChildren && mainCategory.category_type === 'product'"
-                        (click)="toggleCategory(mainCategory)">
-                        <mat-icon>{{ mainCategory.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
-                      </button>
+                      <!-- Drag Handle -->
+                      <div class="drag-handle" cdkDragHandle>
+                        <mat-icon>drag_indicator</mat-icon>
+                      </div>
+
                       <!-- Category Thumbnail or Icon -->
                       <div class="category-thumbnail-container">
                         <img *ngIf="mainCategory.thumbnail_url" [src]="mainCategory.thumbnail_url"
@@ -84,6 +79,20 @@
                       </div>
                     </div>
                     <div class="category-actions-inline">
+
+
+                      <!-- Regular Actions -->
+                      <button mat-icon-button [disabled]="mainCategory.category_type !== 'product'"
+                        (click)="openCategoryDialog(undefined, true, mainCategory.id)" matTooltip="Thêm danh mục con">
+                        <mat-icon>add_circle_outline</mat-icon>
+                      </button>
+                      <button mat-icon-button (click)="editCategory(mainCategory)" matTooltip="Chỉnh sửa">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button mat-icon-button color="warn" (click)="deleteCategory(mainCategory.id)" matTooltip="Xóa">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+
                       <!-- Order Controls -->
                       <div class="order-controls">
                         <button mat-icon-button class="order-btn" [disabled]="i === 0"
@@ -95,17 +104,11 @@
                           <mat-icon>keyboard_arrow_down</mat-icon>
                         </button>
                       </div>
-
-                      <!-- Regular Actions -->
-                      <button mat-icon-button *ngIf="mainCategory.category_type === 'product'"
-                        (click)="openCategoryDialog(undefined, true, mainCategory.id)" matTooltip="Thêm danh mục con">
-                        <mat-icon>add_circle_outline</mat-icon>
-                      </button>
-                      <button mat-icon-button (click)="editCategory(mainCategory)" matTooltip="Chỉnh sửa">
-                        <mat-icon>edit</mat-icon>
-                      </button>
-                      <button mat-icon-button color="warn" (click)="deleteCategory(mainCategory.id)" matTooltip="Xóa">
-                        <mat-icon>delete</mat-icon>
+                      <!-- Expand Button -->
+                      <button mat-icon-button class="expand-btn"
+                        [disabled]="!mainCategory.hasChildren || mainCategory.category_type !== 'product'"
+                        (click)="toggleCategory(mainCategory)">
+                        <mat-icon>{{ mainCategory.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
                       </button>
                     </div>
                   </div>
@@ -145,6 +148,16 @@
                             </div>
                           </div>
                           <div class="category-actions-inline">
+
+
+                            <!-- Regular Subcategory Actions -->
+                            <button mat-icon-button (click)="editCategory(subcategory)" matTooltip="Chỉnh sửa">
+                              <mat-icon>edit</mat-icon>
+                            </button>
+                            <button mat-icon-button color="warn" (click)="deleteCategory(subcategory.id)"
+                              matTooltip="Xóa">
+                              <mat-icon>delete</mat-icon>
+                            </button>
                             <!-- Subcategory Order Controls -->
                             <div class="order-controls">
                               <button mat-icon-button class="order-btn" [disabled]="j === 0"
@@ -159,15 +172,6 @@
                                 <mat-icon>keyboard_arrow_down</mat-icon>
                               </button>
                             </div>
-
-                            <!-- Regular Subcategory Actions -->
-                            <button mat-icon-button (click)="editCategory(subcategory)" matTooltip="Chỉnh sửa">
-                              <mat-icon>edit</mat-icon>
-                            </button>
-                            <button mat-icon-button color="warn" (click)="deleteCategory(subcategory.id)"
-                              matTooltip="Xóa">
-                              <mat-icon>delete</mat-icon>
-                            </button>
                           </div>
                         </div>
                       </div>
