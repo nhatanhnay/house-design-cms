@@ -66,6 +66,7 @@ func main() {
 		api.GET("/articles", handlers.GetArticles)
 		api.GET("/articles/:identifier", handlers.GetArticle)
 		api.GET("/homepage/media", handlers.GetHomepageImages)
+		api.GET("/home-content", handlers.GetHomeContent)
 
 		// Protected routes (require authentication)
 		protected := api.Group("/")
@@ -96,6 +97,9 @@ func main() {
 			protected.POST("/homepage/upload-video", handlers.UploadHomepageVideo)
 			protected.DELETE("/homepage/:type/:filename", handlers.DeleteHomepageMedia)
 			protected.PUT("/homepage/:type/:filename", handlers.ReplaceHomepageMedia)
+
+			// Home content management
+			protected.PUT("/home-content", handlers.UpdateHomeContent)
 		}
 	}
 

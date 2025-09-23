@@ -1278,3 +1278,76 @@ func generateSlug(title string) string {
 	}
 	return result.String()
 }
+
+// Home Content handlers
+func GetHomeContent(c *gin.Context) {
+	var homeContent models.HomeContent
+
+	// Get the first (and should be only) home content record
+	err := database.DB.QueryRow(`
+		SELECT id, hero_title, hero_description, hero_stat1_number, hero_stat1_label,
+		       hero_stat2_number, hero_stat2_label, created_at, updated_at
+		FROM home_content
+		ORDER BY id LIMIT 1
+	`).Scan(
+		&homeContent.ID,
+		&homeContent.HeroTitle,
+		&homeContent.HeroDescription,
+		&homeContent.HeroStat1Number,
+		&homeContent.HeroStat1Label,
+		&homeContent.HeroStat2Number,
+		&homeContent.HeroStat2Label,
+		&homeContent.CreatedAt,
+		&homeContent.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Home content not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch home content"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, homeContent)
+}
+
+func UpdateHomeContent(c *gin.Context) {
+	// Check authentication
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var updateData models.HomeContent
+	if err := c.ShouldBindJSON(&updateData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Update the home content (should be only one record)
+	_, err := database.DB.Exec(`
+		UPDATE home_content
+		SET hero_title = $1, hero_description = $2, hero_stat1_number = $3,
+		    hero_stat1_label = $4, hero_stat2_number = $5, hero_stat2_label = $6,
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE id = (SELECT id FROM home_content ORDER BY id LIMIT 1)
+	`,
+		updateData.HeroTitle,
+		updateData.HeroDescription,
+		updateData.HeroStat1Number,
+		updateData.HeroStat1Label,
+		updateData.HeroStat2Number,
+		updateData.HeroStat2Label,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update home content"})
+		return
+	}
+
+	// Return the updated content
+	GetHomeContent(c)
+}

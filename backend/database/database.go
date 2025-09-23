@@ -114,7 +114,21 @@ func createTables() {
 		FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
 	)`
 
-	tables := []string{adminTable, categoriesTable, articlesTable, postsTable}
+	// Create home_content table
+	homeContentTable := `
+	CREATE TABLE IF NOT EXISTS home_content (
+		id SERIAL PRIMARY KEY,
+		hero_title VARCHAR(500) NOT NULL,
+		hero_description TEXT,
+		hero_stat1_number VARCHAR(50),
+		hero_stat1_label VARCHAR(255),
+		hero_stat2_number VARCHAR(50),
+		hero_stat2_label VARCHAR(255),
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	)`
+
+	tables := []string{adminTable, categoriesTable, articlesTable, postsTable, homeContentTable}
 
 	for _, table := range tables {
 		if _, err := DB.Exec(table); err != nil {
@@ -178,8 +192,10 @@ func seedAdminUser() {
 			log.Fatal("Failed to create admin user:", err)
 		}
 		log.Println("Default admin user created (username: admin, password: admin123)")
-	} // Seed some default categories
+	}
+	// Seed some default categories and home content
 	seedDefaultCategories()
+	seedDefaultHomeContent()
 }
 
 func seedDefaultCategories() {
@@ -205,5 +221,40 @@ func seedDefaultCategories() {
 			}
 		}
 		log.Println("Default categories seeded")
+	}
+}
+
+func seedDefaultHomeContent() {
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM home_content").Scan(&count)
+	if err != nil {
+		log.Fatal("Failed to check home content:", err)
+	}
+
+	if count == 0 {
+		defaultHomeContent := models.HomeContent{
+			HeroTitle:       "MMA Architectural Design",
+			HeroDescription: "Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo",
+			HeroStat1Number: "37",
+			HeroStat1Label:  "Tỉnh Thành Phủ Sóng",
+			HeroStat2Number: "500+",
+			HeroStat2Label:  "Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp",
+		}
+
+		_, err := DB.Exec(`
+			INSERT INTO home_content (hero_title, hero_description, hero_stat1_number, hero_stat1_label, hero_stat2_number, hero_stat2_label)
+			VALUES ($1, $2, $3, $4, $5, $6)`,
+			defaultHomeContent.HeroTitle,
+			defaultHomeContent.HeroDescription,
+			defaultHomeContent.HeroStat1Number,
+			defaultHomeContent.HeroStat1Label,
+			defaultHomeContent.HeroStat2Number,
+			defaultHomeContent.HeroStat2Label,
+		)
+		if err != nil {
+			log.Printf("Failed to seed home content: %v", err)
+		} else {
+			log.Println("Default home content seeded")
+		}
 	}
 }

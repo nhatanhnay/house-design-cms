@@ -79,3 +79,15 @@ type CategoryOrderUpdate struct {
 type CategoryOrderRequest struct {
 	Categories []CategoryOrderUpdate `json:"categories" binding:"required"`
 }
+
+type HomeContent struct {
+	ID               uint      `json:"id" gorm:"primaryKey"`
+	HeroTitle        string    `json:"hero_title" gorm:"not null"`
+	HeroDescription  string    `json:"hero_description" gorm:"type:text"`
+	HeroStat1Number  string    `json:"hero_stat1_number"`
+	HeroStat1Label   string    `json:"hero_stat1_label"`
+	HeroStat2Number  string    `json:"hero_stat2_number"`
+	HeroStat2Label   string    `json:"hero_stat2_label"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
+}
