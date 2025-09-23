@@ -9,7 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { RouterModule } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Admin, Category, HomeContent, Post } from '../../models/models';
 import { AuthService } from '../../services/auth.service';
@@ -40,6 +40,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   isLoadingPosts = true;
   isLoadingCategories = true;
 
+  // Store posts for category filtering
+  allPosts: Post[] = [];
+
   // Homepage carousel properties
   homepageImages: string[] = [];
   currentSlideIndex: number = 0;
@@ -50,11 +53,31 @@ export class HomeComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private dialog: MatDialog
   ) {
-    this.latestPosts$ = this.dataService.getPosts();
-    this.mainCategories$ = this.dataService.getCategories().pipe(
-      map(categories => categories.filter(category => category.level === 0))
-    );
     this.currentUser$ = this.authService.currentUser$;
+
+    // Filter posts based on user admin status
+    this.latestPosts$ = combineLatest([
+      this.dataService.getPosts(),
+      this.currentUser$
+    ]).pipe(
+      map(([posts, currentUser]) => {
+        // If user is admin, show all posts; if not, only show published posts
+        return currentUser ? posts : posts.filter(post => post.published);
+      })
+    );
+
+    this.mainCategories$ = this.dataService.getCategories().pipe(
+      map(categories => {
+        const mainCategories = categories.filter(category => category.level === 0);
+        // Attach children to each main category
+        mainCategories.forEach(mainCategory => {
+          mainCategory.children = categories.filter(category =>
+            category.parent_id === mainCategory.id
+          );
+        });
+        return mainCategories;
+      })
+    );
   }
 
   ngOnInit(): void {
@@ -63,6 +86,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.latestPosts$.subscribe({
       next: (posts) => {
         this.isLoadingPosts = false;
+        this.allPosts = posts;
         console.log('Latest posts loaded:', posts.length);
       },
       error: (error) => {
@@ -177,6 +201,13 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopCarouselAutoPlay();
+  }
+
+  // Get posts for a specific category
+  getCategoryPosts(categoryId: number): Post[] {
+    return this.allPosts
+      .filter(post => post.category_id === categoryId)
+      .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
   }
 
   openEditDialog(): void {
