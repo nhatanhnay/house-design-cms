@@ -117,7 +117,6 @@ export class HomeComponent implements OnInit, OnDestroy {
         if (this.homepageImages.length > 0) {
           this.startCarouselAutoPlay();
         }
-        console.log('Homepage media loaded:', this.homepageImages.length + ' images');
       },
       error: (error) => {
         console.error('Error loading homepage media:', error);

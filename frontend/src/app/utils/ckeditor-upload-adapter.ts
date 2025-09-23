@@ -1,18 +1,18 @@
-import { UploadService } from '../services/upload.service';
+import { DataService } from '../services/data.service';
 
 export class CKEditorUploadAdapter {
   private loader: any;
-  private uploadService: UploadService;
+  private dataService: DataService;
 
-  constructor(loader: any, uploadService: UploadService) {
+  constructor(loader: any, dataService: DataService) {
     this.loader = loader;
-    this.uploadService = uploadService;
+    this.dataService = dataService;
   }
 
   upload(): Promise<{ default: string }> {
     return this.loader.file.then((file: File) => {
       return new Promise((resolve, reject) => {
-        this.uploadService.uploadImage(file).subscribe({
+        this.dataService.uploadImage(file).subscribe({
           next: (response) => {
             console.log('Upload response:', response);
             // Ensure the response has the correct format for CKEditor
@@ -46,7 +46,7 @@ export class CKEditorUploadAdapter {
   }
 }
 
-export function CKEditorUploadAdapterPlugin(uploadService: UploadService) {
+export function CKEditorUploadAdapterPlugin(dataService: DataService) {
   return function(editor: any) {
     console.log('Initializing upload adapter plugin');
     try {
@@ -54,7 +54,7 @@ export function CKEditorUploadAdapterPlugin(uploadService: UploadService) {
       if (fileRepository) {
         fileRepository.createUploadAdapter = (loader: any) => {
           console.log('Creating upload adapter for loader');
-          return new CKEditorUploadAdapter(loader, uploadService);
+          return new CKEditorUploadAdapter(loader, dataService);
         };
       } else {
         console.error('FileRepository plugin not found');

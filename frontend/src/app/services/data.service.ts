@@ -1,9 +1,10 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Article, Category, CategoryTreeItem, CreateCategoryRequest, HomeContent, Post, UpdateCategoryRequest } from '../models/models';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +12,7 @@ import { Article, Category, CategoryTreeItem, CreateCategoryRequest, HomeContent
 export class DataService {
   private apiUrl: string;
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private authService: AuthService) {
     // Runtime detection: if the environment apiUrl points to localhost but the
     // app is accessed from a non-localhost host (e.g. public IP or domain),
     // automatically switch to that host on port 8080 so no rebuild is required.
@@ -28,12 +29,6 @@ export class DataService {
       this.apiUrl = envUrl;
     }
 
-    // Debug: print the resolved API URL so we can confirm runtime detection
-    // in production when served from a public IP.
-    // This log is safe to keep during diagnosing; remove later if desired.
-    if (typeof console !== 'undefined') {
-      console.log('DataService: resolved apiUrl =', this.apiUrl);
-    }
   }
 
   // Categories
@@ -42,7 +37,6 @@ export class DataService {
     const cacheBuster = new Date().getTime();
     return this.http.get<any[]>(`${this.apiUrl}/categories?_t=${cacheBuster}`).pipe(
       map(apiCategories => {
-        console.log('🔄 DataService: Raw categories from API:', apiCategories?.length);
         return apiCategories.map(apiCategory => ({
           id: apiCategory.id,
           name: apiCategory.name,
@@ -242,7 +236,47 @@ export class DataService {
   }
 
   // General image upload for category thumbnails and other purposes
-  uploadImage(formData: FormData): Observable<any> {
-    return this.http.post(`${this.apiUrl}/upload`, formData);
+  uploadImage(file: File): Observable<{ url: string }> {
+    console.log('Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
+
+    const formData = new FormData();
+    formData.append('upload', file);
+
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found. Please log in again.');
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    console.log('Upload URL:', `${this.apiUrl}/upload`);
+    console.log('Token present:', !!token);
+
+    return this.http.post<{ url: string }>(`${this.apiUrl}/upload`, formData, { headers });
+  }
+
+  // Keep the FormData version for backward compatibility
+  uploadImageFormData(formData: FormData): Observable<any> {
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders({ 'Authorization': `Bearer ${token}` }) : undefined;
+    return this.http.post(`${this.apiUrl}/upload`, formData, { headers });
+  }
+
+  uploadVideo(file: File): Observable<{ url: string }> {
+    const formData = new FormData();
+    formData.append('upload', file);
+
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.post<{ url: string }>(`${this.apiUrl}/upload-video`, formData, { headers });
   }
 }

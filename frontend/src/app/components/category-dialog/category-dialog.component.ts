@@ -472,7 +472,7 @@ export class CategoryDialogComponent implements OnInit {
     this.isLoading = true;
 
     // Use the existing upload endpoint
-    this.dataService.uploadImage(formData).subscribe({
+    this.dataService.uploadImageFormData(formData).subscribe({
       next: (response: any) => {
         this.uploadProgress = 100;
         this.categoryForm.patchValue({ thumbnail_url: response.url });

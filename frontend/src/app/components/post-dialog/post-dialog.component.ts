@@ -13,7 +13,6 @@ import { CKEditorModule } from '@ckeditor/ckeditor5-angular';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { Observable } from 'rxjs';
 import { DataService } from '../../services/data.service';
-import { UploadService } from '../../services/upload.service';
 import { AuthService } from '../../services/auth.service';
 import { Category, Post } from '../../models/models';
 import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter';
@@ -337,7 +336,6 @@ export class PostDialogComponent implements OnInit {
     private dialogRef: MatDialogRef<PostDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: { post?: Post },
     private dataService: DataService,
-    private uploadService: UploadService,
     private authService: AuthService,
     private snackBar: MatSnackBar
   ) {
@@ -396,7 +394,7 @@ export class PostDialogComponent implements OnInit {
           'mergeTableCells'
         ]
       },
-      extraPlugins: [CKEditorUploadAdapterPlugin(this.uploadService)],
+      extraPlugins: [CKEditorUploadAdapterPlugin(this.dataService)],
       // Add simple upload URL as fallback
       simpleUpload: {
         uploadUrl: 'http://localhost:8080/api/upload',
@@ -475,7 +473,7 @@ export class PostDialogComponent implements OnInit {
     this.imageUploadError = null;
     this.isUploadingImage = true;
 
-    this.uploadService.uploadImage(file).subscribe({
+    this.dataService.uploadImage(file).subscribe({
       next: (response) => {
         this.isUploadingImage = false;
         this.selectedImageUrl = response.url;

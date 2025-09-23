@@ -47,14 +47,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
         return of([]);
       }),
       map(categories => {
-        console.log('Categories from API:', categories);
         // Filter only active categories for navbar display
         const activeCategories = categories.filter(cat => cat.is_active);
-        console.log('Active categories filtered:', activeCategories);
         const tree = this.dataService.buildCategoryTree(activeCategories);
-        console.log('Built category tree:', tree);
         const mainCategories = tree.filter(cat => cat.level === 0);
-        console.log('Active main categories filtered:', mainCategories);
         return mainCategories;
       })
     );
@@ -65,7 +61,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     // Subscribe to mainCategories$ and populate mainCategories array
     this.mainCategories$.subscribe({
       next: (categories) => {
-        console.log('Main categories loaded:', categories);
         this.mainCategories = categories;
       },
       error: (error) => {
