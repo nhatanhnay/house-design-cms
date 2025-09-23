@@ -893,8 +893,10 @@ func UploadVideo(c *gin.Context) {
 
 // Homepage handlers
 func GetHomepageImages(c *gin.Context) {
-	imagesDir := "./homepage/images"
-	videoDir := "./homepage/videos"
+	// Get the current working directory and use absolute paths
+	workDir, _ := os.Getwd()
+	imagesDir := filepath.Join(workDir, "homepage", "images")
+	videoDir := filepath.Join(workDir, "homepage", "videos")
 
 	fmt.Printf("🔍 KIỂM TRA MEDIA HOMEPAGE:\n")
 	fmt.Printf("   📁 Thư mục images: %s\n", imagesDir)
@@ -1009,7 +1011,9 @@ func UploadHomepageImage(c *gin.Context) {
 	}
 
 	// Create homepage images directory if it doesn't exist
-	uploadsDir := "./homepage/images"
+	// Get the current working directory and use absolute path
+	workDir, _ := os.Getwd()
+	uploadsDir := filepath.Join(workDir, "homepage", "images")
 	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
 		return
@@ -1090,7 +1094,9 @@ func UploadHomepageVideo(c *gin.Context) {
 	}
 
 	// Create homepage videos directory if it doesn't exist
-	uploadsDir := "./homepage/videos"
+	// Get the current working directory and use absolute path
+	workDir, _ := os.Getwd()
+	uploadsDir := filepath.Join(workDir, "homepage", "videos")
 	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
 		return
@@ -1140,7 +1146,9 @@ func DeleteHomepageMedia(c *gin.Context) {
 		return
 	}
 
-	filePath := filepath.Join("./homepage", mediaType, filename)
+	// Get the current working directory and use absolute path
+	workDir, _ := os.Getwd()
+	filePath := filepath.Join(workDir, "homepage", mediaType, filename)
 
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -1217,7 +1225,9 @@ func ReplaceHomepageMedia(c *gin.Context) {
 		return
 	}
 
-	oldFilePath := filepath.Join("./homepage", mediaType, oldFilename)
+	// Get the current working directory and use absolute path
+	workDir, _ := os.Getwd()
+	oldFilePath := filepath.Join(workDir, "homepage", mediaType, oldFilename)
 
 	// Check if old file exists
 	if _, err := os.Stat(oldFilePath); os.IsNotExist(err) {
