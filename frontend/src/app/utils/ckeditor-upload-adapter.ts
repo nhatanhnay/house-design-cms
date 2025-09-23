@@ -17,7 +17,17 @@ export class CKEditorUploadAdapter {
             console.log('Upload response:', response);
             // Ensure the response has the correct format for CKEditor
             if (response && response.url) {
-              resolve({ default: response.url });
+              // Convert absolute URL to relative URL for proxy support
+              let convertedUrl = response.url;
+              if (convertedUrl.startsWith('http://localhost:8080/')) {
+                convertedUrl = convertedUrl.replace('http://localhost:8080/', '/');
+              } else if (convertedUrl.startsWith('http://') && convertedUrl.includes(':8080/')) {
+                convertedUrl = convertedUrl.replace(/http:\/\/[^\/]+:8080\//, '/');
+              } else if (convertedUrl.startsWith('https://') && convertedUrl.includes(':8080/')) {
+                convertedUrl = convertedUrl.replace(/https:\/\/[^\/]+:8080\//, '/');
+              }
+              console.log('CKEditor upload URL converted:', response.url, '->', convertedUrl);
+              resolve({ default: convertedUrl });
             } else {
               console.error('Invalid response format:', response);
               reject(`Invalid response format: ${JSON.stringify(response)}`);

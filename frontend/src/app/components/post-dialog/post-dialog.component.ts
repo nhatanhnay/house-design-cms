@@ -501,6 +501,7 @@ export class PostDialogComponent implements OnInit {
     if (!url) return url;
 
     console.log('PostDialog - Original URL:', url);
+    console.log('PostDialog - Current location:', window.location.href);
 
     // Handle localhost URLs
     if (url.startsWith('http://localhost:8080/')) {
@@ -523,6 +524,23 @@ export class PostDialogComponent implements OnInit {
       return converted;
     }
 
+    // Handle URLs that are already absolute paths starting with /
+    if (url.startsWith('/data/') || url.startsWith('/uploads/') || url.startsWith('/api/')) {
+      console.log('PostDialog - URL already relative:', url);
+      return url;
+    }
+
+    // VPS fallback: If URL contains backend domain patterns, convert to relative
+    if (url.includes('/data/uploads/') || url.includes('/api/')) {
+      // Extract just the path part after domain
+      const match = url.match(/https?:\/\/[^\/]+(.*)$/);
+      if (match) {
+        const converted = match[1];
+        console.log('PostDialog - VPS converted URL:', url, '->', converted);
+        return converted;
+      }
+    }
+
     console.log('PostDialog - URL not converted:', url);
     return url;
   }
@@ -531,10 +549,11 @@ export class PostDialogComponent implements OnInit {
   private convertContentImageUrls = (htmlContent: string): string => {
     if (!htmlContent) return htmlContent;
 
+    console.log('PostDialog - Original content:', htmlContent.substring(0, 200) + '...');
     console.log('PostDialog - Converting content image URLs');
 
     // Replace img src attributes with absolute URLs
-    return htmlContent.replace(
+    const convertedContent = htmlContent.replace(
       /(<img[^>]+src=["'])([^"']+)(["'][^>]*>)/gi,
       (match, prefix, url, suffix) => {
         const convertedUrl = this.convertImageUrl(url);
@@ -542,5 +561,8 @@ export class PostDialogComponent implements OnInit {
         return prefix + convertedUrl + suffix;
       }
     );
+
+    console.log('PostDialog - Converted content:', convertedContent.substring(0, 200) + '...');
+    return convertedContent;
   }
 }
