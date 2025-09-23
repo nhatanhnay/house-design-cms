@@ -415,8 +415,8 @@ export class PostDialogComponent implements OnInit {
         content: post.content,
         published: post.published
       });
-      // Set the selected image URL for preview
-      this.selectedImageUrl = post.image_url || null;
+      // Set the selected image URL for preview with URL conversion
+      this.selectedImageUrl = post.image_url ? this.convertImageUrl(post.image_url) : null;
     }
   }
 
@@ -494,5 +494,36 @@ export class PostDialogComponent implements OnInit {
     this.selectedImageUrl = null;
     this.postForm.patchValue({ image_url: '' });
     this.imageUploadError = null;
+  }
+
+  // Convert absolute backend URLs to relative URLs for proxy support
+  private convertImageUrl = (url: string): string => {
+    if (!url) return url;
+
+    console.log('PostDialog - Original URL:', url);
+
+    // Handle localhost URLs
+    if (url.startsWith('http://localhost:8080/')) {
+      const converted = url.replace('http://localhost:8080/', '/');
+      console.log('PostDialog - Converted localhost URL:', converted);
+      return converted;
+    }
+
+    // Handle HTTPS backend URLs
+    if (url.startsWith('https://') && url.includes(':8080/')) {
+      const converted = url.replace(/https:\/\/[^\/]+:8080\//, '/');
+      console.log('PostDialog - Converted HTTPS URL:', converted);
+      return converted;
+    }
+
+    // Handle HTTP backend URLs with any domain
+    if (url.startsWith('http://') && url.includes(':8080/')) {
+      const converted = url.replace(/http:\/\/[^\/]+:8080\//, '/');
+      console.log('PostDialog - Converted HTTP URL:', converted);
+      return converted;
+    }
+
+    console.log('PostDialog - URL not converted:', url);
+    return url;
   }
 }

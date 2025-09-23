@@ -75,7 +75,19 @@ export class AdminComponent implements OnInit {
     private router: Router
   ) {
     this.categories$ = this.dataService.getCategories();
-    this.posts$ = this.dataService.getPosts();
+
+    // Process posts with URL conversion
+    this.posts$ = this.dataService.getPosts().pipe(
+      map(posts => {
+        return posts.map(post => {
+          if (post.image_url) {
+            post.image_url = this.convertImageUrl(post.image_url);
+          }
+          return post;
+        });
+      })
+    );
+
     this.currentUser$ = this.authService.currentUser$;
 
     // Create observable for category tree with refresh capability
