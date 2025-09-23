@@ -117,8 +117,15 @@ export class HomeComponent implements OnInit, OnDestroy {
   loadHomepageMedia(): void {
     this.dataService.getHomepageMedia().subscribe({
       next: (response: any) => {
-        this.homepageImages = response.images || [];
-        console.log('Image URLs received:', this.homepageImages);
+        // Convert absolute URLs to relative URLs for proxy support
+        this.homepageImages = (response.images || []).map((url: string) => {
+          if (url.startsWith('http://localhost:8080/')) {
+            return url.replace('http://localhost:8080/', '/');
+          }
+          return url;
+        });
+        console.log('Image URLs received:', response.images);
+        console.log('Image URLs converted:', this.homepageImages);
         if (this.homepageImages.length > 0) {
           this.startCarouselAutoPlay();
         }
