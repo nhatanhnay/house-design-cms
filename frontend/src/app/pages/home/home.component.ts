@@ -63,7 +63,9 @@ export class HomeComponent implements OnInit, OnDestroy {
       map(([posts, currentUser]) => {
         // Convert image URLs for all posts
         const processedPosts = posts.map(post => {
-          post.image_url = this.convertImageUrl(post.image_url);
+          if (post.image_url) {
+            post.image_url = this.convertImageUrl(post.image_url);
+          }
           return post;
         });
 
@@ -76,7 +78,9 @@ export class HomeComponent implements OnInit, OnDestroy {
       map(categories => {
         // Convert image URLs for all categories
         const processedCategories = categories.map(category => {
-          category.thumbnail_url = this.convertImageUrl(category.thumbnail_url);
+          if (category.thumbnail_url) {
+            category.thumbnail_url = this.convertImageUrl(category.thumbnail_url);
+          }
           return category;
         });
 
