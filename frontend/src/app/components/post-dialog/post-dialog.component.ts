@@ -397,7 +397,7 @@ export class PostDialogComponent implements OnInit {
       extraPlugins: [CKEditorUploadAdapterPlugin(this.dataService)],
       // Add simple upload URL as fallback
       simpleUpload: {
-        uploadUrl: 'http://localhost:8080/api/upload',
+        uploadUrl: '/api/upload',
         withCredentials: true,
         headers: {
           'Authorization': `Bearer ${token || ''}`
@@ -412,7 +412,7 @@ export class PostDialogComponent implements OnInit {
         category_id: post.category_id,
         summary: post.summary,
         image_url: post.image_url,
-        content: post.content,
+        content: this.convertContentImageUrls(post.content),
         published: post.published
       });
       // Set the selected image URL for preview with URL conversion
@@ -525,5 +525,22 @@ export class PostDialogComponent implements OnInit {
 
     console.log('PostDialog - URL not converted:', url);
     return url;
+  }
+
+  // Convert image URLs within HTML content for CKEditor
+  private convertContentImageUrls = (htmlContent: string): string => {
+    if (!htmlContent) return htmlContent;
+
+    console.log('PostDialog - Converting content image URLs');
+
+    // Replace img src attributes with absolute URLs
+    return htmlContent.replace(
+      /(<img[^>]+src=["'])([^"']+)(["'][^>]*>)/gi,
+      (match, prefix, url, suffix) => {
+        const convertedUrl = this.convertImageUrl(url);
+        console.log('PostDialog - Content image URL converted:', url, '->', convertedUrl);
+        return prefix + convertedUrl + suffix;
+      }
+    );
   }
 }
