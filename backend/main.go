@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"house-design-backend/config"
@@ -98,9 +99,10 @@ func main() {
 		}
 	}
 
-	// Serve static files for uploaded media
-	r.Static("/data", "./data")
-	r.Static("/homepage", "./homepage")
+	// Serve static files for uploaded media using absolute paths
+	workDir, _ := os.Getwd()
+	r.Static("/data", filepath.Join(workDir, "data"))
+	r.Static("/homepage", filepath.Join(workDir, "homepage"))
 
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {
