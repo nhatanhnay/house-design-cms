@@ -301,13 +301,27 @@ export class AdminComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         // Refresh the posts list since the dialog handles the create/update operations
-        this.posts$ = this.dataService.getPosts();
+        this.posts$ = this.dataService.getPosts().pipe(
+          map(posts => {
+            return posts.map(post => {
+              if (post.image_url) {
+                post.image_url = this.convertImageUrl(post.image_url);
+              }
+              return post;
+            });
+          })
+        );
       }
     });
   }
 
   editPost(post: Post): void {
-    this.openPostDialog(post);
+    // Ensure the post image URL is converted before passing to dialog
+    const processedPost = { ...post };
+    if (processedPost.image_url) {
+      processedPost.image_url = this.convertImageUrl(processedPost.image_url);
+    }
+    this.openPostDialog(processedPost);
   }
 
   deletePost(id: number): void {
