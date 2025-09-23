@@ -61,17 +61,29 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.currentUser$
     ]).pipe(
       map(([posts, currentUser]) => {
+        // Convert image URLs for all posts
+        const processedPosts = posts.map(post => {
+          post.image_url = this.convertImageUrl(post.image_url);
+          return post;
+        });
+
         // If user is admin, show all posts; if not, only show published posts
-        return currentUser ? posts : posts.filter(post => post.published);
+        return currentUser ? processedPosts : processedPosts.filter(post => post.published);
       })
     );
 
     this.mainCategories$ = this.dataService.getCategories().pipe(
       map(categories => {
-        const mainCategories = categories.filter(category => category.level === 0);
+        // Convert image URLs for all categories
+        const processedCategories = categories.map(category => {
+          category.thumbnail_url = this.convertImageUrl(category.thumbnail_url);
+          return category;
+        });
+
+        const mainCategories = processedCategories.filter(category => category.level === 0);
         // Attach children to each main category
         mainCategories.forEach(mainCategory => {
-          mainCategory.children = categories.filter(category =>
+          mainCategory.children = processedCategories.filter(category =>
             category.parent_id === mainCategory.id
           );
         });
@@ -143,10 +155,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         // Convert absolute URLs to relative URLs for proxy support
         this.homepageImages = (response.images || []).map((url: string) => {
-          if (url.startsWith('http://localhost:8080/')) {
-            return url.replace('http://localhost:8080/', '/');
-          }
-          return url;
+          return this.convertImageUrl(url);
         });
         console.log('Image URLs received:', response.images);
         console.log('Image URLs converted:', this.homepageImages);
@@ -208,6 +217,42 @@ export class HomeComponent implements OnInit, OnDestroy {
     return this.allPosts
       .filter(post => post.category_id === categoryId)
       .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
+  }
+
+  // Convert absolute backend URLs to relative URLs for proxy support
+  private convertImageUrl = (url: string): string => {
+    if (!url) return url;
+
+    console.log('Original URL:', url);
+
+    // Handle localhost URLs
+    if (url.startsWith('http://localhost:8080/')) {
+      const converted = url.replace('http://localhost:8080/', '/');
+      console.log('Converted localhost URL:', converted);
+      return converted;
+    }
+
+    // Handle production backend URLs - add your VPS backend URL here
+    // Example: if (url.startsWith('http://your-vps-domain:8080/')) {
+    //   return url.replace('http://your-vps-domain:8080/', '/');
+    // }
+
+    // Handle HTTPS backend URLs
+    if (url.startsWith('https://') && url.includes(':8080/')) {
+      const converted = url.replace(/https:\/\/[^\/]+:8080\//, '/');
+      console.log('Converted HTTPS URL:', converted);
+      return converted;
+    }
+
+    // Handle HTTP backend URLs with any domain
+    if (url.startsWith('http://') && url.includes(':8080/')) {
+      const converted = url.replace(/http:\/\/[^\/]+:8080\//, '/');
+      console.log('Converted HTTP URL:', converted);
+      return converted;
+    }
+
+    console.log('URL not converted:', url);
+    return url;
   }
 
   openEditDialog(): void {
