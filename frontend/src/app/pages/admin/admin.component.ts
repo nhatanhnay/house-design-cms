@@ -21,6 +21,11 @@ import { AuthService } from '../../services/auth.service';
 import { Category, Post, Admin, CategoryTreeItem } from '../../models/models';
 import { CategoryDialogComponent } from '../../components/category-dialog/category-dialog.component';
 import { PostDialogComponent } from '../../components/post-dialog/post-dialog.component';
+import { ADMIN_CONSTANTS } from '../../constants/admin.constants';
+import { HomepageContent, OrderUpdate, HomepageMediaResponse } from '../../interfaces/admin.interfaces';
+import { UrlConverter } from '../../utils/url-converter.util';
+import { FileValidator } from '../../utils/file-validator.util';
+import { LoggerService } from '../../services/logger.service';
 
 @Component({
   selector: 'app-admin',
@@ -48,13 +53,13 @@ export class AdminComponent implements OnInit {
   posts$: Observable<Post[]>;
   currentUser$: Observable<Admin | null>;
   categoryTree$: Observable<CategoryTreeItem[]>;
-  currentSection: string = 'categories';
-  postColumns: string[] = ['id', 'title', 'category', 'published', 'views', 'created_at', 'actions'];
+  currentSection: string = ADMIN_CONSTANTS.SECTIONS.CATEGORIES;
+  postColumns: string[] = [...ADMIN_CONSTANTS.POST_COLUMNS];
 
   // Homepage Management Properties
   homepageImages: string[] = [];
   homepageVideos: string[] = [];
-  homepageContent: any = {
+  homepageContent: HomepageContent = {
     hero_title: '',
     hero_description: '',
     hero_stat1_number: '',
@@ -62,7 +67,7 @@ export class AdminComponent implements OnInit {
     hero_stat2_number: '',
     hero_stat2_label: ''
   };
-  originalHomepageContent: any = {};
+  originalHomepageContent: HomepageContent = {} as HomepageContent;
   isContentModified: boolean = false;
 
   private refreshSubject = new Subject<void>();
@@ -72,55 +77,19 @@ export class AdminComponent implements OnInit {
     private authService: AuthService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    private router: Router
+    private router: Router,
+    private logger: LoggerService
   ) {
     this.categories$ = this.dataService.getCategories();
 
     // Process posts with URL conversion
     this.posts$ = this.dataService.getPosts().pipe(
-      map(posts => {
-        return posts.map(post => {
-          if (post.image_url) {
-            post.image_url = this.convertImageUrl(post.image_url);
-          }
-          return post;
-        });
-      })
+      map(posts => this.processPostImageUrls(posts))
     );
 
     this.currentUser$ = this.authService.currentUser$;
 
-    // Create observable for category tree with refresh capability
-    this.categoryTree$ = this.refreshSubject.pipe(
-      startWith(undefined), // Initial emit
-      switchMap(() =>
-        this.dataService.getCategories().pipe(
-          map(categories => {
-            console.log('🔄 Refreshing categories - All loaded:', categories.length, 'categories');
-            console.log('📊 Category details:', categories.map(c => ({id: c.id, name: c.name, type: c.category_type, active: c.is_active})));
-
-            // Convert image URLs for all categories
-            const processedCategories = categories.map(category => {
-              if (category.thumbnail_url) {
-                category.thumbnail_url = this.convertImageUrl(category.thumbnail_url);
-              }
-              return category;
-            });
-
-            const tree = this.dataService.buildCategoryTree(processedCategories);
-            console.log('🌳 Built tree:', tree.length, 'root items');
-            // Filter for main categories (level 0 or no parent_id)
-            const mainCategories = tree.filter(cat => cat.level === 0 || !cat.parent_id);
-            console.log('🎯 Main categories after filter:', mainCategories.length, 'items');
-            return mainCategories;
-          }),
-          catchError(error => {
-            console.error('❌ Error loading categories:', error);
-            return of([]);
-          })
-        )
-      )
-    );
+    this.categoryTree$ = this.createCategoryTreeObservable();
   }
 
   ngOnInit(): void {
@@ -130,10 +99,60 @@ export class AdminComponent implements OnInit {
 
   setCurrentSection(section: string): void {
     this.currentSection = section;
-    if (section === 'homepage') {
+    if (section === ADMIN_CONSTANTS.SECTIONS.HOMEPAGE) {
       this.loadHomepageMedia();
       this.loadHomepageContent();
     }
+  }
+
+  // Helper Methods
+  private processPostImageUrls(posts: Post[]): Post[] {
+    return posts.map(post => {
+      if (post.image_url) {
+        post.image_url = UrlConverter.convertImageUrl(post.image_url);
+      }
+      return post;
+    });
+  }
+
+  private createCategoryTreeObservable(): Observable<CategoryTreeItem[]> {
+    return this.refreshSubject.pipe(
+      startWith(undefined),
+      switchMap(() =>
+        this.dataService.getCategories().pipe(
+          map(categories => {
+            this.logger.logCategoryOperation('loaded', { count: categories.length });
+            this.logger.debug('Category details:', categories.map(c => ({
+              id: c.id,
+              name: c.name,
+              type: c.category_type,
+              active: c.is_active
+            })), 'CategoryManagement');
+
+            const processedCategories = this.processCategoryImageUrls(categories);
+            const tree = this.dataService.buildCategoryTree(processedCategories);
+            this.logger.debug(`Built tree: ${tree.length} root items`, undefined, 'CategoryManagement');
+
+            const mainCategories = tree.filter(cat => cat.level === 0 || !cat.parent_id);
+            this.logger.debug(`Main categories after filter: ${mainCategories.length} items`, undefined, 'CategoryManagement');
+            return mainCategories;
+          }),
+          catchError(error => {
+            this.logger.error('Error loading categories', error, 'CategoryManagement');
+            return of([]);
+          })
+        )
+      )
+    );
+  }
+
+  private processCategoryImageUrls(categories: Category[]): Category[] {
+    return categories.map(category => {
+      if (category.thumbnail_url) {
+        category.thumbnail_url = UrlConverter.convertImageUrl(category.thumbnail_url);
+      }
+      return category;
+    });
   }
 
   refreshData(): void {
@@ -143,7 +162,7 @@ export class AdminComponent implements OnInit {
   // Category Management
   openCategoryDialog(category?: Category, isSubcategory: boolean = false, parentId?: number): void {
     const dialogRef = this.dialog.open(CategoryDialogComponent, {
-      width: '600px',
+      width: ADMIN_CONSTANTS.DIALOG_WIDTH.CATEGORY,
       data: {
         category: category || undefined,
         isSubcategory,
@@ -153,17 +172,19 @@ export class AdminComponent implements OnInit {
     });
 
     dialogRef.afterClosed().subscribe(result => {
-      console.log('🔄 Dialog closed with result:', result);
-      if (result) {
-        console.log('✅ Refreshing category data after successful operation');
-        // Force refresh data since the dialog already handles creating/updating the category
-        this.refreshData();
-        // Also refresh the standalone categories observable for backwards compatibility
-        this.categories$ = this.dataService.getCategories();
-      } else {
-        console.log('❌ Dialog closed without result (cancelled)');
-      }
+      this.handleCategoryDialogResult(result);
     });
+  }
+
+  private handleCategoryDialogResult(result: any): void {
+    this.logger.debug('Category dialog closed with result:', result, 'CategoryManagement');
+    if (result) {
+      this.logger.logCategoryOperation('dialog completed successfully');
+      this.refreshData();
+      this.categories$ = this.dataService.getCategories();
+    } else {
+      this.logger.debug('Category dialog cancelled by user', undefined, 'CategoryManagement');
+    }
   }
 
   editCategory(category: Category): void {
@@ -175,11 +196,11 @@ export class AdminComponent implements OnInit {
       this.dataService.deleteCategory(id).subscribe({
         next: () => {
           this.refreshData();
-          this.snackBar.open('Danh mục đã được xóa', 'Đóng', { duration: 3000 });
+          this.showSuccessMessage('Danh mục đã được xóa');
         },
         error: (error) => {
-          console.error('Error deleting category:', error);
-          this.snackBar.open('Lỗi khi xóa danh mục', 'Đóng', { duration: 3000 });
+          this.logger.error('Error deleting category', error, 'CategoryManagement');
+          this.showErrorMessage('Lỗi khi xóa danh mục');
         }
       });
     }
@@ -190,25 +211,7 @@ export class AdminComponent implements OnInit {
   }
 
   getCategoryIcon(slug: string): string {
-    const iconMap: { [key: string]: string } = {
-      'gioi-thieu': 'info',
-      'du-an-thiet-ke': 'architecture',
-      'cong-trinh-thuc-te': 'business',
-      'dich-vu': 'handyman',
-      'tin-tuc': 'newspaper',
-      'tuyen-dung': 'work',
-      'lien-he': 'contact_page',
-      'biet-thu-hien-dai': 'home',
-      'nha-pho-hien-dai': 'apartment',
-      'van-phong': 'business_center',
-      'biet-thu': 'villa',
-      'nha-pho': 'home_work',
-      'thiet-ke': 'draw',
-      'thi-cong': 'construction',
-      'tu-van': 'support_agent',
-      'default': 'category'
-    };
-    return iconMap[slug] || iconMap['default'];
+    return ADMIN_CONSTANTS.CATEGORY_ICONS[slug as keyof typeof ADMIN_CONSTANTS.CATEGORY_ICONS] || ADMIN_CONSTANTS.CATEGORY_ICONS['default'];
   }
 
   // Category ordering methods
@@ -241,37 +244,37 @@ export class AdminComponent implements OnInit {
   }
 
   private updateCategoryOrder(tree: CategoryTreeItem[]): void {
-    const orderUpdates = tree.map((item, index) => ({
+    const orderUpdates: OrderUpdate[] = tree.map((item, index) => ({
       id: item.id,
       display_order: index + 1
     }));
 
     this.dataService.updateCategoryOrder(orderUpdates).subscribe({
       next: () => {
-        this.snackBar.open('Thứ tự danh mục đã được cập nhật', 'Đóng', { duration: 2000 });
+        this.showSuccessMessage('Thứ tự danh mục đã được cập nhật', ADMIN_CONSTANTS.SNACKBAR_DURATION.SHORT);
       },
       error: (error) => {
-        console.error('Error updating category order:', error);
-        this.snackBar.open('Lỗi khi cập nhật thứ tự', 'Đóng', { duration: 3000 });
-        this.refreshData(); // Reload to restore original order
+        this.logger.error('Error updating category order', error, 'CategoryManagement');
+        this.showErrorMessage('Lỗi khi cập nhật thứ tự');
+        this.refreshData();
       }
     });
   }
 
   private updateSubcategoryOrder(siblings: CategoryTreeItem[]): void {
-    const orderUpdates = siblings.map((item, index) => ({
+    const orderUpdates: OrderUpdate[] = siblings.map((item, index) => ({
       id: item.id,
       display_order: index + 1
     }));
 
     this.dataService.updateCategoryOrder(orderUpdates).subscribe({
       next: () => {
-        this.snackBar.open('Thứ tự danh mục con đã được cập nhật', 'Đóng', { duration: 2000 });
+        this.showSuccessMessage('Thứ tự danh mục con đã được cập nhật', ADMIN_CONSTANTS.SNACKBAR_DURATION.SHORT);
       },
       error: (error) => {
-        console.error('Error updating subcategory order:', error);
-        this.snackBar.open('Lỗi khi cập nhật thứ tự', 'Đóng', { duration: 3000 });
-        this.refreshData(); // Reload to restore original order
+        this.logger.error('Error updating subcategory order', error, 'CategoryManagement');
+        this.showErrorMessage('Lỗi khi cập nhật thứ tự');
+        this.refreshData();
       }
     });
   }
@@ -294,32 +297,27 @@ export class AdminComponent implements OnInit {
   // Post Management
   openPostDialog(post?: Post): void {
     const dialogRef = this.dialog.open(PostDialogComponent, {
-      width: '800px',
+      width: ADMIN_CONSTANTS.DIALOG_WIDTH.POST,
       data: { post: post || null }
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        // Refresh the posts list since the dialog handles the create/update operations
-        this.posts$ = this.dataService.getPosts().pipe(
-          map(posts => {
-            return posts.map(post => {
-              if (post.image_url) {
-                post.image_url = this.convertImageUrl(post.image_url);
-              }
-              return post;
-            });
-          })
-        );
+        this.refreshPostsList();
       }
     });
   }
 
+  private refreshPostsList(): void {
+    this.posts$ = this.dataService.getPosts().pipe(
+      map(posts => this.processPostImageUrls(posts))
+    );
+  }
+
   editPost(post: Post): void {
-    // Ensure the post image URL is converted before passing to dialog
     const processedPost = { ...post };
     if (processedPost.image_url) {
-      processedPost.image_url = this.convertImageUrl(processedPost.image_url);
+      processedPost.image_url = UrlConverter.convertImageUrl(processedPost.image_url);
     }
     this.openPostDialog(processedPost);
   }
@@ -328,12 +326,12 @@ export class AdminComponent implements OnInit {
     if (confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
       this.dataService.deletePost(id).subscribe({
         next: () => {
-          this.posts$ = this.dataService.getPosts();
-          this.snackBar.open('Bài viết đã được xóa', 'Đóng', { duration: 3000 });
+          this.refreshPostsList();
+          this.showSuccessMessage('Bài viết đã được xóa');
         },
         error: (error) => {
-          console.error('Error deleting post:', error);
-          this.snackBar.open('Lỗi khi xóa bài viết', 'Đóng', { duration: 3000 });
+          this.logger.error('Error deleting post', error, 'PostManagement');
+          this.showErrorMessage('Lỗi khi xóa bài viết');
         }
       });
     }
@@ -342,12 +340,12 @@ export class AdminComponent implements OnInit {
   // Homepage Management Methods
   loadHomepageMedia(): void {
     this.dataService.getHomepageMedia().subscribe({
-      next: (response: any) => {
+      next: (response: HomepageMediaResponse) => {
         this.homepageImages = response.images || [];
         this.homepageVideos = response.videos || [];
       },
       error: (error) => {
-        console.error('Error loading homepage media:', error);
+        this.logger.error('Error loading homepage media', error, 'MediaManagement');
         this.homepageImages = [];
         this.homepageVideos = [];
       }
@@ -356,111 +354,122 @@ export class AdminComponent implements OnInit {
 
   refreshHomepageMedia(): void {
     this.loadHomepageMedia();
-    this.snackBar.open('Media đã được làm mới', 'Đóng', { duration: 2000 });
+    this.showSuccessMessage('Media đã được làm mới', ADMIN_CONSTANTS.SNACKBAR_DURATION.SHORT);
   }
 
   uploadHomepageImage(): void {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.multiple = true;
+    this.createFileInput('image/*', true, (files) => {
+      Array.from(files).forEach(file => {
+        this.handleImageUpload(file);
+      });
+    });
+  }
 
-    input.onchange = (event: any) => {
-      const files = event.target.files;
-      if (files && files.length > 0) {
-        for (let file of files) {
-          const formData = new FormData();
-          formData.append('upload', file);
+  private handleImageUpload(file: File): void {
+    const validation = FileValidator.validateImage(file);
+    if (!validation.isValid) {
+      this.showErrorMessage(validation.error!);
+      return;
+    }
 
-          this.dataService.uploadHomepageImage(formData).subscribe({
-            next: (response) => {
-              this.loadHomepageMedia(); // Refresh the media list
-              this.snackBar.open('Hình ảnh đã được tải lên', 'Đóng', { duration: 3000 });
-            },
-            error: (error) => {
-              console.error('Error uploading image:', error);
-              this.snackBar.open('Lỗi khi tải lên hình ảnh', 'Đóng', { duration: 3000 });
-            }
-          });
-        }
+    const formData = new FormData();
+    formData.append('upload', file);
+
+    this.dataService.uploadHomepageImage(formData).subscribe({
+      next: () => {
+        this.loadHomepageMedia();
+        this.showSuccessMessage('Hình ảnh đã được tải lên');
+      },
+      error: (error) => {
+        this.logger.error('Error uploading image', error, 'MediaManagement');
+        this.showErrorMessage('Lỗi khi tải lên hình ảnh');
       }
-    };
-
-    input.click();
+    });
   }
 
   uploadHomepageVideo(): void {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'video/*';
-    input.multiple = true;
+    this.createFileInput('video/*', true, (files) => {
+      Array.from(files).forEach(file => {
+        this.handleVideoUpload(file);
+      });
+    });
+  }
 
-    input.onchange = (event: any) => {
-      const files = event.target.files;
-      if (files && files.length > 0) {
-        for (let file of files) {
-          const formData = new FormData();
-          formData.append('upload', file);
+  private handleVideoUpload(file: File): void {
+    const validation = FileValidator.validateVideo(file);
+    if (!validation.isValid) {
+      this.showErrorMessage(validation.error!);
+      return;
+    }
 
-          this.dataService.uploadHomepageVideo(formData).subscribe({
-            next: (response) => {
-              this.loadHomepageMedia(); // Refresh the media list
-              this.snackBar.open('Video đã được tải lên', 'Đóng', { duration: 3000 });
-            },
-            error: (error) => {
-              console.error('Error uploading video:', error);
-              this.snackBar.open('Lỗi khi tải lên video', 'Đóng', { duration: 3000 });
-            }
-          });
-        }
+    const formData = new FormData();
+    formData.append('upload', file);
+
+    this.dataService.uploadHomepageVideo(formData).subscribe({
+      next: () => {
+        this.loadHomepageMedia();
+        this.showSuccessMessage('Video đã được tải lên');
+      },
+      error: (error) => {
+        this.logger.error('Error uploading video', error, 'MediaManagement');
+        this.showErrorMessage('Lỗi khi tải lên video');
       }
-    };
-
-    input.click();
+    });
   }
 
   replaceHomepageMedia(mediaUrl: string, type: 'images' | 'videos'): void {
     const filename = this.getFilename(mediaUrl);
     const acceptType = type === 'images' ? 'image/*' : 'video/*';
 
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = acceptType;
-
-    input.onchange = (event: any) => {
-      const file = event.target.files[0];
+    this.createFileInput(acceptType, false, (files) => {
+      const file = files[0];
       if (file) {
-        const formData = new FormData();
-        formData.append(type === 'images' ? 'image' : 'video', file);
-
-        this.dataService.replaceHomepageMedia(formData, type, filename).subscribe({
-          next: (response) => {
-            this.loadHomepageMedia(); // Refresh the media list
-            this.snackBar.open(`${type === 'images' ? 'Hình ảnh' : 'Video'} đã được thay thế`, 'Đóng', { duration: 3000 });
-          },
-          error: (error) => {
-            console.error('Error replacing media:', error);
-            this.snackBar.open(`Lỗi khi thay thế ${type === 'images' ? 'hình ảnh' : 'video'}`, 'Đóng', { duration: 3000 });
-          }
-        });
+        this.handleMediaReplacement(file, type, filename);
       }
-    };
+    });
+  }
 
-    input.click();
+  private handleMediaReplacement(file: File, type: 'images' | 'videos', filename: string): void {
+    const validation = type === 'images'
+      ? FileValidator.validateImage(file)
+      : FileValidator.validateVideo(file);
+
+    if (!validation.isValid) {
+      this.showErrorMessage(validation.error!);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append(type === 'images' ? 'image' : 'video', file);
+
+    this.dataService.replaceHomepageMedia(formData, type, filename).subscribe({
+      next: () => {
+        this.loadHomepageMedia();
+        const mediaType = type === 'images' ? 'Hình ảnh' : 'Video';
+        this.showSuccessMessage(`${mediaType} đã được thay thế`);
+      },
+      error: (error) => {
+        this.logger.error('Error replacing media', error, 'MediaManagement');
+        const mediaType = type === 'images' ? 'hình ảnh' : 'video';
+        this.showErrorMessage(`Lỗi khi thay thế ${mediaType}`);
+      }
+    });
   }
 
   deleteHomepageMedia(mediaUrl: string, type: 'images' | 'videos'): void {
     const filename = this.getFilename(mediaUrl);
+    const mediaType = type === 'images' ? 'hình ảnh' : 'video';
 
-    if (confirm(`Bạn có chắc chắn muốn xóa ${type === 'images' ? 'hình ảnh' : 'video'} này?`)) {
+    if (confirm(`Bạn có chắc chắn muốn xóa ${mediaType} này?`)) {
       this.dataService.deleteHomepageMedia(type, filename).subscribe({
-        next: (response) => {
-          this.loadHomepageMedia(); // Refresh the media list
-          this.snackBar.open(`${type === 'images' ? 'Hình ảnh' : 'Video'} đã được xóa`, 'Đóng', { duration: 3000 });
+        next: () => {
+          this.loadHomepageMedia();
+          const successType = type === 'images' ? 'Hình ảnh' : 'Video';
+          this.showSuccessMessage(`${successType} đã được xóa`);
         },
         error: (error) => {
-          console.error('Error deleting media:', error);
-          this.snackBar.open(`Lỗi khi xóa ${type === 'images' ? 'hình ảnh' : 'video'}`, 'Đóng', { duration: 3000 });
+          this.logger.error('Error deleting media', error, 'MediaManagement');
+          this.showErrorMessage(`Lỗi khi xóa ${mediaType}`);
         }
       });
     }
@@ -510,11 +519,11 @@ export class AdminComponent implements OnInit {
         this.homepageContent = { ...updatedContent };
         this.originalHomepageContent = { ...updatedContent };
         this.isContentModified = false;
-        this.snackBar.open('Nội dung trang chủ đã được lưu', 'Đóng', { duration: 3000 });
+        this.showSuccessMessage('Nội dung trang chủ đã được lưu');
       },
       error: (error) => {
-        console.error('Error saving homepage content:', error);
-        this.snackBar.open('Lỗi khi lưu nội dung trang chủ', 'Đóng', { duration: 3000 });
+        this.logger.error('Error saving homepage content', error, 'ContentManagement');
+        this.showErrorMessage('Lỗi khi lưu nội dung trang chủ');
       }
     });
   }
@@ -534,35 +543,33 @@ export class AdminComponent implements OnInit {
     }
   }
 
-  // Convert absolute backend URLs to relative URLs for proxy support
-  private convertImageUrl = (url: string): string => {
-    if (!url) return url;
+  // Utility Methods
+  private showSuccessMessage(message: string, duration: number = ADMIN_CONSTANTS.SNACKBAR_DURATION.MEDIUM): void {
+    this.snackBar.open(message, 'Đóng', { duration });
+  }
 
-    console.log('Admin - Original URL:', url);
+  private showErrorMessage(message: string, duration: number = ADMIN_CONSTANTS.SNACKBAR_DURATION.MEDIUM): void {
+    this.snackBar.open(message, 'Đóng', { duration });
+  }
 
-    // Handle localhost URLs
-    if (url.startsWith('http://localhost:8080/')) {
-      const converted = url.replace('http://localhost:8080/', '/');
-      console.log('Admin - Converted localhost URL:', converted);
-      return converted;
-    }
+  private createFileInput(
+    accept: string,
+    multiple: boolean,
+    onFileSelect: (files: FileList) => void
+  ): void {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = accept;
+    input.multiple = multiple;
 
-    // Handle HTTPS backend URLs
-    if (url.startsWith('https://') && url.includes(':8080/')) {
-      const converted = url.replace(/https:\/\/[^\/]+:8080\//, '/');
-      console.log('Admin - Converted HTTPS URL:', converted);
-      return converted;
-    }
+    input.onchange = (event: any) => {
+      const files = event.target.files;
+      if (files && files.length > 0) {
+        onFileSelect(files);
+      }
+    };
 
-    // Handle HTTP backend URLs with any domain
-    if (url.startsWith('http://') && url.includes(':8080/')) {
-      const converted = url.replace(/http:\/\/[^\/]+:8080\//, '/');
-      console.log('Admin - Converted HTTP URL:', converted);
-      return converted;
-    }
-
-    console.log('Admin - URL not converted:', url);
-    return url;
+    input.click();
   }
 
   logout(): void {
@@ -571,7 +578,7 @@ export class AdminComponent implements OnInit {
         this.router.navigate(['/']);
       },
       error: (error) => {
-        console.error('Logout error:', error);
+        this.logger.error('Logout error', error, 'Authentication');
         this.router.navigate(['/']);
       }
     });
