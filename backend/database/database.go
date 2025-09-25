@@ -21,7 +21,7 @@ func InitDatabase() {
 	dbHost := getEnv("DB_HOST", "localhost")
 	dbPort := getEnv("DB_PORT", "5432")
 	dbUser := getEnv("DB_USER", "postgres")
-	dbPassword := getEnv("DB_PASSWORD", "password")
+	dbPassword := getEnv("DB_PASSWORD", "12346789")
 	dbName := getEnv("DB_NAME", "house_design")
 	dbSSLMode := getEnv("DB_SSLMODE", "disable")
 

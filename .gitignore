@@ -43,6 +43,7 @@ temp/
 /backend/*.so
 /backend/*.dylib
 /backend/vendor/
+*.gz
 
 # Data uploads (keep structure but ignore uploaded files)
 !/backend/data/uploads/.gitkeep
