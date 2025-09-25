@@ -91,6 +91,7 @@ func main() {
 			// Media uploads
 			protected.POST("/upload", handlers.UploadImage)
 			protected.POST("/upload-video", handlers.UploadVideo)
+			protected.POST("/upload-svg-icon", handlers.UploadSvgIcon)
 
 			// Homepage media management
 			protected.POST("/homepage/upload-image", handlers.UploadHomepageImage)

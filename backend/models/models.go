@@ -100,6 +100,9 @@ type HomeContent struct {
 	Feature3Icon          string    `json:"feature3_icon"`
 	Feature3Title         string    `json:"feature3_title"`
 	Feature3Description   string    `json:"feature3_description" gorm:"type:text"`
+	Feature4Icon          string    `json:"feature4_icon"`
+	Feature4Title         string    `json:"feature4_title"`
+	Feature4Description   string    `json:"feature4_description" gorm:"type:text"`
 	CreatedAt             time.Time `json:"created_at"`
 	UpdatedAt             time.Time `json:"updated_at"`
 }

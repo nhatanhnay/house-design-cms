@@ -187,12 +187,31 @@ func migrateHomeContentTable() {
 		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature3_icon VARCHAR(500)",
 		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature3_title VARCHAR(500)",
 		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature3_description TEXT",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature4_icon VARCHAR(500)",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature4_title VARCHAR(500)",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature4_description TEXT",
 	}
 
 	for _, migration := range migrations {
 		if _, err := DB.Exec(migration); err != nil {
 			log.Printf("Home content migration warning: %v", err)
 		}
+	}
+
+	// Update existing records with default feature4 values if they don't exist
+	_, err := DB.Exec(`
+		UPDATE home_content
+		SET feature4_icon = COALESCE(feature4_icon, 'verified'),
+		    feature4_title = COALESCE(feature4_title, 'Uy Tín 37 Tỉnh Thành'),
+		    feature4_description = COALESCE(feature4_description, 'Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng.'),
+		    features_title = COALESCE(features_title, 'Ưu Thế MMA Architectural Design'),
+		    feature1_icon = COALESCE(feature1_icon, 'architecture'),
+		    feature2_icon = COALESCE(feature2_icon, 'engineering'),
+		    feature3_icon = COALESCE(feature3_icon, 'business')
+		WHERE feature4_title IS NULL OR feature4_title = ''
+	`)
+	if err != nil {
+		log.Printf("Failed to update existing home content with feature4 defaults: %v", err)
 	}
 
 	log.Println("Home content table migration completed")
@@ -266,22 +285,31 @@ func seedDefaultHomeContent() {
 			HeroStat1Label:        "Tỉnh Thành Phủ Sóng",
 			HeroStat2Number:       "500+",
 			HeroStat2Label:        "Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp",
-			FeaturesTitle:         "Dịch Vụ Chuyên Nghiệp",
-			FeaturesDescription:   "Chúng tôi cung cấp các dịch vụ thiết kế và thi công chuyên nghiệp với chất lượng cao nhất",
-			Feature1Title:         "Thiết Kế Sáng Tạo",
-			Feature1Description:   "Đội ngũ kiến trúc sư giàu kinh nghiệm với ý tưởng sáng tạo và hiện đại",
-			Feature2Title:         "Thi Công Chất Lượng",
-			Feature2Description:   "Quy trình thi công chuyên nghiệp, đảm bảo chất lượng và tiến độ",
-			Feature3Title:         "Hỗ Trợ 24/7",
-			Feature3Description:   "Đội ngũ tư vấn và hỗ trợ khách hàng 24/7 trong suốt quá trình dự án",
+			FeaturesTitle:         "Ưu Thế MMA Architectural Design",
+			FeaturesDescription:   "",
+			FeaturesLogoURL:       "",
+			Feature1Icon:          "architecture",
+			Feature1Title:         "Thiết Kế Kiến Trúc Độc Đáo",
+			Feature1Description:   "Chuyên gia kiến trúc sư với hơn 10 năm kinh nghiệm, tạo ra những công trình biệt thự và nhà ở đẳng cấp.",
+			Feature2Icon:          "engineering",
+			Feature2Title:         "Thi Công Chất Lượng Cao",
+			Feature2Description:   "Đội ngũ kỹ sư và công nhân tay nghề cao, sử dụng công nghệ hiện đại trong thi công.",
+			Feature3Icon:          "business",
+			Feature3Title:         "Dịch Vụ Toàn Diện",
+			Feature3Description:   "Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn giao hoàn thiện.",
+			Feature4Icon:          "verified",
+			Feature4Title:         "Uy Tín 37 Tỉnh Thành",
+			Feature4Description:   "Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng.",
 		}
 
 		_, err := DB.Exec(`
 			INSERT INTO home_content (hero_title, hero_description, hero_stat1_number, hero_stat1_label,
-			                         hero_stat2_number, hero_stat2_label, features_title, features_description,
-			                         feature1_title, feature1_description, feature2_title, feature2_description,
-			                         feature3_title, feature3_description)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+			                         hero_stat2_number, hero_stat2_label, features_title, features_description, features_logo_url,
+			                         feature1_icon, feature1_title, feature1_description,
+			                         feature2_icon, feature2_title, feature2_description,
+			                         feature3_icon, feature3_title, feature3_description,
+			                         feature4_icon, feature4_title, feature4_description)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
 			defaultHomeContent.HeroTitle,
 			defaultHomeContent.HeroDescription,
 			defaultHomeContent.HeroStat1Number,
@@ -290,12 +318,19 @@ func seedDefaultHomeContent() {
 			defaultHomeContent.HeroStat2Label,
 			defaultHomeContent.FeaturesTitle,
 			defaultHomeContent.FeaturesDescription,
+			defaultHomeContent.FeaturesLogoURL,
+			defaultHomeContent.Feature1Icon,
 			defaultHomeContent.Feature1Title,
 			defaultHomeContent.Feature1Description,
+			defaultHomeContent.Feature2Icon,
 			defaultHomeContent.Feature2Title,
 			defaultHomeContent.Feature2Description,
+			defaultHomeContent.Feature3Icon,
 			defaultHomeContent.Feature3Title,
 			defaultHomeContent.Feature3Description,
+			defaultHomeContent.Feature4Icon,
+			defaultHomeContent.Feature4Title,
+			defaultHomeContent.Feature4Description,
 		)
 		if err != nil {
 			log.Printf("Failed to seed home content: %v", err)

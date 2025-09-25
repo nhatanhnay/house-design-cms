@@ -1281,6 +1281,9 @@ func GetHomeContent(c *gin.Context) {
 		       COALESCE(feature3_icon, '') as feature3_icon,
 		       COALESCE(feature3_title, '') as feature3_title,
 		       COALESCE(feature3_description, '') as feature3_description,
+		       COALESCE(feature4_icon, '') as feature4_icon,
+		       COALESCE(feature4_title, '') as feature4_title,
+		       COALESCE(feature4_description, '') as feature4_description,
 		       created_at, updated_at
 		FROM home_content
 		ORDER BY id LIMIT 1
@@ -1304,6 +1307,9 @@ func GetHomeContent(c *gin.Context) {
 		&homeContent.Feature3Icon,
 		&homeContent.Feature3Title,
 		&homeContent.Feature3Description,
+		&homeContent.Feature4Icon,
+		&homeContent.Feature4Title,
+		&homeContent.Feature4Description,
 		&homeContent.CreatedAt,
 		&homeContent.UpdatedAt,
 	)
@@ -1343,6 +1349,7 @@ func UpdateHomeContent(c *gin.Context) {
 		    feature1_icon = $10, feature1_title = $11, feature1_description = $12,
 		    feature2_icon = $13, feature2_title = $14, feature2_description = $15,
 		    feature3_icon = $16, feature3_title = $17, feature3_description = $18,
+		    feature4_icon = $19, feature4_title = $20, feature4_description = $21,
 		    updated_at = CURRENT_TIMESTAMP
 		WHERE id = (SELECT id FROM home_content ORDER BY id LIMIT 1)
 	`,
@@ -1364,6 +1371,9 @@ func UpdateHomeContent(c *gin.Context) {
 		updateData.Feature3Icon,
 		updateData.Feature3Title,
 		updateData.Feature3Description,
+		updateData.Feature4Icon,
+		updateData.Feature4Title,
+		updateData.Feature4Description,
 	)
 
 	if err != nil {
@@ -1373,4 +1383,94 @@ func UpdateHomeContent(c *gin.Context) {
 
 	// Return the updated content
 	GetHomeContent(c)
+}
+
+// UploadSvgIcon handles SVG icon uploads for the icon selector
+func UploadSvgIcon(c *gin.Context) {
+	fmt.Println("SVG icon upload request received")
+
+	// Check authentication
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		fmt.Println("Unauthorized upload attempt - no user_id")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	fmt.Printf("Authenticated user ID: %d\n", userID)
+
+	// Parse the multipart form
+	file, header, err := c.Request.FormFile("svg")
+	if err != nil {
+		fmt.Printf("Error parsing form file: %v\n", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
+		return
+	}
+	defer file.Close()
+
+	fmt.Printf("SVG File received: %s, Size: %d, Type: %s\n", header.Filename, header.Size, header.Header.Get("Content-Type"))
+
+	// Validate file type - only SVG allowed
+	contentType := header.Header.Get("Content-Type")
+	if contentType != "image/svg+xml" && !strings.HasSuffix(header.Filename, ".svg") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only SVG files are allowed."})
+		return
+	}
+
+	// Validate file size (1MB max for SVG)
+	const maxSize = 1 * 1024 * 1024 // 1MB
+	if header.Size > maxSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File too large. Maximum size is 1MB."})
+		return
+	}
+
+	// Create uploads directory for SVG icons
+	uploadsDir := "./data/uploads/svg-icons"
+	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+		return
+	}
+
+	// Generate unique filename
+	ext := filepath.Ext(header.Filename)
+	filename := uuid.New().String() + ext
+	filePath := filepath.Join(uploadsDir, filename)
+
+	// Create the file
+	dst, err := os.Create(filePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+	defer dst.Close()
+
+	// Copy the uploaded file to the destination
+	if _, err := io.Copy(dst, file); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+
+	// Read SVG content for preview
+	svgContent, err := os.ReadFile(filePath)
+	if err != nil {
+		fmt.Printf("Warning: Could not read SVG content: %v\n", err)
+		svgContent = []byte("")
+	}
+
+	// Return the URL and SVG content
+	baseURL := getBaseURL(c)
+	iconURL := fmt.Sprintf("%s/data/uploads/svg-icons/%s", baseURL, filename)
+
+	// Debug logging
+	fmt.Printf("✅ SVG ICON UPLOAD SUCCESSFUL:\n")
+	fmt.Printf("   📁 Save directory: %s\n", uploadsDir)
+	fmt.Printf("   📄 File name: %s\n", filename)
+	fmt.Printf("   🌐 Base URL: %s\n", baseURL)
+	fmt.Printf("   🔗 URL returned: %s\n", iconURL)
+
+	c.JSON(http.StatusOK, gin.H{
+		"url":  iconURL,
+		"svg":  string(svgContent),
+		"name": strings.TrimSuffix(header.Filename, ext),
+	})
 }
