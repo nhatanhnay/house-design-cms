@@ -109,43 +109,30 @@ if [[ \$REPLY != "RESET VPS" ]]; then
     exit 1
 fi
 
-echo "🗑️  Step 1: Clearing all data from VPS database..."
+echo "🗑️  Step 1: Dropping and recreating VPS database..."
 
-# Stop any connections and clear data
-psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -d "\$DB_NAME" << SQL
--- Disable foreign key checks temporarily
-SET session_replication_role = replica;
+# Drop and recreate database to avoid constraint conflicts
+psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -d postgres << SQL
+-- Terminate all connections to the database
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '\$DB_NAME';
 
--- Clear all data from tables
-TRUNCATE TABLE articles RESTART IDENTITY CASCADE;
-TRUNCATE TABLE posts RESTART IDENTITY CASCADE;
-TRUNCATE TABLE categories RESTART IDENTITY CASCADE;
-TRUNCATE TABLE admin RESTART IDENTITY CASCADE;
-TRUNCATE TABLE home_content RESTART IDENTITY CASCADE;
-
--- Re-enable foreign key checks
-SET session_replication_role = DEFAULT;
-
--- Reset sequences
-ALTER SEQUENCE admin_id_seq RESTART WITH 1;
-ALTER SEQUENCE categories_id_seq RESTART WITH 1;
-ALTER SEQUENCE articles_id_seq RESTART WITH 1;
-ALTER SEQUENCE posts_id_seq RESTART WITH 1;
-ALTER SEQUENCE home_content_id_seq RESTART WITH 1;
+-- Drop and recreate database
+DROP DATABASE IF EXISTS "\$DB_NAME";
+CREATE DATABASE "\$DB_NAME";
 SQL
 
 if [ \$? -eq 0 ]; then
-    echo "✅ VPS database data cleared successfully!"
+    echo "✅ VPS database recreated successfully!"
 else
-    echo "❌ Failed to clear VPS database data!"
+    echo "❌ Failed to recreate VPS database!"
     exit 1
 fi
 
 echo ""
 echo "📁 Step 2: Loading clean structure to VPS database..."
 
-# Load the clean structure
-psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -d "\$DB_NAME" < "$BACKUP_FILE"
+# Load the clean structure (ignore role errors)
+psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -d "\$DB_NAME" < "$BACKUP_FILE" 2>&1 | grep -v "role.*does not exist"
 
 if [ \$? -eq 0 ]; then
     echo "✅ Clean structure loaded to VPS successfully!"
