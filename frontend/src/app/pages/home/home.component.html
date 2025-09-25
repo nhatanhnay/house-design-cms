@@ -90,14 +90,17 @@
   <!-- Features Section -->
   <section class="features-section">
     <div class="container">
-      <h2 class="section-title text-center">Ưu Thế MMA Architectural Design</h2>
+      <h2 class="section-title text-center">{{ homeContent?.features_title || 'Ưu Thế MMA Architectural Design' }}</h2>
       <div class="features-strips">
         <div class="feature-strip left-aligned">
           <div class="feature-content">
-            <mat-icon class="feature-icon">architecture</mat-icon>
+            <div class="feature-icon-container">
+              <mat-icon *ngIf="isMatIcon(homeContent?.feature1_icon || 'architecture')" class="feature-icon">{{ homeContent?.feature1_icon || 'architecture' }}</mat-icon>
+              <img *ngIf="!isMatIcon(homeContent?.feature1_icon || 'architecture')" [src]="homeContent?.feature1_icon || 'architecture'" class="feature-icon custom-svg" alt="Feature icon">
+            </div>
             <div class="feature-text">
-              <h3>Thiết Kế Kiến Trúc Độc Đáo</h3>
-              <p>Chuyên gia kiến trúc sư với hơn 10 năm kinh nghiệm, tạo ra những công trình biệt thự và nhà ở đẳng cấp.
+              <h3>{{ homeContent?.feature1_title || 'Thiết Kế Kiến Trúc Độc Đáo' }}</h3>
+              <p>{{ homeContent?.feature1_description || 'Chuyên gia kiến trúc sư với hơn 10 năm kinh nghiệm, tạo ra những công trình biệt thự và nhà ở đẳng cấp.' }}
               </p>
             </div>
           </div>
@@ -105,28 +108,37 @@
         <div class="feature-strip right-aligned">
           <div class="feature-content">
             <div class="feature-text">
-              <h3>Thi Công Chất Lượng Cao</h3>
-              <p>Đội ngũ kỹ sư và công nhân tay nghề cao, sử dụng công nghệ hiện đại trong thi công.</p>
+              <h3>{{ homeContent?.feature2_title || 'Thi Công Chất Lượng Cao' }}</h3>
+              <p>{{ homeContent?.feature2_description || 'Đội ngũ kỹ sư và công nhân tay nghề cao, sử dụng công nghệ hiện đại trong thi công.' }}</p>
             </div>
-            <mat-icon class="feature-icon">engineering</mat-icon>
+            <div class="feature-icon-container">
+              <mat-icon *ngIf="isMatIcon(homeContent?.feature2_icon || 'engineering')" class="feature-icon">{{ homeContent?.feature2_icon || 'engineering' }}</mat-icon>
+              <img *ngIf="!isMatIcon(homeContent?.feature2_icon || 'engineering')" [src]="homeContent?.feature2_icon || 'engineering'" class="feature-icon custom-svg" alt="Feature icon">
+            </div>
           </div>
         </div>
         <div class="feature-strip left-aligned">
           <div class="feature-content">
-            <mat-icon class="feature-icon">business</mat-icon>
+            <div class="feature-icon-container">
+              <mat-icon *ngIf="isMatIcon(homeContent?.feature3_icon || 'business')" class="feature-icon">{{ homeContent?.feature3_icon || 'business' }}</mat-icon>
+              <img *ngIf="!isMatIcon(homeContent?.feature3_icon || 'business')" [src]="homeContent?.feature3_icon || 'business'" class="feature-icon custom-svg" alt="Feature icon">
+            </div>
             <div class="feature-text">
-              <h3>Dịch Vụ Toàn Diện</h3>
-              <p>Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn giao hoàn thiện.</p>
+              <h3>{{ homeContent?.feature3_title || 'Dịch Vụ Toàn Diện' }}</h3>
+              <p>{{ homeContent?.feature3_description || 'Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn giao hoàn thiện.' }}</p>
             </div>
           </div>
         </div>
         <div class="feature-strip right-aligned">
           <div class="feature-content">
             <div class="feature-text">
-              <h3>Uy Tín 37 Tỉnh Thành</h3>
-              <p>Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng.</p>
+              <h3>{{ homeContent?.feature4_title || 'Uy Tín 37 Tỉnh Thành' }}</h3>
+              <p>{{ homeContent?.feature4_description || 'Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng.' }}</p>
             </div>
-            <mat-icon class="feature-icon">verified</mat-icon>
+            <div class="feature-icon-container">
+              <mat-icon *ngIf="isMatIcon(homeContent?.feature4_icon || 'verified')" class="feature-icon">{{ homeContent?.feature4_icon || 'verified' }}</mat-icon>
+              <img *ngIf="!isMatIcon(homeContent?.feature4_icon || 'verified')" [src]="homeContent?.feature4_icon || 'verified'" class="feature-icon custom-svg" alt="Feature icon">
+            </div>
           </div>
         </div>
       </div>

@@ -464,6 +464,20 @@
   flex-shrink: 0;
 }
 
+.feature-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.feature-icon.custom-svg {
+  width: 4rem;
+  height: 4rem;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(61%) sepia(48%) saturate(578%) hue-rotate(344deg) brightness(87%) contrast(87%);
+}
+
 .feature-text {
   flex: 1;
 }
@@ -921,6 +935,11 @@
 
   .feature-icon {
     font-size: 3rem;
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .feature-icon.custom-svg {
     width: 3rem;
     height: 3rem;
   }

@@ -109,16 +109,34 @@ export class HomeComponent implements OnInit {
   }
 
   openEditDialog(): void {
+    // Ensure all fields exist, merging with defaults
+    const defaultContent: HomeContent = {
+      id: 0,
+      hero_title: 'MMA Architectural Design',
+      hero_description: 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo',
+      hero_stat1_number: '37',
+      hero_stat1_label: 'Tỉnh Thành Phủ Sóng',
+      hero_stat2_number: '500+',
+      hero_stat2_label: 'Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp',
+      features_title: '',
+      features_description: '',
+      features_logo_url: '',
+      feature1_icon: '',
+      feature1_title: '',
+      feature1_description: '',
+      feature2_icon: '',
+      feature2_title: '',
+      feature2_description: '',
+      feature3_icon: '',
+      feature3_title: '',
+      feature3_description: ''
+    };
+
+    const dialogData = this.homeContent ? { ...defaultContent, ...this.homeContent } : defaultContent;
+
     const dialogRef = this.dialog.open(HomeContentEditDialog, {
-      width: '600px',
-      data: this.homeContent || {
-        hero_title: 'MMA Architectural Design',
-        hero_description: 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo',
-        hero_stat1_number: '37',
-        hero_stat1_label: 'Tỉnh Thành Phủ Sóng',
-        hero_stat2_number: '500+',
-        hero_stat2_label: 'Dự Án Biệt Thư/Nhà Ở Chuyên Nghiệp'
-      }
+      width: '800px',
+      data: dialogData
     });
 
     dialogRef.afterClosed().subscribe(result => {

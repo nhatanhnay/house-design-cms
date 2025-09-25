@@ -416,6 +416,114 @@
                     placeholder="Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp">
                 </mat-form-field>
               </div>
+
+              <!-- Features Section -->
+              <div class="section-divider">
+                <h4 class="section-title">⭐ Phần Tính Năng</h4>
+              </div>
+
+              <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Tiêu đề phần tính năng</mat-label>
+                <input matInput [(ngModel)]="homepageContent.features_title" (ngModelChange)="onContentChange()"
+                  placeholder="Ưu Thế MMA Architectural Design">
+              </mat-form-field>
+
+              <!-- Feature 1 -->
+              <div class="feature-item">
+                <h5 class="feature-title">Tính năng 1 - Left Aligned</h5>
+                <div class="feature-row">
+                  <div class="icon-field">
+                    <label class="icon-selector-label">Icon</label>
+                    <app-icon-selector
+                      [iconValue]="homepageContent.feature1_icon || 'architecture'"
+                      (iconChange)="onFeature1IconChange($event)">
+                    </app-icon-selector>
+                  </div>
+                  <mat-form-field appearance="fill" class="title-field">
+                    <mat-label>Tiêu đề</mat-label>
+                    <input matInput [(ngModel)]="homepageContent.feature1_title" (ngModelChange)="onContentChange()"
+                      placeholder="Thiết Kế Kiến Trúc Độc Đáo">
+                  </mat-form-field>
+                </div>
+                <mat-form-field appearance="fill" class="full-width">
+                  <mat-label>Mô tả</mat-label>
+                  <textarea matInput [(ngModel)]="homepageContent.feature1_description" (ngModelChange)="onContentChange()"
+                    rows="3" placeholder="Chuyên gia kiến trúc sư với hơn 10 năm kinh nghiệm, tạo ra những công trình biệt thự và nhà ở đẳng cấp."></textarea>
+                </mat-form-field>
+              </div>
+
+              <!-- Feature 2 -->
+              <div class="feature-item">
+                <h5 class="feature-title">Tính năng 2 - Right Aligned</h5>
+                <div class="feature-row">
+                  <div class="icon-field">
+                    <label class="icon-selector-label">Icon</label>
+                    <app-icon-selector
+                      [iconValue]="homepageContent.feature2_icon || 'engineering'"
+                      (iconChange)="onFeature2IconChange($event)">
+                    </app-icon-selector>
+                  </div>
+                  <mat-form-field appearance="fill" class="title-field">
+                    <mat-label>Tiêu đề</mat-label>
+                    <input matInput [(ngModel)]="homepageContent.feature2_title" (ngModelChange)="onContentChange()"
+                      placeholder="Thi Công Chất Lượng Cao">
+                  </mat-form-field>
+                </div>
+                <mat-form-field appearance="fill" class="full-width">
+                  <mat-label>Mô tả</mat-label>
+                  <textarea matInput [(ngModel)]="homepageContent.feature2_description" (ngModelChange)="onContentChange()"
+                    rows="3" placeholder="Đội ngũ kỹ sư và công nhân tay nghề cao, sử dụng công nghệ hiện đại trong thi công."></textarea>
+                </mat-form-field>
+              </div>
+
+              <!-- Feature 3 -->
+              <div class="feature-item">
+                <h5 class="feature-title">Tính năng 3 - Left Aligned</h5>
+                <div class="feature-row">
+                  <div class="icon-field">
+                    <label class="icon-selector-label">Icon</label>
+                    <app-icon-selector
+                      [iconValue]="homepageContent.feature3_icon || 'business'"
+                      (iconChange)="onFeature3IconChange($event)">
+                    </app-icon-selector>
+                  </div>
+                  <mat-form-field appearance="fill" class="title-field">
+                    <mat-label>Tiêu đề</mat-label>
+                    <input matInput [(ngModel)]="homepageContent.feature3_title" (ngModelChange)="onContentChange()"
+                      placeholder="Dịch Vụ Toàn Diện">
+                  </mat-form-field>
+                </div>
+                <mat-form-field appearance="fill" class="full-width">
+                  <mat-label>Mô tả</mat-label>
+                  <textarea matInput [(ngModel)]="homepageContent.feature3_description" (ngModelChange)="onContentChange()"
+                    rows="3" placeholder="Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn giao hoàn thiện."></textarea>
+                </mat-form-field>
+              </div>
+
+              <!-- Feature 4 -->
+              <div class="feature-item">
+                <h5 class="feature-title">Tính năng 4 - Right Aligned</h5>
+                <div class="feature-row">
+                  <div class="icon-field">
+                    <label class="icon-selector-label">Icon</label>
+                    <app-icon-selector
+                      [iconValue]="homepageContent.feature4_icon || 'verified'"
+                      (iconChange)="onFeature4IconChange($event)">
+                    </app-icon-selector>
+                  </div>
+                  <mat-form-field appearance="fill" class="title-field">
+                    <mat-label>Tiêu đề</mat-label>
+                    <input matInput [(ngModel)]="homepageContent.feature4_title" (ngModelChange)="onContentChange()"
+                      placeholder="Uy Tín 37 Tỉnh Thành">
+                  </mat-form-field>
+                </div>
+                <mat-form-field appearance="fill" class="full-width">
+                  <mat-label>Mô tả</mat-label>
+                  <textarea matInput [(ngModel)]="homepageContent.feature4_description" (ngModelChange)="onContentChange()"
+                    rows="3" placeholder="Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng."></textarea>
+                </mat-form-field>
+              </div>
+
             </div>
           </mat-card>
         </div>

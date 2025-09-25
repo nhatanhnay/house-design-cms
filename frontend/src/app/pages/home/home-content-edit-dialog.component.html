@@ -1,6 +1,12 @@
 <h2 mat-dialog-title>Chỉnh sửa nội dung trang chủ</h2>
 <mat-dialog-content>
-  <div style="display: flex; flex-direction: column; gap: 16px; min-width: 500px;">
+  <div style="display: flex; flex-direction: column; gap: 16px; min-width: 700px; max-height: 80vh; overflow-y: auto;">
+
+    <!-- Hero Section -->
+    <h3 style="margin: 16px 0 8px 0; color: #1976d2; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px;">
+      📍 Phần Hero
+    </h3>
+
     <mat-form-field>
       <mat-label>Tiêu đề chính</mat-label>
       <input matInput [(ngModel)]="data.hero_title" placeholder="Tiêu đề chính">
@@ -34,6 +40,78 @@
         <input matInput [(ngModel)]="data.hero_stat2_label" placeholder="Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp">
       </mat-form-field>
     </div>
+
+    <!-- Features Section -->
+    <h3 style="margin: 24px 0 8px 0; color: #1976d2; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px;">
+      ⭐ Phần Tính Năng
+    </h3>
+
+    <mat-form-field>
+      <mat-label>Tiêu đề tính năng</mat-label>
+      <input matInput [(ngModel)]="data.features_title" placeholder="Dịch Vụ Chuyên Nghiệp">
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Mô tả tính năng</mat-label>
+      <textarea matInput [(ngModel)]="data.features_description" rows="3" placeholder="Mô tả về các dịch vụ"></textarea>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>URL Logo</mat-label>
+      <input matInput [(ngModel)]="data.features_logo_url" placeholder="/homepage/images/company-logo.png">
+    </mat-form-field>
+
+    <!-- Feature 1 -->
+    <h4 style="margin: 16px 0 8px 0; color: #666;">Tính năng 1</h4>
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
+      <mat-form-field>
+        <mat-label>Icon (CSS Class)</mat-label>
+        <input matInput [(ngModel)]="data.feature1_icon" placeholder="fas fa-drafting-compass">
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Tiêu đề</mat-label>
+        <input matInput [(ngModel)]="data.feature1_title" placeholder="Thiết Kế Sáng Tạo">
+      </mat-form-field>
+    </div>
+    <mat-form-field>
+      <mat-label>Mô tả</mat-label>
+      <textarea matInput [(ngModel)]="data.feature1_description" rows="2" placeholder="Mô tả tính năng 1"></textarea>
+    </mat-form-field>
+
+    <!-- Feature 2 -->
+    <h4 style="margin: 16px 0 8px 0; color: #666;">Tính năng 2</h4>
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
+      <mat-form-field>
+        <mat-label>Icon (CSS Class)</mat-label>
+        <input matInput [(ngModel)]="data.feature2_icon" placeholder="fas fa-hammer">
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Tiêu đề</mat-label>
+        <input matInput [(ngModel)]="data.feature2_title" placeholder="Thi Công Chất Lượng">
+      </mat-form-field>
+    </div>
+    <mat-form-field>
+      <mat-label>Mô tả</mat-label>
+      <textarea matInput [(ngModel)]="data.feature2_description" rows="2" placeholder="Mô tả tính năng 2"></textarea>
+    </mat-form-field>
+
+    <!-- Feature 3 -->
+    <h4 style="margin: 16px 0 8px 0; color: #666;">Tính năng 3</h4>
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
+      <mat-form-field>
+        <mat-label>Icon (CSS Class)</mat-label>
+        <input matInput [(ngModel)]="data.feature3_icon" placeholder="fas fa-headset">
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Tiêu đề</mat-label>
+        <input matInput [(ngModel)]="data.feature3_title" placeholder="Hỗ Trợ 24/7">
+      </mat-form-field>
+    </div>
+    <mat-form-field>
+      <mat-label>Mô tả</mat-label>
+      <textarea matInput [(ngModel)]="data.feature3_description" rows="2" placeholder="Mô tả tính năng 3"></textarea>
+    </mat-form-field>
+
   </div>
 </mat-dialog-content>
 <mat-dialog-actions align="end">

@@ -280,4 +280,11 @@ export class DataService {
 
     return this.http.post<{ url: string }>(`${this.apiUrl}/upload-video`, formData, { headers });
   }
+
+  // Upload SVG icon
+  uploadSvgIcon(formData: FormData): Observable<{ url: string, svg: string, name: string }> {
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders({ 'Authorization': `Bearer ${token}` }) : undefined;
+    return this.http.post<{ url: string, svg: string, name: string }>(`${this.apiUrl}/upload-svg-icon`, formData, { headers });
+  }
 }

@@ -22,10 +22,12 @@ import { Category, Post, Admin, CategoryTreeItem } from '../../models/models';
 import { CategoryDialogComponent } from '../../components/category-dialog/category-dialog.component';
 import { PostDialogComponent } from '../../components/post-dialog/post-dialog.component';
 import { ADMIN_CONSTANTS } from '../../constants/admin.constants';
-import { HomepageContent, OrderUpdate, HomepageMediaResponse } from '../../interfaces/admin.interfaces';
+import { OrderUpdate, HomepageMediaResponse } from '../../interfaces/admin.interfaces';
+import { HomeContent } from '../../models/models';
 import { UrlConverter } from '../../utils/url-converter.util';
 import { FileValidator } from '../../utils/file-validator.util';
 import { LoggerService } from '../../services/logger.service';
+import { IconSelectorComponent } from '../../components/icon-selector/icon-selector.component';
 
 @Component({
   selector: 'app-admin',
@@ -43,7 +45,8 @@ import { LoggerService } from '../../services/logger.service';
     MatTooltipModule,
     MatFormFieldModule,
     MatInputModule,
-    DragDropModule
+    DragDropModule,
+    IconSelectorComponent
   ],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss']
@@ -59,15 +62,31 @@ export class AdminComponent implements OnInit {
   // Homepage Management Properties
   homepageImages: string[] = [];
   homepageVideos: string[] = [];
-  homepageContent: HomepageContent = {
+  homepageContent: HomeContent = {
+    id: 0,
     hero_title: '',
     hero_description: '',
     hero_stat1_number: '',
     hero_stat1_label: '',
     hero_stat2_number: '',
-    hero_stat2_label: ''
+    hero_stat2_label: '',
+    features_title: '',
+    features_description: '',
+    features_logo_url: '',
+    feature1_icon: '',
+    feature1_title: '',
+    feature1_description: '',
+    feature2_icon: '',
+    feature2_title: '',
+    feature2_description: '',
+    feature3_icon: '',
+    feature3_title: '',
+    feature3_description: '',
+    feature4_icon: '',
+    feature4_title: '',
+    feature4_description: ''
   };
-  originalHomepageContent: HomepageContent = {} as HomepageContent;
+  originalHomepageContent: HomeContent = {} as HomeContent;
   isContentModified: boolean = false;
 
   private refreshSubject = new Subject<void>();
@@ -488,6 +507,14 @@ export class AdminComponent implements OnInit {
   loadHomepageContent(): void {
     this.dataService.getHomeContent().subscribe({
       next: (content) => {
+        console.log('Loaded homepage content from server:', content);
+        console.log('Features data loaded:', {
+          features_title: content.features_title,
+          feature1_title: content.feature1_title,
+          feature2_title: content.feature2_title,
+          feature3_title: content.feature3_title,
+          feature4_title: content.feature4_title
+        });
         this.homepageContent = { ...content };
         this.originalHomepageContent = { ...content };
         this.isContentModified = false;
@@ -496,12 +523,28 @@ export class AdminComponent implements OnInit {
         console.error('Error loading homepage content:', error);
         // Use default values if API fails
         this.homepageContent = {
+          id: 0,
           hero_title: 'MMA Architectural Design',
           hero_description: 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo',
           hero_stat1_number: '37',
           hero_stat1_label: 'Tỉnh Thành Phủ Sóng',
           hero_stat2_number: '500+',
-          hero_stat2_label: 'Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp'
+          hero_stat2_label: 'Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp',
+          features_title: 'Ưu Thế MMA Architectural Design',
+          features_description: '',
+          features_logo_url: '',
+          feature1_icon: 'architecture',
+          feature1_title: 'Thiết Kế Kiến Trúc Độc Đáo',
+          feature1_description: 'Chuyên gia kiến trúc sư với hơn 10 năm kinh nghiệm, tạo ra những công trình biệt thự và nhà ở đẳng cấp.',
+          feature2_icon: 'engineering',
+          feature2_title: 'Thi Công Chất Lượng Cao',
+          feature2_description: 'Đội ngũ kỹ sư và công nhân tay nghề cao, sử dụng công nghệ hiện đại trong thi công.',
+          feature3_icon: 'business',
+          feature3_title: 'Dịch Vụ Toàn Diện',
+          feature3_description: 'Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn giao hoàn thiện.',
+          feature4_icon: 'verified',
+          feature4_title: 'Uy Tín 37 Tỉnh Thành',
+          feature4_description: 'Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng.'
         };
         this.originalHomepageContent = { ...this.homepageContent };
         this.isContentModified = false;
@@ -513,15 +556,61 @@ export class AdminComponent implements OnInit {
     this.isContentModified = JSON.stringify(this.homepageContent) !== JSON.stringify(this.originalHomepageContent);
   }
 
+  onFeature1IconChange(iconValue: string): void {
+    this.homepageContent.feature1_icon = iconValue;
+    this.onContentChange();
+  }
+
+  onFeature2IconChange(iconValue: string): void {
+    this.homepageContent.feature2_icon = iconValue;
+    this.onContentChange();
+  }
+
+  onFeature3IconChange(iconValue: string): void {
+    this.homepageContent.feature3_icon = iconValue;
+    this.onContentChange();
+  }
+
+  onFeature4IconChange(iconValue: string): void {
+    this.homepageContent.feature4_icon = iconValue;
+    this.onContentChange();
+  }
+
   saveHomepageContent(): void {
+    console.log('Saving homepage content:', this.homepageContent);
+    console.log('Features data being saved:', {
+      features_title: this.homepageContent.features_title,
+      feature1_icon: this.homepageContent.feature1_icon,
+      feature1_title: this.homepageContent.feature1_title,
+      feature1_description: this.homepageContent.feature1_description,
+      feature2_icon: this.homepageContent.feature2_icon,
+      feature2_title: this.homepageContent.feature2_title,
+      feature2_description: this.homepageContent.feature2_description,
+      feature3_icon: this.homepageContent.feature3_icon,
+      feature3_title: this.homepageContent.feature3_title,
+      feature3_description: this.homepageContent.feature3_description,
+      feature4_icon: this.homepageContent.feature4_icon,
+      feature4_title: this.homepageContent.feature4_title,
+      feature4_description: this.homepageContent.feature4_description
+    });
+
     this.dataService.updateHomeContent(this.homepageContent).subscribe({
       next: (updatedContent) => {
+        console.log('Received updated content from server:', updatedContent);
+        console.log('Features data received:', {
+          features_title: updatedContent.features_title,
+          feature1_title: updatedContent.feature1_title,
+          feature2_title: updatedContent.feature2_title,
+          feature3_title: updatedContent.feature3_title,
+          feature4_title: updatedContent.feature4_title
+        });
         this.homepageContent = { ...updatedContent };
         this.originalHomepageContent = { ...updatedContent };
         this.isContentModified = false;
         this.showSuccessMessage('Nội dung trang chủ đã được lưu');
       },
       error: (error) => {
+        console.error('Error saving homepage content:', error);
         this.logger.error('Error saving homepage content', error, 'ContentManagement');
         this.showErrorMessage('Lỗi khi lưu nội dung trang chủ');
       }

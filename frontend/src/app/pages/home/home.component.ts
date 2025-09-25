@@ -286,5 +286,11 @@ export class HomeComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  isMatIcon(value: string | undefined): boolean {
+    // Check if the value is a Material Icon (not a URL or SVG content)
+    if (!value) return false;
+    return !value.includes('/') && !value.includes('http') && !value.startsWith('<svg');
+  }
 }
 
