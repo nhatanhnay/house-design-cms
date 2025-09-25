@@ -81,13 +81,25 @@ type CategoryOrderRequest struct {
 }
 
 type HomeContent struct {
-	ID               uint      `json:"id" gorm:"primaryKey"`
-	HeroTitle        string    `json:"hero_title" gorm:"not null"`
-	HeroDescription  string    `json:"hero_description" gorm:"type:text"`
-	HeroStat1Number  string    `json:"hero_stat1_number"`
-	HeroStat1Label   string    `json:"hero_stat1_label"`
-	HeroStat2Number  string    `json:"hero_stat2_number"`
-	HeroStat2Label   string    `json:"hero_stat2_label"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	ID                    uint      `json:"id" gorm:"primaryKey"`
+	HeroTitle             string    `json:"hero_title" gorm:"not null"`
+	HeroDescription       string    `json:"hero_description" gorm:"type:text"`
+	HeroStat1Number       string    `json:"hero_stat1_number"`
+	HeroStat1Label        string    `json:"hero_stat1_label"`
+	HeroStat2Number       string    `json:"hero_stat2_number"`
+	HeroStat2Label        string    `json:"hero_stat2_label"`
+	FeaturesTitle         string    `json:"features_title"`
+	FeaturesDescription   string    `json:"features_description" gorm:"type:text"`
+	FeaturesLogoURL       string    `json:"features_logo_url"`
+	Feature1Icon          string    `json:"feature1_icon"`
+	Feature1Title         string    `json:"feature1_title"`
+	Feature1Description   string    `json:"feature1_description" gorm:"type:text"`
+	Feature2Icon          string    `json:"feature2_icon"`
+	Feature2Title         string    `json:"feature2_title"`
+	Feature2Description   string    `json:"feature2_description" gorm:"type:text"`
+	Feature3Icon          string    `json:"feature3_icon"`
+	Feature3Title         string    `json:"feature3_title"`
+	Feature3Description   string    `json:"feature3_description" gorm:"type:text"`
+	CreatedAt             time.Time `json:"created_at"`
+	UpdatedAt             time.Time `json:"updated_at"`
 }

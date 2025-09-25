@@ -41,6 +41,7 @@ func InitDatabase() {
 	log.Println("Connected to PostgreSQL database successfully")
 	createTables()
 	migrateCategoriesTable()
+	migrateHomeContentTable()
 	seedAdminUser()
 }
 
@@ -171,6 +172,32 @@ func migrateCategoriesTable() {
 	log.Println("Categories table migration completed")
 }
 
+func migrateHomeContentTable() {
+	// Add new features section columns to home_content table
+	migrations := []string{
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS features_title VARCHAR(500)",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS features_description TEXT",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS features_logo_url VARCHAR(500)",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature1_icon VARCHAR(500)",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature1_title VARCHAR(500)",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature1_description TEXT",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature2_icon VARCHAR(500)",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature2_title VARCHAR(500)",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature2_description TEXT",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature3_icon VARCHAR(500)",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature3_title VARCHAR(500)",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature3_description TEXT",
+	}
+
+	for _, migration := range migrations {
+		if _, err := DB.Exec(migration); err != nil {
+			log.Printf("Home content migration warning: %v", err)
+		}
+	}
+
+	log.Println("Home content table migration completed")
+}
+
 func seedAdminUser() {
 	// Check if admin user exists
 	var count int
@@ -233,23 +260,42 @@ func seedDefaultHomeContent() {
 
 	if count == 0 {
 		defaultHomeContent := models.HomeContent{
-			HeroTitle:       "MMA Architectural Design",
-			HeroDescription: "Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo",
-			HeroStat1Number: "37",
-			HeroStat1Label:  "Tỉnh Thành Phủ Sóng",
-			HeroStat2Number: "500+",
-			HeroStat2Label:  "Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp",
+			HeroTitle:             "MMA Architectural Design",
+			HeroDescription:       "Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo",
+			HeroStat1Number:       "37",
+			HeroStat1Label:        "Tỉnh Thành Phủ Sóng",
+			HeroStat2Number:       "500+",
+			HeroStat2Label:        "Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp",
+			FeaturesTitle:         "Dịch Vụ Chuyên Nghiệp",
+			FeaturesDescription:   "Chúng tôi cung cấp các dịch vụ thiết kế và thi công chuyên nghiệp với chất lượng cao nhất",
+			Feature1Title:         "Thiết Kế Sáng Tạo",
+			Feature1Description:   "Đội ngũ kiến trúc sư giàu kinh nghiệm với ý tưởng sáng tạo và hiện đại",
+			Feature2Title:         "Thi Công Chất Lượng",
+			Feature2Description:   "Quy trình thi công chuyên nghiệp, đảm bảo chất lượng và tiến độ",
+			Feature3Title:         "Hỗ Trợ 24/7",
+			Feature3Description:   "Đội ngũ tư vấn và hỗ trợ khách hàng 24/7 trong suốt quá trình dự án",
 		}
 
 		_, err := DB.Exec(`
-			INSERT INTO home_content (hero_title, hero_description, hero_stat1_number, hero_stat1_label, hero_stat2_number, hero_stat2_label)
-			VALUES ($1, $2, $3, $4, $5, $6)`,
+			INSERT INTO home_content (hero_title, hero_description, hero_stat1_number, hero_stat1_label,
+			                         hero_stat2_number, hero_stat2_label, features_title, features_description,
+			                         feature1_title, feature1_description, feature2_title, feature2_description,
+			                         feature3_title, feature3_description)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
 			defaultHomeContent.HeroTitle,
 			defaultHomeContent.HeroDescription,
 			defaultHomeContent.HeroStat1Number,
 			defaultHomeContent.HeroStat1Label,
 			defaultHomeContent.HeroStat2Number,
 			defaultHomeContent.HeroStat2Label,
+			defaultHomeContent.FeaturesTitle,
+			defaultHomeContent.FeaturesDescription,
+			defaultHomeContent.Feature1Title,
+			defaultHomeContent.Feature1Description,
+			defaultHomeContent.Feature2Title,
+			defaultHomeContent.Feature2Description,
+			defaultHomeContent.Feature3Title,
+			defaultHomeContent.Feature3Description,
 		)
 		if err != nil {
 			log.Printf("Failed to seed home content: %v", err)

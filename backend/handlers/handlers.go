@@ -1268,7 +1268,20 @@ func GetHomeContent(c *gin.Context) {
 	// Get the first (and should be only) home content record
 	err := database.DB.QueryRow(`
 		SELECT id, hero_title, hero_description, hero_stat1_number, hero_stat1_label,
-		       hero_stat2_number, hero_stat2_label, created_at, updated_at
+		       hero_stat2_number, hero_stat2_label,
+		       COALESCE(features_title, '') as features_title,
+		       COALESCE(features_description, '') as features_description,
+		       COALESCE(features_logo_url, '') as features_logo_url,
+		       COALESCE(feature1_icon, '') as feature1_icon,
+		       COALESCE(feature1_title, '') as feature1_title,
+		       COALESCE(feature1_description, '') as feature1_description,
+		       COALESCE(feature2_icon, '') as feature2_icon,
+		       COALESCE(feature2_title, '') as feature2_title,
+		       COALESCE(feature2_description, '') as feature2_description,
+		       COALESCE(feature3_icon, '') as feature3_icon,
+		       COALESCE(feature3_title, '') as feature3_title,
+		       COALESCE(feature3_description, '') as feature3_description,
+		       created_at, updated_at
 		FROM home_content
 		ORDER BY id LIMIT 1
 	`).Scan(
@@ -1279,6 +1292,18 @@ func GetHomeContent(c *gin.Context) {
 		&homeContent.HeroStat1Label,
 		&homeContent.HeroStat2Number,
 		&homeContent.HeroStat2Label,
+		&homeContent.FeaturesTitle,
+		&homeContent.FeaturesDescription,
+		&homeContent.FeaturesLogoURL,
+		&homeContent.Feature1Icon,
+		&homeContent.Feature1Title,
+		&homeContent.Feature1Description,
+		&homeContent.Feature2Icon,
+		&homeContent.Feature2Title,
+		&homeContent.Feature2Description,
+		&homeContent.Feature3Icon,
+		&homeContent.Feature3Title,
+		&homeContent.Feature3Description,
 		&homeContent.CreatedAt,
 		&homeContent.UpdatedAt,
 	)
@@ -1314,6 +1339,10 @@ func UpdateHomeContent(c *gin.Context) {
 		UPDATE home_content
 		SET hero_title = $1, hero_description = $2, hero_stat1_number = $3,
 		    hero_stat1_label = $4, hero_stat2_number = $5, hero_stat2_label = $6,
+		    features_title = $7, features_description = $8, features_logo_url = $9,
+		    feature1_icon = $10, feature1_title = $11, feature1_description = $12,
+		    feature2_icon = $13, feature2_title = $14, feature2_description = $15,
+		    feature3_icon = $16, feature3_title = $17, feature3_description = $18,
 		    updated_at = CURRENT_TIMESTAMP
 		WHERE id = (SELECT id FROM home_content ORDER BY id LIMIT 1)
 	`,
@@ -1323,6 +1352,18 @@ func UpdateHomeContent(c *gin.Context) {
 		updateData.HeroStat1Label,
 		updateData.HeroStat2Number,
 		updateData.HeroStat2Label,
+		updateData.FeaturesTitle,
+		updateData.FeaturesDescription,
+		updateData.FeaturesLogoURL,
+		updateData.Feature1Icon,
+		updateData.Feature1Title,
+		updateData.Feature1Description,
+		updateData.Feature2Icon,
+		updateData.Feature2Title,
+		updateData.Feature2Description,
+		updateData.Feature3Icon,
+		updateData.Feature3Title,
+		updateData.Feature3Description,
 	)
 
 	if err != nil {
