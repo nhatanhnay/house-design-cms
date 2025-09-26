@@ -44,7 +44,7 @@ echo ""
 echo "📁 Step 2: Loading clean structure to VPS database..."
 
 # Load the clean structure (ignore role errors)
-psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" < "house_design_clean_schema_20250925_152720.sql" 2>&1 | grep -v "role.*does not exist"
+psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" < "house_design_clean_schema_20250926_154835.sql" 2>&1 | grep -v "role.*does not exist"
 
 if [ $? -eq 0 ]; then
     echo "✅ Clean structure loaded to VPS successfully!"

@@ -5,7 +5,7 @@
 -- Dumped from database version 15.12 (Ubuntu 15.12-1.pgdg20.04+1)
 -- Dumped by pg_dump version 15.12 (Ubuntu 15.12-1.pgdg20.04+1)
 
--- Started on 2025-09-25 15:27:30 +07
+-- Started on 2025-09-26 15:48:46 +07
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -20,7 +20,7 @@ SET row_security = off;
 
 DROP DATABASE IF EXISTS house_design;
 --
--- TOC entry 3353 (class 1262 OID 65541)
+-- TOC entry 3365 (class 1262 OID 65541)
 -- Name: house_design; Type: DATABASE; Schema: -; Owner: postgres
 --
 
@@ -77,7 +77,7 @@ CREATE SEQUENCE public.admin_id_seq
 ALTER TABLE public.admin_id_seq OWNER TO house_user;
 
 --
--- TOC entry 3356 (class 0 OID 0)
+-- TOC entry 3368 (class 0 OID 0)
 -- Dependencies: 214
 -- Name: admin_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: house_user
 --
@@ -128,7 +128,7 @@ CREATE SEQUENCE public.articles_id_seq
 ALTER TABLE public.articles_id_seq OWNER TO house_user;
 
 --
--- TOC entry 3357 (class 0 OID 0)
+-- TOC entry 3369 (class 0 OID 0)
 -- Dependencies: 220
 -- Name: articles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: house_user
 --
@@ -177,12 +177,63 @@ CREATE SEQUENCE public.categories_id_seq
 ALTER TABLE public.categories_id_seq OWNER TO house_user;
 
 --
--- TOC entry 3358 (class 0 OID 0)
+-- TOC entry 3370 (class 0 OID 0)
 -- Dependencies: 216
 -- Name: categories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: house_user
 --
 
 ALTER SEQUENCE public.categories_id_seq OWNED BY public.categories.id;
+
+
+--
+-- TOC entry 225 (class 1259 OID 122886)
+-- Name: footer_content; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.footer_content (
+    id integer NOT NULL,
+    company_name character varying(500) NOT NULL,
+    address text,
+    phone character varying(50),
+    email character varying(255),
+    facebook_url character varying(500),
+    instagram_url character varying(500),
+    youtube_url character varying(500),
+    linkedin_url character varying(500),
+    copyright_text character varying(500),
+    description text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    services text DEFAULT '[]'::text,
+    social_media text DEFAULT '[]'::text
+);
+
+
+ALTER TABLE public.footer_content OWNER TO postgres;
+
+--
+-- TOC entry 224 (class 1259 OID 122885)
+-- Name: footer_content_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.footer_content_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.footer_content_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 3371 (class 0 OID 0)
+-- Dependencies: 224
+-- Name: footer_content_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.footer_content_id_seq OWNED BY public.footer_content.id;
 
 
 --
@@ -237,7 +288,7 @@ CREATE SEQUENCE public.home_content_id_seq
 ALTER TABLE public.home_content_id_seq OWNER TO house_user;
 
 --
--- TOC entry 3359 (class 0 OID 0)
+-- TOC entry 3372 (class 0 OID 0)
 -- Dependencies: 222
 -- Name: home_content_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: house_user
 --
@@ -282,7 +333,7 @@ CREATE SEQUENCE public.posts_id_seq
 ALTER TABLE public.posts_id_seq OWNER TO house_user;
 
 --
--- TOC entry 3360 (class 0 OID 0)
+-- TOC entry 3373 (class 0 OID 0)
 -- Dependencies: 218
 -- Name: posts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: house_user
 --
@@ -291,7 +342,7 @@ ALTER SEQUENCE public.posts_id_seq OWNED BY public.posts.id;
 
 
 --
--- TOC entry 3165 (class 2604 OID 65547)
+-- TOC entry 3170 (class 2604 OID 65547)
 -- Name: admin id; Type: DEFAULT; Schema: public; Owner: house_user
 --
 
@@ -299,7 +350,7 @@ ALTER TABLE ONLY public.admin ALTER COLUMN id SET DEFAULT nextval('public.admin_
 
 
 --
--- TOC entry 3178 (class 2604 OID 73737)
+-- TOC entry 3183 (class 2604 OID 73737)
 -- Name: articles id; Type: DEFAULT; Schema: public; Owner: house_user
 --
 
@@ -307,7 +358,7 @@ ALTER TABLE ONLY public.articles ALTER COLUMN id SET DEFAULT nextval('public.art
 
 
 --
--- TOC entry 3166 (class 2604 OID 65558)
+-- TOC entry 3171 (class 2604 OID 65558)
 -- Name: categories id; Type: DEFAULT; Schema: public; Owner: house_user
 --
 
@@ -315,7 +366,15 @@ ALTER TABLE ONLY public.categories ALTER COLUMN id SET DEFAULT nextval('public.c
 
 
 --
--- TOC entry 3183 (class 2604 OID 106505)
+-- TOC entry 3191 (class 2604 OID 122889)
+-- Name: footer_content id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.footer_content ALTER COLUMN id SET DEFAULT nextval('public.footer_content_id_seq'::regclass);
+
+
+--
+-- TOC entry 3188 (class 2604 OID 106505)
 -- Name: home_content id; Type: DEFAULT; Schema: public; Owner: house_user
 --
 
@@ -323,7 +382,7 @@ ALTER TABLE ONLY public.home_content ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3174 (class 2604 OID 65571)
+-- TOC entry 3179 (class 2604 OID 65571)
 -- Name: posts id; Type: DEFAULT; Schema: public; Owner: house_user
 --
 
@@ -331,7 +390,7 @@ ALTER TABLE ONLY public.posts ALTER COLUMN id SET DEFAULT nextval('public.posts_
 
 
 --
--- TOC entry 3187 (class 2606 OID 65551)
+-- TOC entry 3197 (class 2606 OID 65551)
 -- Name: admin admin_pkey; Type: CONSTRAINT; Schema: public; Owner: house_user
 --
 
@@ -340,7 +399,7 @@ ALTER TABLE ONLY public.admin
 
 
 --
--- TOC entry 3189 (class 2606 OID 65553)
+-- TOC entry 3199 (class 2606 OID 65553)
 -- Name: admin admin_username_key; Type: CONSTRAINT; Schema: public; Owner: house_user
 --
 
@@ -349,7 +408,7 @@ ALTER TABLE ONLY public.admin
 
 
 --
--- TOC entry 3197 (class 2606 OID 73745)
+-- TOC entry 3207 (class 2606 OID 73745)
 -- Name: articles articles_pkey; Type: CONSTRAINT; Schema: public; Owner: house_user
 --
 
@@ -358,7 +417,7 @@ ALTER TABLE ONLY public.articles
 
 
 --
--- TOC entry 3199 (class 2606 OID 73747)
+-- TOC entry 3209 (class 2606 OID 73747)
 -- Name: articles articles_slug_key; Type: CONSTRAINT; Schema: public; Owner: house_user
 --
 
@@ -367,7 +426,7 @@ ALTER TABLE ONLY public.articles
 
 
 --
--- TOC entry 3191 (class 2606 OID 65564)
+-- TOC entry 3201 (class 2606 OID 65564)
 -- Name: categories categories_pkey; Type: CONSTRAINT; Schema: public; Owner: house_user
 --
 
@@ -376,7 +435,7 @@ ALTER TABLE ONLY public.categories
 
 
 --
--- TOC entry 3193 (class 2606 OID 65566)
+-- TOC entry 3203 (class 2606 OID 65566)
 -- Name: categories categories_slug_key; Type: CONSTRAINT; Schema: public; Owner: house_user
 --
 
@@ -385,7 +444,16 @@ ALTER TABLE ONLY public.categories
 
 
 --
--- TOC entry 3201 (class 2606 OID 106511)
+-- TOC entry 3213 (class 2606 OID 122895)
+-- Name: footer_content footer_content_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.footer_content
+    ADD CONSTRAINT footer_content_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3211 (class 2606 OID 106511)
 -- Name: home_content home_content_pkey; Type: CONSTRAINT; Schema: public; Owner: house_user
 --
 
@@ -394,7 +462,7 @@ ALTER TABLE ONLY public.home_content
 
 
 --
--- TOC entry 3195 (class 2606 OID 65578)
+-- TOC entry 3205 (class 2606 OID 65578)
 -- Name: posts posts_pkey; Type: CONSTRAINT; Schema: public; Owner: house_user
 --
 
@@ -403,7 +471,7 @@ ALTER TABLE ONLY public.posts
 
 
 --
--- TOC entry 3204 (class 2606 OID 73748)
+-- TOC entry 3216 (class 2606 OID 73748)
 -- Name: articles articles_author_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: house_user
 --
 
@@ -412,7 +480,7 @@ ALTER TABLE ONLY public.articles
 
 
 --
--- TOC entry 3205 (class 2606 OID 73753)
+-- TOC entry 3217 (class 2606 OID 73753)
 -- Name: articles articles_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: house_user
 --
 
@@ -421,7 +489,7 @@ ALTER TABLE ONLY public.articles
 
 
 --
--- TOC entry 3202 (class 2606 OID 81928)
+-- TOC entry 3214 (class 2606 OID 81928)
 -- Name: categories categories_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: house_user
 --
 
@@ -430,7 +498,7 @@ ALTER TABLE ONLY public.categories
 
 
 --
--- TOC entry 3203 (class 2606 OID 65579)
+-- TOC entry 3215 (class 2606 OID 65579)
 -- Name: posts posts_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: house_user
 --
 
@@ -439,8 +507,8 @@ ALTER TABLE ONLY public.posts
 
 
 --
--- TOC entry 3354 (class 0 OID 0)
--- Dependencies: 3353
+-- TOC entry 3366 (class 0 OID 0)
+-- Dependencies: 3365
 -- Name: DATABASE house_design; Type: ACL; Schema: -; Owner: postgres
 --
 
@@ -448,7 +516,7 @@ GRANT ALL ON DATABASE house_design TO house_user;
 
 
 --
--- TOC entry 3355 (class 0 OID 0)
+-- TOC entry 3367 (class 0 OID 0)
 -- Dependencies: 5
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: pg_database_owner
 --
@@ -456,7 +524,7 @@ GRANT ALL ON DATABASE house_design TO house_user;
 GRANT ALL ON SCHEMA public TO house_user;
 
 
--- Completed on 2025-09-25 15:27:33 +07
+-- Completed on 2025-09-26 15:48:53 +07
 
 --
 -- PostgreSQL database dump complete
