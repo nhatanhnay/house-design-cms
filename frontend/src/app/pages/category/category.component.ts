@@ -117,39 +117,54 @@ import { Post, Admin } from '../../models/models';
     .category-header {
       display: flex;
       width: 100%;
-      height: auto;
+      height: calc(100vh - 64px);
       margin-bottom: 40px;
       background: white;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
 
     .left-content {
-      width: 30%;
+      width: 20%;
+      height: 100%;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: flex-end;
       text-align: right;
-      padding-right: 20px;
+      padding: 20px;
       font-family: 'UVF BankGothic Md BT', sans-serif;
+      position: relative;
+      overflow: visible;
     }
 
     .right-content {
-      width: 70%;
+      width: 80%;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .category-title {
-      font-size: 30px;
+      align-items: center;
+      justify-content: center;
+      display: flex;
+      font-size: 60px;
+      height: auto;
       font-weight: 700;
       color: var(--dark-blue, #2c3e50);
-      margin-bottom: 15px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      transform: rotate(-90deg);
+      transform-origin: center;
+      white-space: nowrap;
+      margin: 0;
+      font-family: 'UVF BankGothic Md BT', sans-serif;
+      position: absolute;
+      right: 20px;
+      top: calc(50vh - 32px);
+      transform-origin: center;
     }
 
     .category-description {
@@ -164,8 +179,9 @@ import { Post, Admin } from '../../models/models';
 
     .category-thumbnail {
       width: 100%;
-      height: auto;
-      object-fit: contain;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
     }
 
     .posts-count {

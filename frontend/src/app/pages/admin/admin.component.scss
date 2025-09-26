@@ -1014,13 +1014,15 @@
       color: #999;
     }
 
+    app-icon-selector {
+      width: auto;
+    }
     /* Override icon-selector component styling completely */
     app-icon-selector .icon-selector-container {
       display: flex !important;
       justify-content: flex-start !important;
       align-items: center !important;
-      width: 100% !important;
-      max-width: 180px !important;
+      width: auto !important;
       overflow: hidden !important;
       position: relative !important;
       gap: 8px !important;
@@ -1033,8 +1035,7 @@
     app-icon-selector .icon-selector-container button {
       flex: 0 0 auto !important;
       margin-left: 0 !important;
-      min-width: 24px !important;
-      max-width: 32px !important;
+      width: auto !important;
     }
 
     app-icon-selector .icon-selector-modal {

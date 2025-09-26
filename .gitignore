@@ -55,3 +55,6 @@ temp/
 /backend/homepage/images/*
 !/backend/homepage/videos/*
 /backend/homepage/videos/*
+
+# Terminal Paste Image folder
+.cp-images/
