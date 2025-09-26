@@ -5,6 +5,7 @@ import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Article, Category, CategoryTreeItem, CreateCategoryRequest, HomeContent, Post, UpdateCategoryRequest } from '../models/models';
 import { AuthService } from './auth.service';
+import { FooterContent } from '../pages/admin/admin.component';
 
 @Injectable({
   providedIn: 'root'
@@ -213,6 +214,29 @@ export class DataService {
 
   updateHomeContent(content: Partial<HomeContent>): Observable<HomeContent> {
     return this.http.put<HomeContent>(`${this.apiUrl}/home-content`, content);
+  }
+
+  // Footer Content
+  getFooterContent(): Observable<FooterContent> {
+    return this.http.get<FooterContent>(`${this.apiUrl}/footer-content`).pipe(
+      map(response => {
+        console.log('DataService: GET footer content from API:', response);
+        console.log('DataService: GET services received:', response.services);
+        return response;
+      })
+    );
+  }
+
+  updateFooterContent(content: Partial<FooterContent>): Observable<FooterContent> {
+    console.log('DataService: Sending footer content to API:', content);
+    console.log('DataService: Services being sent:', content.services);
+    return this.http.put<FooterContent>(`${this.apiUrl}/footer-content`, content).pipe(
+      map(response => {
+        console.log('DataService: Received footer content from API:', response);
+        console.log('DataService: Services received:', response.services);
+        return response;
+      })
+    );
   }
 
   // Homepage Media Management

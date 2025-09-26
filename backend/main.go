@@ -67,6 +67,7 @@ func main() {
 		api.GET("/articles/:identifier", handlers.GetArticle)
 		api.GET("/homepage/media", handlers.GetHomepageImages)
 		api.GET("/home-content", handlers.GetHomeContent)
+		api.GET("/footer-content", handlers.GetFooterContent)
 
 		// Protected routes (require authentication)
 		protected := api.Group("/")
@@ -101,6 +102,9 @@ func main() {
 
 			// Home content management
 			protected.PUT("/home-content", handlers.UpdateHomeContent)
+
+			// Footer content management
+			protected.PUT("/footer-content", handlers.UpdateFooterContent)
 		}
 	}
 

@@ -42,6 +42,8 @@ func InitDatabase() {
 	createTables()
 	migrateCategoriesTable()
 	migrateHomeContentTable()
+	createFooterContentTable()
+	migrateFooterContentTable()
 	seedAdminUser()
 }
 
@@ -217,6 +219,67 @@ func migrateHomeContentTable() {
 	log.Println("Home content table migration completed")
 }
 
+func createFooterContentTable() {
+	// Create footer_content table
+	footerContentTable := `
+	CREATE TABLE IF NOT EXISTS footer_content (
+		id SERIAL PRIMARY KEY,
+		company_name VARCHAR(500) NOT NULL,
+		address TEXT,
+		phone VARCHAR(50),
+		email VARCHAR(255),
+		facebook_url VARCHAR(500),
+		instagram_url VARCHAR(500),
+		youtube_url VARCHAR(500),
+		linkedin_url VARCHAR(500),
+		copyright_text VARCHAR(500),
+		description TEXT,
+		services TEXT DEFAULT '[]',
+		social_media TEXT DEFAULT '[]',
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	)`
+
+	if _, err := DB.Exec(footerContentTable); err != nil {
+		log.Fatal("Failed to create footer_content table:", err)
+	}
+
+	log.Println("Footer content table created successfully")
+}
+
+func migrateFooterContentTable() {
+	// Add services and social_media columns to footer_content table if they don't exist
+	migrations := []string{
+		"ALTER TABLE footer_content ADD COLUMN IF NOT EXISTS services TEXT DEFAULT '[]'",
+		"ALTER TABLE footer_content ADD COLUMN IF NOT EXISTS social_media TEXT DEFAULT '[]'",
+	}
+
+	for _, migration := range migrations {
+		if _, err := DB.Exec(migration); err != nil {
+			log.Printf("Footer content migration warning: %v", err)
+		}
+	}
+
+	// Update existing records that might have NULL services or social_media
+	_, err := DB.Exec("UPDATE footer_content SET services = '[]' WHERE services IS NULL OR services = ''")
+	if err != nil {
+		log.Printf("Failed to update existing footer content services: %v", err)
+	} else {
+		log.Println("Updated existing footer content with default services")
+	}
+
+	// Set default social media for existing records
+	defaultSocialMedia := `[{"name":"Facebook","url":"https://facebook.com/company","icon":"facebook"},{"name":"Instagram","url":"https://instagram.com/company","icon":"photo_camera"},{"name":"YouTube","url":"https://youtube.com/company","icon":"play_circle"},{"name":"LinkedIn","url":"https://linkedin.com/company/company","icon":"business"}]`
+	_, err = DB.Exec("UPDATE footer_content SET social_media = $1 WHERE social_media IS NULL OR social_media = '' OR social_media = '[]'", defaultSocialMedia)
+	if err != nil {
+		log.Printf("Failed to update existing footer content social media: %v", err)
+	} else {
+		log.Println("Updated existing footer content with default social media")
+	}
+
+	log.Println("Footer content table migration completed")
+}
+
 func seedAdminUser() {
 	// Check if admin user exists
 	var count int
@@ -242,6 +305,7 @@ func seedAdminUser() {
 	// Seed some default categories and home content
 	seedDefaultCategories()
 	seedDefaultHomeContent()
+	seedDefaultFooterContent()
 }
 
 func seedDefaultCategories() {
@@ -336,6 +400,57 @@ func seedDefaultHomeContent() {
 			log.Printf("Failed to seed home content: %v", err)
 		} else {
 			log.Println("Default home content seeded")
+		}
+	}
+}
+
+func seedDefaultFooterContent() {
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM footer_content").Scan(&count)
+	if err != nil {
+		log.Fatal("Failed to check footer content:", err)
+	}
+
+	if count == 0 {
+		defaultFooterContent := models.FooterContent{
+			CompanyName:   "MMA Architectural Design",
+			Address:       "123 Đường ABC, Phường XYZ, Quận 1, TP.HCM",
+			Phone:         "0123 456 789",
+			Email:         "contact@mmadesign.com",
+			FacebookURL:   "https://facebook.com/mmadesign",
+			InstagramURL:  "https://instagram.com/mmadesign",
+			YoutubeURL:    "https://youtube.com/mmadesign",
+			LinkedinURL:   "https://linkedin.com/company/mmadesign",
+			CopyrightText: "© 2024 MMA Architectural Design. All rights reserved.",
+			Description:   "Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo. Đội ngũ kiến trúc sư giàu kinh nghiệm, cam kết mang đến những công trình chất lượng cao.",
+		}
+
+		// Default services as JSON string
+		defaultServices := `["Thiết kế kiến trúc", "Thi công xây dựng", "Nội thất cao cấp", "Tư vấn phong thủy"]`
+		// Default social media as JSON string
+		defaultSocialMedia := `[{"name":"Facebook","url":"https://facebook.com/mmadesign","icon":"facebook"},{"name":"Instagram","url":"https://instagram.com/mmadesign","icon":"photo_camera"},{"name":"YouTube","url":"https://youtube.com/mmadesign","icon":"play_circle"},{"name":"LinkedIn","url":"https://linkedin.com/company/mmadesign","icon":"business"}]`
+
+		_, err := DB.Exec(`
+			INSERT INTO footer_content (company_name, address, phone, email, facebook_url, instagram_url,
+			                           youtube_url, linkedin_url, copyright_text, description, services, social_media)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+			defaultFooterContent.CompanyName,
+			defaultFooterContent.Address,
+			defaultFooterContent.Phone,
+			defaultFooterContent.Email,
+			defaultFooterContent.FacebookURL,
+			defaultFooterContent.InstagramURL,
+			defaultFooterContent.YoutubeURL,
+			defaultFooterContent.LinkedinURL,
+			defaultFooterContent.CopyrightText,
+			defaultFooterContent.Description,
+			defaultServices,
+			defaultSocialMedia,
+		)
+		if err != nil {
+			log.Printf("Failed to seed footer content: %v", err)
+		} else {
+			log.Println("Default footer content seeded")
 		}
 	}
 }

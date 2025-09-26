@@ -52,7 +52,8 @@ export const ADMIN_CONSTANTS = {
     CATEGORIES: 'categories',
     POSTS: 'posts',
     MEDIA: 'media',
-    HOMEPAGE: 'homepage'
+    HOMEPAGE: 'homepage',
+    FOOTER: 'footer'
   },
 
   // Table columns

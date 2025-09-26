@@ -106,3 +106,21 @@ type HomeContent struct {
 	CreatedAt             time.Time `json:"created_at"`
 	UpdatedAt             time.Time `json:"updated_at"`
 }
+
+type FooterContent struct {
+	ID           uint      `json:"id" gorm:"primaryKey"`
+	CompanyName  string    `json:"company_name" gorm:"not null"`
+	Address      string    `json:"address" gorm:"type:text"`
+	Phone        string    `json:"phone"`
+	Email        string    `json:"email"`
+	FacebookURL  string    `json:"facebook_url"`
+	InstagramURL string    `json:"instagram_url"`
+	YoutubeURL   string    `json:"youtube_url"`
+	LinkedinURL  string    `json:"linkedin_url"`
+	CopyrightText string   `json:"copyright_text"`
+	Description   string   `json:"description" gorm:"type:text"`
+	Services      string   `json:"services" gorm:"type:text"`
+	SocialMedia   string   `json:"social_media" gorm:"type:text"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}

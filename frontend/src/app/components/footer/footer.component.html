@@ -1,48 +1,43 @@
 <footer class="footer dark-bg">
   <div class="footer-content-wrapper">
     <div class="footer-section">
-      <h3>MMA Architectural Design</h3>
-      <p>Chuyên thiết kế và thi công nhà ở hiện đại, đẹp mắt và tiện nghi.
-         Mang đến cho bạn những ngôi nhà trong mơ với phong cách kiến trúc độc đáo.</p>
+      <h3>{{ footerContent.company_name }}</h3>
+      <p>{{ footerContent.description }}</p>
     </div>
 
     <div class="footer-section">
       <h4>Liên Hệ</h4>
       <div class="contact-item">
         <mat-icon>phone</mat-icon>
-        <span>0123 456 789</span>
+        <span>{{ footerContent.phone }}</span>
       </div>
       <div class="contact-item">
         <mat-icon>email</mat-icon>
-        <span>info&#64;modernhousedesign.com</span>
+        <span>{{ footerContent.email }}</span>
       </div>
       <div class="contact-item">
         <mat-icon>location_on</mat-icon>
-        <span>123 Đường ABC, Quận XYZ, TP.HCM</span>
+        <span>{{ footerContent.address }}</span>
       </div>
     </div>
 
     <div class="footer-section">
       <h4>Dịch Vụ</h4>
       <ul class="service-list">
-        <li>Thiết kế kiến trúc</li>
-        <li>Thi công xây dựng</li>
-        <li>Nội thất cao cấp</li>
-        <li>Tư vấn phong thủy</li>
+        <li *ngFor="let service of footerContent.services">{{ service }}</li>
       </ul>
     </div>
 
     <div class="footer-section social-section">
       <h4>Theo Dõi</h4>
       <div class="social-links">
-        <a href="#" class="social-link">
-          <mat-icon>facebook</mat-icon>
-        </a>
-        <a href="#" class="social-link">
-          <mat-icon>instagram</mat-icon>
-        </a>
-        <a href="#" class="social-link">
-          <mat-icon>youtube_searched_for</mat-icon>
+        <a *ngFor="let socialMedia of footerContent.social_media"
+           [href]="socialMedia.url"
+           class="social-link"
+           target="_blank"
+           rel="noopener"
+           [title]="socialMedia.name">
+          <mat-icon>{{ socialMedia.icon }}</mat-icon>
         </a>
       </div>
     </div>
@@ -50,7 +45,7 @@
 
   <div class="footer-bottom">
     <div class="footer-bottom-content">
-      <p>&copy; 2025 MMA Architectural Design. Tất cả quyền được bảo lưu.</p>
+      <p>{{ footerContent.copyright_text }}</p>
     </div>
   </div>
 </footer>

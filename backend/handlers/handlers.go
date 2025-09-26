@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -1473,4 +1474,196 @@ func UploadSvgIcon(c *gin.Context) {
 		"svg":  string(svgContent),
 		"name": strings.TrimSuffix(header.Filename, ext),
 	})
+}
+
+// SocialMediaItem represents a single social media entry
+type SocialMediaItem struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+	Icon string `json:"icon"`
+}
+
+// FooterContentResponse represents the API response structure with services as array
+type FooterContentResponse struct {
+	ID           uint               `json:"id"`
+	CompanyName  string             `json:"company_name"`
+	Address      string             `json:"address"`
+	Phone        string             `json:"phone"`
+	Email        string             `json:"email"`
+	FacebookURL  string             `json:"facebook_url"`
+	InstagramURL string             `json:"instagram_url"`
+	YoutubeURL   string             `json:"youtube_url"`
+	LinkedinURL  string             `json:"linkedin_url"`
+	CopyrightText string            `json:"copyright_text"`
+	Description   string            `json:"description"`
+	Services      []string           `json:"services"`
+	SocialMedia   []SocialMediaItem  `json:"social_media"`
+	CreatedAt     time.Time          `json:"created_at"`
+	UpdatedAt     time.Time          `json:"updated_at"`
+}
+
+// Footer Content handlers
+func GetFooterContent(c *gin.Context) {
+	var footerContent models.FooterContent
+
+	// Get the first (and should be only) footer content record
+	err := database.DB.QueryRow(`
+		SELECT id, company_name, address, phone, email,
+		       COALESCE(facebook_url, '') as facebook_url,
+		       COALESCE(instagram_url, '') as instagram_url,
+		       COALESCE(youtube_url, '') as youtube_url,
+		       COALESCE(linkedin_url, '') as linkedin_url,
+		       copyright_text, description, COALESCE(services, '[]') as services,
+		       COALESCE(social_media, '[]') as social_media,
+		       created_at, updated_at
+		FROM footer_content
+		ORDER BY id LIMIT 1
+	`).Scan(
+		&footerContent.ID,
+		&footerContent.CompanyName,
+		&footerContent.Address,
+		&footerContent.Phone,
+		&footerContent.Email,
+		&footerContent.FacebookURL,
+		&footerContent.InstagramURL,
+		&footerContent.YoutubeURL,
+		&footerContent.LinkedinURL,
+		&footerContent.CopyrightText,
+		&footerContent.Description,
+		&footerContent.Services,
+		&footerContent.SocialMedia,
+		&footerContent.CreatedAt,
+		&footerContent.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Footer content not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch footer content"})
+		}
+		return
+	}
+
+	// Parse services JSON string to array
+	var services []string
+	if footerContent.Services != "" {
+		if err := json.Unmarshal([]byte(footerContent.Services), &services); err != nil {
+			fmt.Printf("Backend: Error unmarshaling services JSON: %v\n", err)
+			fmt.Printf("Backend: Raw services string: %s\n", footerContent.Services)
+			services = []string{}
+		}
+	} else {
+		fmt.Printf("Backend: Services field is empty\n")
+		services = []string{}
+	}
+
+	fmt.Printf("Backend: Parsed services array: %+v\n", services)
+
+	// Parse social media JSON string to array
+	var socialMedia []SocialMediaItem
+	if footerContent.SocialMedia != "" {
+		if err := json.Unmarshal([]byte(footerContent.SocialMedia), &socialMedia); err != nil {
+			fmt.Printf("Backend: Error unmarshaling social media JSON: %v\n", err)
+			fmt.Printf("Backend: Raw social media string: %s\n", footerContent.SocialMedia)
+			socialMedia = []SocialMediaItem{}
+		}
+	} else {
+		fmt.Printf("Backend: Social media field is empty\n")
+		socialMedia = []SocialMediaItem{}
+	}
+
+	fmt.Printf("Backend: Parsed social media array: %+v\n", socialMedia)
+
+	// Create response object
+	response := FooterContentResponse{
+		ID:           footerContent.ID,
+		CompanyName:  footerContent.CompanyName,
+		Address:      footerContent.Address,
+		Phone:        footerContent.Phone,
+		Email:        footerContent.Email,
+		FacebookURL:  footerContent.FacebookURL,
+		InstagramURL: footerContent.InstagramURL,
+		YoutubeURL:   footerContent.YoutubeURL,
+		LinkedinURL:  footerContent.LinkedinURL,
+		CopyrightText: footerContent.CopyrightText,
+		Description:   footerContent.Description,
+		Services:      services,
+		SocialMedia:   socialMedia,
+		CreatedAt:     footerContent.CreatedAt,
+		UpdatedAt:     footerContent.UpdatedAt,
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func UpdateFooterContent(c *gin.Context) {
+	// Check authentication
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var updateData FooterContentResponse
+	if err := c.ShouldBindJSON(&updateData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	fmt.Printf("Backend: Received footer content update: %+v\n", updateData)
+	fmt.Printf("Backend: Services received: %+v\n", updateData.Services)
+	fmt.Printf("Backend: Social media received: %+v\n", updateData.SocialMedia)
+
+	// Convert services array to JSON string
+	servicesJSON, err := json.Marshal(updateData.Services)
+	if err != nil {
+		fmt.Printf("Backend: Error marshaling services: %v\n", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to process services data"})
+		return
+	}
+
+	// Convert social media array to JSON string
+	socialMediaJSON, err := json.Marshal(updateData.SocialMedia)
+	if err != nil {
+		fmt.Printf("Backend: Error marshaling social media: %v\n", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to process social media data"})
+		return
+	}
+
+	fmt.Printf("Backend: Services JSON: %s\n", string(servicesJSON))
+	fmt.Printf("Backend: Social media JSON: %s\n", string(socialMediaJSON))
+
+	// Update the footer content (should be only one record)
+	_, err = database.DB.Exec(`
+		UPDATE footer_content
+		SET company_name = $1, address = $2, phone = $3, email = $4,
+		    facebook_url = $5, instagram_url = $6, youtube_url = $7, linkedin_url = $8,
+		    copyright_text = $9, description = $10, services = $11, social_media = $12, updated_at = CURRENT_TIMESTAMP
+		WHERE id = (SELECT id FROM footer_content ORDER BY id LIMIT 1)
+	`,
+		updateData.CompanyName,
+		updateData.Address,
+		updateData.Phone,
+		updateData.Email,
+		updateData.FacebookURL,
+		updateData.InstagramURL,
+		updateData.YoutubeURL,
+		updateData.LinkedinURL,
+		updateData.CopyrightText,
+		updateData.Description,
+		string(servicesJSON),
+		string(socialMediaJSON),
+	)
+
+	if err != nil {
+		fmt.Printf("Backend: Database update error: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update footer content"})
+		return
+	}
+
+	fmt.Printf("Backend: Footer content updated successfully\n")
+
+	// Return the updated content
+	GetFooterContent(c)
 }

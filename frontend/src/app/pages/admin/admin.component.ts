@@ -29,6 +29,28 @@ import { FileValidator } from '../../utils/file-validator.util';
 import { LoggerService } from '../../services/logger.service';
 import { IconSelectorComponent } from '../../components/icon-selector/icon-selector.component';
 
+export interface SocialMediaItem {
+  name: string;
+  url: string;
+  icon: string;
+}
+
+export interface FooterContent {
+  id?: number;
+  company_name: string;
+  address: string;
+  phone: string;
+  email: string;
+  facebook_url?: string;
+  instagram_url?: string;
+  youtube_url?: string;
+  linkedin_url?: string;
+  copyright_text: string;
+  description: string;
+  services: string[];
+  social_media: SocialMediaItem[];
+}
+
 @Component({
   selector: 'app-admin',
   standalone: true,
@@ -89,6 +111,24 @@ export class AdminComponent implements OnInit {
   originalHomepageContent: HomeContent = {} as HomeContent;
   isContentModified: boolean = false;
 
+  // Footer Management Properties
+  footerContent: FooterContent = {
+    company_name: '',
+    address: '',
+    phone: '',
+    email: '',
+    facebook_url: '',
+    instagram_url: '',
+    youtube_url: '',
+    linkedin_url: '',
+    copyright_text: '',
+    description: '',
+    services: [],
+    social_media: []
+  };
+  originalFooterContent: FooterContent = {} as FooterContent;
+  isFooterContentModified: boolean = false;
+
   private refreshSubject = new Subject<void>();
 
   constructor(
@@ -114,6 +154,7 @@ export class AdminComponent implements OnInit {
   ngOnInit(): void {
     this.loadHomepageContent();
     this.loadHomepageMedia();
+    this.loadFooterContent();
   }
 
   setCurrentSection(section: string): void {
@@ -121,6 +162,9 @@ export class AdminComponent implements OnInit {
     if (section === ADMIN_CONSTANTS.SECTIONS.HOMEPAGE) {
       this.loadHomepageMedia();
       this.loadHomepageContent();
+    }
+    if (section === ADMIN_CONSTANTS.SECTIONS.FOOTER) {
+      this.loadFooterContent();
     }
   }
 
@@ -671,5 +715,182 @@ export class AdminComponent implements OnInit {
         this.router.navigate(['/']);
       }
     });
+  }
+
+  // Footer Content Management Methods
+  loadFooterContent(): void {
+    this.dataService.getFooterContent().subscribe({
+      next: (content) => {
+        this.footerContent = JSON.parse(JSON.stringify(content)); // Deep copy
+        // Ensure services array is always initialized
+        if (!this.footerContent.services || !Array.isArray(this.footerContent.services)) {
+          this.footerContent.services = ['Thiết kế kiến trúc', 'Thi công xây dựng', 'Nội thất cao cấp', 'Tư vấn phong thủy'];
+        }
+        // Ensure social media array is always initialized
+        if (!this.footerContent.social_media || !Array.isArray(this.footerContent.social_media)) {
+          this.footerContent.social_media = [
+            { name: 'Facebook', url: 'https://facebook.com/company', icon: 'facebook' },
+            { name: 'Instagram', url: 'https://instagram.com/company', icon: 'photo_camera' },
+            { name: 'YouTube', url: 'https://youtube.com/company', icon: 'play_circle' },
+            { name: 'LinkedIn', url: 'https://linkedin.com/company/company', icon: 'business' }
+          ];
+        }
+        this.originalFooterContent = JSON.parse(JSON.stringify(this.footerContent)); // Deep copy
+        this.isFooterContentModified = false;
+      },
+      error: (error) => {
+        console.error('Error loading footer content:', error);
+        // Use default values if API fails
+        this.footerContent = {
+          company_name: 'MMA Architectural Design',
+          address: '123 Đường ABC, Quận XYZ, TP.HCM',
+          phone: '0123 456 789',
+          email: 'contact@company.com',
+          facebook_url: '',
+          instagram_url: '',
+          youtube_url: '',
+          linkedin_url: '',
+          copyright_text: '© 2024 MMA Architectural Design. All rights reserved.',
+          description: 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo',
+          services: ['Thiết kế kiến trúc', 'Thi công xây dựng', 'Nội thất cao cấp', 'Tư vấn phong thủy'],
+          social_media: [
+            { name: 'Facebook', url: 'https://facebook.com/company', icon: 'facebook' },
+            { name: 'Instagram', url: 'https://instagram.com/company', icon: 'photo_camera' },
+            { name: 'YouTube', url: 'https://youtube.com/company', icon: 'play_circle' },
+            { name: 'LinkedIn', url: 'https://linkedin.com/company/company', icon: 'business' }
+          ]
+        };
+        this.originalFooterContent = { ...this.footerContent };
+        this.isFooterContentModified = false;
+      }
+    });
+  }
+
+  onFooterContentChange(): void {
+    // Force deep comparison by creating new objects to ensure change detection works
+    const currentContent = JSON.parse(JSON.stringify(this.footerContent));
+    const originalContent = JSON.parse(JSON.stringify(this.originalFooterContent));
+    this.isFooterContentModified = JSON.stringify(currentContent) !== JSON.stringify(originalContent);
+    console.log('Footer content modified:', this.isFooterContentModified);
+  }
+
+  saveFooterContent(): void {
+    console.log('Saving footer content:', this.footerContent);
+    console.log('Services being saved:', this.footerContent.services);
+
+    this.dataService.updateFooterContent(this.footerContent).subscribe({
+      next: (updatedContent) => {
+        console.log('Received updated footer content from server:', updatedContent);
+        this.footerContent = JSON.parse(JSON.stringify(updatedContent)); // Deep copy
+        this.originalFooterContent = JSON.parse(JSON.stringify(updatedContent)); // Deep copy
+        this.isFooterContentModified = false;
+        this.showSuccessMessage('Nội dung footer đã được lưu');
+      },
+      error: (error) => {
+        console.error('Error saving footer content:', error);
+        this.logger.error('Error saving footer content', error, 'ContentManagement');
+        this.showErrorMessage('Lỗi khi lưu nội dung footer');
+      }
+    });
+  }
+
+  // Service Management Methods
+  addService(): void {
+    console.log('addService called');
+    console.log('Current services:', this.footerContent.services);
+    // Ensure services array exists
+    if (!this.footerContent.services) {
+      this.footerContent.services = [];
+    }
+
+    // Create a new array to trigger change detection
+    this.footerContent.services = [...this.footerContent.services, ''];
+    console.log('Services after adding:', this.footerContent.services);
+
+    // Force change detection
+    setTimeout(() => {
+      this.onFooterContentChange();
+    }, 0);
+  }
+
+  removeService(index: number): void {
+    if (this.footerContent.services && index >= 0 && index < this.footerContent.services.length) {
+      // Create a new array to trigger change detection
+      this.footerContent.services = this.footerContent.services.filter((_, i) => i !== index);
+
+      // Force change detection
+      setTimeout(() => {
+        this.onFooterContentChange();
+      }, 0);
+    }
+  }
+
+  onServiceChange(index: number, value: string): void {
+    if (this.footerContent.services && index >= 0 && index < this.footerContent.services.length) {
+      this.footerContent.services[index] = value;
+      setTimeout(() => {
+        this.onFooterContentChange();
+      }, 0);
+    }
+  }
+
+  // Social Media Management Methods
+  addSocialMedia(): void {
+    console.log('addSocialMedia called');
+    // Ensure social media array exists
+    if (!this.footerContent.social_media) {
+      this.footerContent.social_media = [];
+    }
+
+    // Create a new social media item with default values
+    const newSocialMedia: SocialMediaItem = {
+      name: '',
+      url: '',
+      icon: 'public'
+    };
+
+    // Create a new array to trigger change detection
+    this.footerContent.social_media = [...this.footerContent.social_media, newSocialMedia];
+    console.log('Social media after adding:', this.footerContent.social_media);
+
+    // Force change detection
+    setTimeout(() => {
+      this.onFooterContentChange();
+    }, 0);
+  }
+
+  removeSocialMedia(index: number): void {
+    if (this.footerContent.social_media && index >= 0 && index < this.footerContent.social_media.length) {
+      // Create a new array to trigger change detection
+      this.footerContent.social_media = this.footerContent.social_media.filter((_, i) => i !== index);
+
+      // Force change detection
+      setTimeout(() => {
+        this.onFooterContentChange();
+      }, 0);
+    }
+  }
+
+  onSocialMediaChange(index: number, field: 'name' | 'url', value: string): void {
+    if (this.footerContent.social_media && index >= 0 && index < this.footerContent.social_media.length) {
+      this.footerContent.social_media[index][field] = value;
+      setTimeout(() => {
+        this.onFooterContentChange();
+      }, 0);
+    }
+  }
+
+  onSocialMediaIconChange(index: number, iconName: string): void {
+    console.log(`Social media ${index} icon changed to:`, iconName);
+    if (this.footerContent.social_media && index >= 0 && index < this.footerContent.social_media.length) {
+      this.footerContent.social_media[index].icon = iconName;
+      setTimeout(() => {
+        this.onFooterContentChange();
+      }, 0);
+    }
+  }
+
+  trackByIndex(index: number): number {
+    return index;
   }
 }

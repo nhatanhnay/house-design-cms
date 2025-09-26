@@ -18,7 +18,7 @@
 
         <!-- Category with subcategories - CSS hover dropdown -->
         <div *ngIf="mainCategory.hasChildren" class="category-dropdown-container">
-          <button mat-button class="category-dropdown">
+          <button mat-button class="category-dropdown" [routerLink]="'/category/' + mainCategory.slug">
             {{ mainCategory.name }}
             <mat-icon class="dropdown-arrow">keyboard_arrow_down</mat-icon>
           </button>

@@ -15,17 +15,22 @@ import { Post, Admin } from '../../models/models';
   imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, RouterModule],
   template: `
     <div class="category-page">
-      <div class="container">
-        <!-- Category Header -->
-        <div class="category-header">
+      <!-- Category Header -->
+      <div class="category-header">
+        <div class="left-content">
           <h1 class="category-title">{{ categoryName || 'Danh mục không tìm thấy' }}</h1>
           <div class="category-description" *ngIf="categoryDescription">
             <p>{{ categoryDescription }}</p>
           </div>
-          <div class="posts-count" *ngIf="posts$ | async as posts">
-            <span>{{ posts.length }} bài viết</span>
-          </div>
         </div>
+        <div class="right-content">
+          <img [src]="categoryThumbnail || 'assets/images/placeholder-category.jpg'"
+               [alt]="categoryName"
+               class="category-thumbnail"
+               (error)="onImageError($event)">
+        </div>
+      </div>
+      <div class="container">
 
         <!-- Loading State -->
         <div class="loading-state" *ngIf="isLoading">
@@ -89,8 +94,15 @@ import { Post, Admin } from '../../models/models';
     </div>
   `,
   styles: [`
+    @font-face {
+      font-family: 'UVF BankGothic Md BT';
+      src: url('/assets/images/font/UVF BankGothic Md BT.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
     .category-page {
-      padding: 40px 0;
+      padding: 0px 0;
       min-height: 100vh;
       background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     }
@@ -103,16 +115,34 @@ import { Post, Admin } from '../../models/models';
 
     /* Category Header */
     .category-header {
-      text-align: center;
+      display: flex;
+      width: 100%;
+      height: auto;
       margin-bottom: 40px;
-      padding: 40px 20px;
       background: white;
-      border-radius: 16px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
 
+    .left-content {
+      width: 30%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-end;
+      text-align: right;
+      padding-right: 20px;
+      font-family: 'UVF BankGothic Md BT', sans-serif;
+    }
+
+    .right-content {
+      width: 70%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     .category-title {
-      font-size: 2.5rem;
+      font-size: 30px;
       font-weight: 700;
       color: var(--dark-blue, #2c3e50);
       margin-bottom: 15px;
@@ -130,6 +160,12 @@ import { Post, Admin } from '../../models/models';
       font-size: 1.1rem;
       color: #6c757d;
       line-height: 1.6;
+    }
+
+    .category-thumbnail {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
     }
 
     .posts-count {
@@ -374,6 +410,7 @@ export class CategoryComponent implements OnInit {
   currentUser$: Observable<Admin | null>;
   categoryName = '';
   categoryDescription = '';
+  categoryThumbnail = '';
   isLoading = true;
 
   constructor(
@@ -397,11 +434,13 @@ export class CategoryComponent implements OnInit {
             if (category) {
               this.categoryName = category.name; // Use the actual category name
               this.categoryDescription = category.description;
+              this.categoryThumbnail = category.thumbnail_url || '';
               return this.dataService.getPosts(category.id);
             } else {
               console.log('Category not found for slug:', params['slug']);
               this.categoryName = 'Danh mục không tìm thấy';
               this.categoryDescription = '';
+              this.categoryThumbnail = '';
               return of([]);
             }
           })

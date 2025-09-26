@@ -25,6 +25,11 @@
             <mat-icon matListIcon>home</mat-icon>
             <span matLine>Quản Lý Trang Chủ</span>
           </mat-list-item>
+
+          <mat-list-item (click)="setCurrentSection('footer')" [class.active]="currentSection === 'footer'">
+            <mat-icon matListIcon>web</mat-icon>
+            <span matLine>Quản Lý Footer</span>
+          </mat-list-item>
         </mat-nav-list>
       </mat-sidenav>
 
@@ -434,21 +439,21 @@
                 <div class="feature-row">
                   <div class="icon-field">
                     <label class="icon-selector-label">Icon</label>
-                    <app-icon-selector
-                      [iconValue]="homepageContent.feature1_icon || 'architecture'"
+                    <app-icon-selector [iconValue]="homepageContent.feature1_icon || 'architecture'"
                       (iconChange)="onFeature1IconChange($event)">
                     </app-icon-selector>
                   </div>
                   <div class="title-field">
                     <label class="field-label">Tiêu đề</label>
-                    <input type="text" class="form-input" [(ngModel)]="homepageContent.feature1_title" (ngModelChange)="onContentChange()"
-                      placeholder="Thiết Kế Kiến Trúc Độc Đáo">
+                    <input type="text" class="form-input" [(ngModel)]="homepageContent.feature1_title"
+                      (ngModelChange)="onContentChange()" placeholder="Thiết Kế Kiến Trúc Độc Đáo">
                   </div>
                 </div>
                 <mat-form-field appearance="fill" class="full-width">
                   <mat-label>Mô tả</mat-label>
-                  <textarea matInput [(ngModel)]="homepageContent.feature1_description" (ngModelChange)="onContentChange()"
-                    rows="3" placeholder="Chuyên gia kiến trúc sư với hơn 10 năm kinh nghiệm, tạo ra những công trình biệt thự và nhà ở đẳng cấp."></textarea>
+                  <textarea matInput [(ngModel)]="homepageContent.feature1_description"
+                    (ngModelChange)="onContentChange()" rows="3"
+                    placeholder="Chuyên gia kiến trúc sư với hơn 10 năm kinh nghiệm, tạo ra những công trình biệt thự và nhà ở đẳng cấp."></textarea>
                 </mat-form-field>
               </div>
 
@@ -458,21 +463,21 @@
                 <div class="feature-row">
                   <div class="icon-field">
                     <label class="icon-selector-label">Icon</label>
-                    <app-icon-selector
-                      [iconValue]="homepageContent.feature2_icon || 'engineering'"
+                    <app-icon-selector [iconValue]="homepageContent.feature2_icon || 'engineering'"
                       (iconChange)="onFeature2IconChange($event)">
                     </app-icon-selector>
                   </div>
                   <div class="title-field">
                     <label class="field-label">Tiêu đề</label>
-                    <input type="text" class="form-input" [(ngModel)]="homepageContent.feature2_title" (ngModelChange)="onContentChange()"
-                      placeholder="Thi Công Chất Lượng Cao">
+                    <input type="text" class="form-input" [(ngModel)]="homepageContent.feature2_title"
+                      (ngModelChange)="onContentChange()" placeholder="Thi Công Chất Lượng Cao">
                   </div>
                 </div>
                 <mat-form-field appearance="fill" class="full-width">
                   <mat-label>Mô tả</mat-label>
-                  <textarea matInput [(ngModel)]="homepageContent.feature2_description" (ngModelChange)="onContentChange()"
-                    rows="3" placeholder="Đội ngũ kỹ sư và công nhân tay nghề cao, sử dụng công nghệ hiện đại trong thi công."></textarea>
+                  <textarea matInput [(ngModel)]="homepageContent.feature2_description"
+                    (ngModelChange)="onContentChange()" rows="3"
+                    placeholder="Đội ngũ kỹ sư và công nhân tay nghề cao, sử dụng công nghệ hiện đại trong thi công."></textarea>
                 </mat-form-field>
               </div>
 
@@ -482,21 +487,21 @@
                 <div class="feature-row">
                   <div class="icon-field">
                     <label class="icon-selector-label">Icon</label>
-                    <app-icon-selector
-                      [iconValue]="homepageContent.feature3_icon || 'business'"
+                    <app-icon-selector [iconValue]="homepageContent.feature3_icon || 'business'"
                       (iconChange)="onFeature3IconChange($event)">
                     </app-icon-selector>
                   </div>
                   <div class="title-field">
                     <label class="field-label">Tiêu đề</label>
-                    <input type="text" class="form-input" [(ngModel)]="homepageContent.feature3_title" (ngModelChange)="onContentChange()"
-                      placeholder="Dịch Vụ Toàn Diện">
+                    <input type="text" class="form-input" [(ngModel)]="homepageContent.feature3_title"
+                      (ngModelChange)="onContentChange()" placeholder="Dịch Vụ Toàn Diện">
                   </div>
                 </div>
                 <mat-form-field appearance="fill" class="full-width">
                   <mat-label>Mô tả</mat-label>
-                  <textarea matInput [(ngModel)]="homepageContent.feature3_description" (ngModelChange)="onContentChange()"
-                    rows="3" placeholder="Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn giao hoàn thiện."></textarea>
+                  <textarea matInput [(ngModel)]="homepageContent.feature3_description"
+                    (ngModelChange)="onContentChange()" rows="3"
+                    placeholder="Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn giao hoàn thiện."></textarea>
                 </mat-form-field>
               </div>
 
@@ -506,22 +511,167 @@
                 <div class="feature-row">
                   <div class="icon-field">
                     <label class="icon-selector-label">Icon</label>
-                    <app-icon-selector
-                      [iconValue]="homepageContent.feature4_icon || 'verified'"
+                    <app-icon-selector [iconValue]="homepageContent.feature4_icon || 'verified'"
                       (iconChange)="onFeature4IconChange($event)">
                     </app-icon-selector>
                   </div>
                   <div class="title-field">
                     <label class="field-label">Tiêu đề</label>
-                    <input type="text" class="form-input" [(ngModel)]="homepageContent.feature4_title" (ngModelChange)="onContentChange()"
-                      placeholder="Uy Tín 37 Tỉnh Thành">
+                    <input type="text" class="form-input" [(ngModel)]="homepageContent.feature4_title"
+                      (ngModelChange)="onContentChange()" placeholder="Uy Tín 37 Tỉnh Thành">
                   </div>
                 </div>
                 <mat-form-field appearance="fill" class="full-width">
                   <mat-label>Mô tả</mat-label>
-                  <textarea matInput [(ngModel)]="homepageContent.feature4_description" (ngModelChange)="onContentChange()"
-                    rows="3" placeholder="Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng."></textarea>
+                  <textarea matInput [(ngModel)]="homepageContent.feature4_description"
+                    (ngModelChange)="onContentChange()" rows="3"
+                    placeholder="Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng."></textarea>
                 </mat-form-field>
+              </div>
+
+            </div>
+          </mat-card>
+        </div>
+
+        <!-- Footer Management Section -->
+        <div *ngIf="currentSection === 'footer'" class="content-section">
+          <div class="section-header">
+            <h2>Quản Lý Footer</h2>
+            <button mat-raised-button color="primary" (click)="saveFooterContent()"
+              [disabled]="!isFooterContentModified">
+              <mat-icon>save</mat-icon>
+              Lưu Thay Đổi
+            </button>
+          </div>
+
+          <mat-card class="footer-content-card">
+            <div class="footer-form">
+              <!-- Company Information -->
+              <div class="section-divider">
+                <h4 class="section-title">📍 Thông Tin Công Ty</h4>
+              </div>
+
+              <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Tên công ty</mat-label>
+                <input matInput [(ngModel)]="footerContent.company_name" (ngModelChange)="onFooterContentChange()"
+                  placeholder="MMA Architectural Design">
+              </mat-form-field>
+
+              <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Địa chỉ</mat-label>
+                <textarea matInput [(ngModel)]="footerContent.address" (ngModelChange)="onFooterContentChange()"
+                  rows="2" placeholder="123 Đường ABC, Quận XYZ, TP.HCM"></textarea>
+              </mat-form-field>
+
+              <div class="contact-row">
+                <mat-form-field appearance="fill">
+                  <mat-label>Số điện thoại</mat-label>
+                  <input matInput [(ngModel)]="footerContent.phone" (ngModelChange)="onFooterContentChange()"
+                    placeholder="0123 456 789">
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                  <mat-label>Email</mat-label>
+                  <input matInput [(ngModel)]="footerContent.email" (ngModelChange)="onFooterContentChange()"
+                    placeholder="contact@company.com">
+                </mat-form-field>
+              </div>
+
+              <!-- Dynamic Social Media Links -->
+              <div class="section-divider">
+                <h4 class="section-title">🔗 Mạng Xã Hội</h4>
+              </div>
+
+              <div class="social-media-list">
+                <div class="social-media-item"
+                  *ngFor="let socialMedia of footerContent.social_media || []; let i = index; trackBy: trackByIndex">
+
+                  <div class="social-media-header">
+                    <div class="social-media-title">Mạng xã hội {{i + 1}}</div>
+                    <button class="remove-social-btn" (click)="removeSocialMedia(i)"
+                      [disabled]="footerContent.social_media.length <= 1" title="Xóa mạng xã hội">
+                      <span class="remove-icon">✕</span>
+                    </button>
+                  </div>
+
+                  <div class="social-media-form">
+                    <div class="icon-name-row">
+                      <div class="icon-field">
+                        <label class="icon-selector-label">Icon</label>
+                        <app-icon-selector [iconValue]="socialMedia.icon || 'public'"
+                          (iconChange)="onSocialMediaIconChange(i, $event)">
+                        </app-icon-selector>
+                      </div>
+
+                      <div class="name-field">
+                        <label class="field-label">Tên mạng xã hội</label>
+                        <input type="text" class="form-input" [(ngModel)]="footerContent.social_media[i].name"
+                          (ngModelChange)="onSocialMediaChange(i, 'name', $event)" placeholder="Facebook">
+                      </div>
+                    </div>
+
+                    <div class="url-field">
+                      <label class="field-label">URL</label>
+                      <input type="url" class="form-input" [(ngModel)]="footerContent.social_media[i].url"
+                        (ngModelChange)="onSocialMediaChange(i, 'url', $event)"
+                        placeholder="https://facebook.com/company">
+                    </div>
+                  </div>
+                </div>
+
+                <button class="add-social-btn" (click)="addSocialMedia()">
+                  <span class="add-icon">+</span>
+                  Thêm Mạng Xã Hội
+                </button>
+
+              </div>
+
+              <!-- Copyright Information -->
+              <div class="section-divider">
+                <h4 class="section-title">©️ Bản Quyền</h4>
+              </div>
+
+              <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Thông tin bản quyền</mat-label>
+                <input matInput [(ngModel)]="footerContent.copyright_text" (ngModelChange)="onFooterContentChange()"
+                  placeholder="© 2024 MMA Architectural Design. All rights reserved.">
+              </mat-form-field>
+
+              <!-- Additional Information -->
+              <div class="section-divider">
+                <h4 class="section-title">ℹ️ Thông Tin Bổ Sung</h4>
+              </div>
+
+              <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Mô tả ngắn</mat-label>
+                <textarea matInput [(ngModel)]="footerContent.description" (ngModelChange)="onFooterContentChange()"
+                  rows="3"
+                  placeholder="Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo"></textarea>
+              </mat-form-field>
+
+              <!-- Services Section -->
+              <div class="section-divider">
+                <h4 class="section-title">🔧 Danh Sách Dịch Vụ</h4>
+              </div>
+
+              <div class="services-list">
+                <div class="service-item"
+                  *ngFor="let service of footerContent.services || []; let i = index; trackBy: trackByIndex">
+                  <mat-form-field appearance="fill" class="service-input">
+                    <mat-label>Dịch vụ {{i + 1}}</mat-label>
+                    <input matInput [(ngModel)]="footerContent.services[i]" (ngModelChange)="onServiceChange(i, $event)"
+                      placeholder="Nhập tên dịch vụ">
+                  </mat-form-field>
+                  <button mat-icon-button color="warn" (click)="removeService(i)"
+                    [disabled]="footerContent.services.length <= 1" matTooltip="Xóa dịch vụ">
+                    <mat-icon>remove_circle</mat-icon>
+                  </button>
+                </div>
+
+                <button mat-stroked-button color="primary" (click)="addService()" class="add-service-btn">
+                  <mat-icon>add_circle</mat-icon>
+                  Thêm Dịch Vụ
+                </button>
               </div>
 
             </div>
