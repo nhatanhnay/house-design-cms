@@ -41,9 +41,12 @@ func InitDatabase() {
 	log.Println("Connected to PostgreSQL database successfully")
 	createTables()
 	migrateCategoriesTable()
+	migratePostsTable()
+	migrateArticlesTable()
 	migrateHomeContentTable()
 	createFooterContentTable()
 	migrateFooterContentTable()
+	seedGlobalSEOSettings()
 	seedAdminUser()
 }
 
@@ -72,7 +75,7 @@ func createTables() {
 		slug VARCHAR(255) UNIQUE NOT NULL,
 		description TEXT,
 		thumbnail_url VARCHAR(500),
-		category_type VARCHAR(50) DEFAULT 'product',
+		category_type VARCHAR(50) DEFAULT 'parent',
 		parent_id INTEGER REFERENCES categories(id) ON DELETE CASCADE,
 		level INTEGER DEFAULT 0,
 		order_index INTEGER DEFAULT 0,
@@ -140,6 +143,9 @@ func createTables() {
 	}
 
 	log.Println("Database tables created successfully")
+
+	// Create global_seo_settings table
+	createGlobalSEOSettingsTable()
 }
 
 func migrateCategoriesTable() {
@@ -152,6 +158,11 @@ func migrateCategoriesTable() {
 		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
 		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS thumbnail_url VARCHAR(500)",
 		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS category_type VARCHAR(50) DEFAULT 'product'",
+		// SEO Fields
+		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS meta_title VARCHAR(255)",
+		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS meta_description TEXT",
+		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS meta_keywords TEXT",
+		"ALTER TABLE categories ADD COLUMN IF NOT EXISTS og_image_url VARCHAR(500)",
 	}
 
 	for _, migration := range migrations {
@@ -172,6 +183,43 @@ func migrateCategoriesTable() {
 	}
 
 	log.Println("Categories table migration completed")
+}
+
+func migratePostsTable() {
+	// Add SEO fields to posts table
+	migrations := []string{
+		"ALTER TABLE posts ADD COLUMN IF NOT EXISTS views INTEGER DEFAULT 0",
+		"ALTER TABLE posts ADD COLUMN IF NOT EXISTS meta_title VARCHAR(255)",
+		"ALTER TABLE posts ADD COLUMN IF NOT EXISTS meta_description TEXT",
+		"ALTER TABLE posts ADD COLUMN IF NOT EXISTS focus_keywords TEXT",
+		"ALTER TABLE posts ADD COLUMN IF NOT EXISTS og_image_url VARCHAR(500)",
+		"ALTER TABLE posts ADD COLUMN IF NOT EXISTS slug VARCHAR(255)",
+	}
+
+	for _, migration := range migrations {
+		if _, err := DB.Exec(migration); err != nil {
+			log.Printf("Migration warning: %v", err)
+		}
+	}
+
+	log.Println("Posts table migration completed")
+}
+
+func migrateArticlesTable() {
+	// Add missing SEO fields to articles table
+	migrations := []string{
+		"ALTER TABLE articles ADD COLUMN IF NOT EXISTS focus_keywords TEXT",
+		"ALTER TABLE articles ADD COLUMN IF NOT EXISTS og_image_url VARCHAR(500)",
+		"ALTER TABLE articles ADD COLUMN IF NOT EXISTS canonical_url VARCHAR(500)",
+	}
+
+	for _, migration := range migrations {
+		if _, err := DB.Exec(migration); err != nil {
+			log.Printf("Migration warning: %v", err)
+		}
+	}
+
+	log.Println("Articles table migration completed")
 }
 
 func migrateHomeContentTable() {
@@ -453,4 +501,220 @@ func seedDefaultFooterContent() {
 			log.Println("Default footer content seeded")
 		}
 	}
+}
+
+// createGlobalSEOSettingsTable creates the global_seo_settings table
+func createGlobalSEOSettingsTable() {
+	seoSettingsTable := `
+	CREATE TABLE IF NOT EXISTS global_seo_settings (
+		id SERIAL PRIMARY KEY,
+		site_name VARCHAR(255) NOT NULL,
+		default_meta_title VARCHAR(255) NOT NULL,
+		default_meta_description TEXT NOT NULL,
+		default_og_image_url VARCHAR(500),
+		google_analytics_id VARCHAR(255),
+		google_search_console_id VARCHAR(255),
+		facebook_app_id VARCHAR(255),
+		twitter_handle VARCHAR(255),
+		company_name VARCHAR(255) NOT NULL,
+		company_description TEXT,
+		company_address TEXT,
+		company_phone VARCHAR(50),
+		company_email VARCHAR(255),
+		company_logo_url VARCHAR(500),
+		business_hours VARCHAR(255),
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	)`
+
+	if _, err := DB.Exec(seoSettingsTable); err != nil {
+		log.Fatal("Failed to create global_seo_settings table:", err)
+	}
+
+	log.Println("Global SEO settings table created successfully")
+}
+
+// seedGlobalSEOSettings creates default SEO settings if none exist
+func seedGlobalSEOSettings() {
+	// Check if SEO settings already exist
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM global_seo_settings").Scan(&count)
+	if err != nil {
+		log.Printf("Failed to check global SEO settings: %v", err)
+		return
+	}
+
+	// If no settings exist, create default settings
+	if count == 0 {
+		log.Println("Seeding default global SEO settings...")
+
+		defaultSettings := models.GlobalSEOSettings{
+			SiteName:               "MMA Architectural Design",
+			DefaultMetaTitle:       "MMA Architectural Design - Thiết Kế & Thi Công Biệt Thự",
+			DefaultMetaDescription: "Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo. Uy tín tại 37 tỉnh thành, hơn 500 dự án hoàn thành.",
+			DefaultOGImageURL:      "",
+			GoogleAnalyticsID:      "",
+			GoogleSearchConsoleID:  "",
+			FacebookAppID:          "",
+			TwitterHandle:          "",
+			CompanyName:            "MMA Architectural Design",
+			CompanyDescription:     "Công ty chuyên thiết kế và thi công biệt thự, nhà ở cao cấp",
+			CompanyAddress:         "123 Đường ABC, Quận XYZ, TP.HCM",
+			CompanyPhone:           "0123 456 789",
+			CompanyEmail:           "contact@mma-design.com",
+			CompanyLogoURL:         "",
+			BusinessHours:          "Mo-Fr 08:00-17:00, Sa 08:00-12:00",
+		}
+
+		_, err := DB.Exec(`
+			INSERT INTO global_seo_settings
+			(site_name, default_meta_title, default_meta_description, default_og_image_url,
+			 google_analytics_id, google_search_console_id, facebook_app_id, twitter_handle,
+			 company_name, company_description, company_address, company_phone, company_email,
+			 company_logo_url, business_hours)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+			defaultSettings.SiteName,
+			defaultSettings.DefaultMetaTitle,
+			defaultSettings.DefaultMetaDescription,
+			defaultSettings.DefaultOGImageURL,
+			defaultSettings.GoogleAnalyticsID,
+			defaultSettings.GoogleSearchConsoleID,
+			defaultSettings.FacebookAppID,
+			defaultSettings.TwitterHandle,
+			defaultSettings.CompanyName,
+			defaultSettings.CompanyDescription,
+			defaultSettings.CompanyAddress,
+			defaultSettings.CompanyPhone,
+			defaultSettings.CompanyEmail,
+			defaultSettings.CompanyLogoURL,
+			defaultSettings.BusinessHours,
+		)
+		if err != nil {
+			log.Printf("Failed to seed global SEO settings: %v", err)
+		} else {
+			log.Println("Default global SEO settings seeded")
+		}
+	}
+}
+
+// GetGlobalSEOSettings retrieves the global SEO settings
+func GetGlobalSEOSettings() (*models.GlobalSEOSettings, error) {
+	settings := &models.GlobalSEOSettings{}
+
+	err := DB.QueryRow(`
+		SELECT id, site_name, default_meta_title, default_meta_description, default_og_image_url,
+		       google_analytics_id, google_search_console_id, facebook_app_id, twitter_handle,
+		       company_name, company_description, company_address, company_phone, company_email,
+		       company_logo_url, business_hours, created_at, updated_at
+		FROM global_seo_settings
+		ORDER BY id ASC
+		LIMIT 1`).Scan(
+		&settings.ID,
+		&settings.SiteName,
+		&settings.DefaultMetaTitle,
+		&settings.DefaultMetaDescription,
+		&settings.DefaultOGImageURL,
+		&settings.GoogleAnalyticsID,
+		&settings.GoogleSearchConsoleID,
+		&settings.FacebookAppID,
+		&settings.TwitterHandle,
+		&settings.CompanyName,
+		&settings.CompanyDescription,
+		&settings.CompanyAddress,
+		&settings.CompanyPhone,
+		&settings.CompanyEmail,
+		&settings.CompanyLogoURL,
+		&settings.BusinessHours,
+		&settings.CreatedAt,
+		&settings.UpdatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		// No settings exist, return nil without error
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return settings, nil
+}
+
+// UpdateGlobalSEOSettings updates the global SEO settings
+func UpdateGlobalSEOSettings(settings *models.GlobalSEOSettings) error {
+	// First check if settings exist
+	var exists bool
+	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM global_seo_settings WHERE id = $1)", settings.ID).Scan(&exists)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		// Insert new settings
+		return DB.QueryRow(`
+			INSERT INTO global_seo_settings
+			(site_name, default_meta_title, default_meta_description, default_og_image_url,
+			 google_analytics_id, google_search_console_id, facebook_app_id, twitter_handle,
+			 company_name, company_description, company_address, company_phone, company_email,
+			 company_logo_url, business_hours)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+			RETURNING id`,
+			settings.SiteName,
+			settings.DefaultMetaTitle,
+			settings.DefaultMetaDescription,
+			settings.DefaultOGImageURL,
+			settings.GoogleAnalyticsID,
+			settings.GoogleSearchConsoleID,
+			settings.FacebookAppID,
+			settings.TwitterHandle,
+			settings.CompanyName,
+			settings.CompanyDescription,
+			settings.CompanyAddress,
+			settings.CompanyPhone,
+			settings.CompanyEmail,
+			settings.CompanyLogoURL,
+			settings.BusinessHours,
+		).Scan(&settings.ID)
+	}
+
+	// Update existing settings
+	_, err = DB.Exec(`
+		UPDATE global_seo_settings
+		SET site_name = $1,
+		    default_meta_title = $2,
+		    default_meta_description = $3,
+		    default_og_image_url = $4,
+		    google_analytics_id = $5,
+		    google_search_console_id = $6,
+		    facebook_app_id = $7,
+		    twitter_handle = $8,
+		    company_name = $9,
+		    company_description = $10,
+		    company_address = $11,
+		    company_phone = $12,
+		    company_email = $13,
+		    company_logo_url = $14,
+		    business_hours = $15,
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE id = $16`,
+		settings.SiteName,
+		settings.DefaultMetaTitle,
+		settings.DefaultMetaDescription,
+		settings.DefaultOGImageURL,
+		settings.GoogleAnalyticsID,
+		settings.GoogleSearchConsoleID,
+		settings.FacebookAppID,
+		settings.TwitterHandle,
+		settings.CompanyName,
+		settings.CompanyDescription,
+		settings.CompanyAddress,
+		settings.CompanyPhone,
+		settings.CompanyEmail,
+		settings.CompanyLogoURL,
+		settings.BusinessHours,
+		settings.ID,
+	)
+
+	return err
 }

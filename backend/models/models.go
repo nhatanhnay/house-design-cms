@@ -16,7 +16,7 @@ type Category struct {
 	Slug         string    `json:"slug" gorm:"unique;not null"`
 	Description  string    `json:"description"`
 	ThumbnailURL string    `json:"thumbnail_url"`
-	CategoryType string    `json:"category_type" gorm:"default:'product'"` // 'product' or 'news'
+	CategoryType string    `json:"category_type" gorm:"default:'parent'"` // 'parent' or 'regular'
 	ParentID     *uint     `json:"parent_id" gorm:"default:null"`
 	Parent       *Category `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
 	Children     []Category `json:"children,omitempty" gorm:"foreignKey:ParentID"`
@@ -24,8 +24,13 @@ type Category struct {
 	OrderIndex   int       `json:"order_index" gorm:"default:0"`
 	DisplayOrder int       `json:"display_order" gorm:"default:0"`
 	IsActive     bool      `json:"is_active" gorm:"default:true"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	// SEO Fields
+	MetaTitle       string `json:"meta_title"`
+	MetaDescription string `json:"meta_description"`
+	MetaKeywords    string `json:"meta_keywords"`
+	OGImageURL      string `json:"og_image_url"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type Post struct {
@@ -37,8 +42,15 @@ type Post struct {
 	CategoryID uint      `json:"category_id" gorm:"not null"`
 	Category   Category  `json:"category" gorm:"foreignKey:CategoryID"`
 	Published  bool      `json:"published" gorm:"default:true"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	Views      int       `json:"views" gorm:"default:0"`
+	// SEO Fields
+	MetaTitle       string `json:"meta_title"`
+	MetaDescription string `json:"meta_description"`
+	FocusKeywords   string `json:"focus_keywords"`
+	OGImageURL      string `json:"og_image_url"`
+	Slug            string `json:"slug"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type Article struct {
@@ -53,6 +65,9 @@ type Article struct {
 	Tags             string    `json:"tags"`
 	MetaTitle        string    `json:"meta_title"`
 	MetaDescription  string    `json:"meta_description"`
+	FocusKeywords    string    `json:"focus_keywords"`
+	OGImageURL       string    `json:"og_image_url"`
+	CanonicalURL     string    `json:"canonical_url"`
 	Slug             string    `json:"slug" gorm:"unique;not null"`
 	AuthorID         uint      `json:"author_id"`
 	Author           Admin     `json:"author" gorm:"foreignKey:AuthorID"`
@@ -123,4 +138,25 @@ type FooterContent struct {
 	SocialMedia   string   `json:"social_media" gorm:"type:text"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+type GlobalSEOSettings struct {
+	ID                      uint      `json:"id" gorm:"primaryKey"`
+	SiteName                string    `json:"site_name" gorm:"not null"`
+	DefaultMetaTitle        string    `json:"default_meta_title" gorm:"not null"`
+	DefaultMetaDescription  string    `json:"default_meta_description" gorm:"type:text;not null"`
+	DefaultOGImageURL       string    `json:"default_og_image_url"`
+	GoogleAnalyticsID       string    `json:"google_analytics_id"`
+	GoogleSearchConsoleID   string    `json:"google_search_console_id"`
+	FacebookAppID           string    `json:"facebook_app_id"`
+	TwitterHandle           string    `json:"twitter_handle"`
+	CompanyName             string    `json:"company_name" gorm:"not null"`
+	CompanyDescription      string    `json:"company_description" gorm:"type:text"`
+	CompanyAddress          string    `json:"company_address" gorm:"type:text"`
+	CompanyPhone            string    `json:"company_phone"`
+	CompanyEmail            string    `json:"company_email"`
+	CompanyLogoURL          string    `json:"company_logo_url"`
+	BusinessHours           string    `json:"business_hours"`
+	CreatedAt               time.Time `json:"created_at"`
+	UpdatedAt               time.Time `json:"updated_at"`
 }

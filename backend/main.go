@@ -68,6 +68,7 @@ func main() {
 		api.GET("/homepage/media", handlers.GetHomepageImages)
 		api.GET("/home-content", handlers.GetHomeContent)
 		api.GET("/footer-content", handlers.GetFooterContent)
+		api.GET("/seo-settings", handlers.GetGlobalSEOSettings)
 
 		// Protected routes (require authentication)
 		protected := api.Group("/")
@@ -105,6 +106,9 @@ func main() {
 
 			// Footer content management
 			protected.PUT("/footer-content", handlers.UpdateFooterContent)
+
+			// SEO settings management
+			protected.PUT("/seo-settings", handlers.UpdateGlobalSEOSettings)
 		}
 	}
 

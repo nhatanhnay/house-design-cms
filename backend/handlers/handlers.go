@@ -89,7 +89,9 @@ func Logout(c *gin.Context) {
 
 // Categories handlers
 func GetCategories(c *gin.Context) {
-	rows, err := database.DB.Query(`SELECT id, name, slug, description, COALESCE(thumbnail_url, '') as thumbnail_url, COALESCE(category_type, 'product') as category_type, parent_id, level, order_index, display_order, is_active, created_at, updated_at
+	rows, err := database.DB.Query(`SELECT id, name, slug, description, COALESCE(thumbnail_url, '') as thumbnail_url, COALESCE(category_type, 'parent') as category_type, parent_id, level, order_index, display_order, is_active,
+		COALESCE(meta_title, '') as meta_title, COALESCE(meta_description, '') as meta_description, COALESCE(meta_keywords, '') as meta_keywords, COALESCE(og_image_url, '') as og_image_url,
+		created_at, updated_at
 		FROM categories ORDER BY category_type ASC, level ASC, display_order ASC, order_index ASC, created_at ASC`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch categories"})
@@ -103,6 +105,7 @@ func GetCategories(c *gin.Context) {
 		var parentID sql.NullInt64
 		err := rows.Scan(&category.ID, &category.Name, &category.Slug, &category.Description, &category.ThumbnailURL,
 			&category.CategoryType, &parentID, &category.Level, &category.OrderIndex, &category.DisplayOrder, &category.IsActive,
+			&category.MetaTitle, &category.MetaDescription, &category.MetaKeywords, &category.OGImageURL,
 			&category.CreatedAt, &category.UpdatedAt)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan category"})
@@ -198,9 +201,9 @@ func CreateCategory(c *gin.Context) {
 	}
 
 	var newID uint
-	err = database.DB.QueryRow(`INSERT INTO categories (name, slug, description, thumbnail_url, category_type, parent_id, level, order_index, is_active)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-		category.Name, category.Slug, category.Description, category.ThumbnailURL, category.CategoryType, category.ParentID, category.Level, category.OrderIndex, category.IsActive).Scan(&newID)
+	err = database.DB.QueryRow(`INSERT INTO categories (name, slug, description, thumbnail_url, category_type, parent_id, level, order_index, is_active, meta_title, meta_description, meta_keywords, og_image_url)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
+		category.Name, category.Slug, category.Description, category.ThumbnailURL, category.CategoryType, category.ParentID, category.Level, category.OrderIndex, category.IsActive, category.MetaTitle, category.MetaDescription, category.MetaKeywords, category.OGImageURL).Scan(&newID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create category"})
 		return
@@ -220,16 +223,22 @@ func UpdateCategory(c *gin.Context) {
 	}
 
 	// Debug log to check received data
-	fmt.Printf("Updating category ID: %s with data: %+v\n", id, category)
+	fmt.Printf("📦 Updating category ID: %s with data: %+v\n", id, category)
+	fmt.Printf("📝 SEO Fields Received: meta_title='%s', meta_description='%s', meta_keywords='%s', og_image_url='%s'\n",
+		category.MetaTitle, category.MetaDescription, category.MetaKeywords, category.OGImageURL)
 
 	// Get existing category to handle partial updates
 	var existingCategory models.Category
 	err := database.DB.QueryRow(`SELECT name, slug, description, COALESCE(thumbnail_url, '') as thumbnail_url,
-		COALESCE(category_type, 'product') as category_type, parent_id, level, order_index, is_active
+		COALESCE(category_type, 'parent') as category_type, parent_id, level, order_index, is_active,
+		COALESCE(meta_title, '') as meta_title, COALESCE(meta_description, '') as meta_description,
+		COALESCE(meta_keywords, '') as meta_keywords, COALESCE(og_image_url, '') as og_image_url
 		FROM categories WHERE id = $1`, id).Scan(
 		&existingCategory.Name, &existingCategory.Slug, &existingCategory.Description,
 		&existingCategory.ThumbnailURL, &existingCategory.CategoryType, &existingCategory.ParentID,
-		&existingCategory.Level, &existingCategory.OrderIndex, &existingCategory.IsActive)
+		&existingCategory.Level, &existingCategory.OrderIndex, &existingCategory.IsActive,
+		&existingCategory.MetaTitle, &existingCategory.MetaDescription,
+		&existingCategory.MetaKeywords, &existingCategory.OGImageURL)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
 		return
@@ -255,6 +264,12 @@ func UpdateCategory(c *gin.Context) {
 	// Always update is_active as it can be false
 	existingCategory.IsActive = category.IsActive
 
+	// Update SEO fields (allow empty values to clear fields)
+	existingCategory.MetaTitle = category.MetaTitle
+	existingCategory.MetaDescription = category.MetaDescription
+	existingCategory.MetaKeywords = category.MetaKeywords
+	existingCategory.OGImageURL = category.OGImageURL
+
 	// Handle parent_id updates - check if it's being set in the request
 	// Note: We need to distinguish between nil (not provided) and explicitly null
 	if category.ParentID != nil {
@@ -270,29 +285,36 @@ func UpdateCategory(c *gin.Context) {
 		fmt.Printf("Setting parent_id to: %v, level: %d\n", *category.ParentID, existingCategory.Level)
 	}
 
-	// Force business rules: News categories cannot have parents
-	if existingCategory.CategoryType == "news" {
+	// Force business rules: Regular categories cannot have parents
+	if existingCategory.CategoryType == "regular" {
 		existingCategory.Level = 0
 		existingCategory.ParentID = nil
-		fmt.Printf("Forcing news category to have no parent\n")
+		fmt.Printf("Forcing regular category to have no parent\n")
 	}
 
-	// If no parent is set and it's a product category, make it a main category
-	if existingCategory.ParentID == nil && existingCategory.CategoryType == "product" {
+	// If no parent is set and it's a parent category, make it a main category
+	if existingCategory.ParentID == nil && existingCategory.CategoryType == "parent" {
 		existingCategory.Level = 0
-		fmt.Printf("Setting product category as main category (level 0)\n")
+		fmt.Printf("Setting parent category as main category (level 0)\n")
 	}
 
 	fmt.Printf("Final category data before update: %+v\n", existingCategory)
+	fmt.Printf("SEO fields to update: meta_title='%s', meta_description='%s', meta_keywords='%s', og_image_url='%s'\n",
+		existingCategory.MetaTitle, existingCategory.MetaDescription, existingCategory.MetaKeywords, existingCategory.OGImageURL)
 
-	_, err = database.DB.Exec(`UPDATE categories SET name = $2, slug = $3, description = $4, thumbnail_url = $5, category_type = $6, parent_id = $7,
-		level = $8, order_index = $9, is_active = $10, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+	result, err := database.DB.Exec(`UPDATE categories SET name = $2, slug = $3, description = $4, thumbnail_url = $5, category_type = $6, parent_id = $7,
+		level = $8, order_index = $9, is_active = $10, meta_title = $11, meta_description = $12, meta_keywords = $13, og_image_url = $14, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
 		id, existingCategory.Name, existingCategory.Slug, existingCategory.Description, existingCategory.ThumbnailURL,
-		existingCategory.CategoryType, existingCategory.ParentID, existingCategory.Level, existingCategory.OrderIndex, existingCategory.IsActive)
+		existingCategory.CategoryType, existingCategory.ParentID, existingCategory.Level, existingCategory.OrderIndex, existingCategory.IsActive,
+		existingCategory.MetaTitle, existingCategory.MetaDescription, existingCategory.MetaKeywords, existingCategory.OGImageURL)
 	if err != nil {
+		fmt.Printf("SQL UPDATE ERROR: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update category"})
 		return
 	}
+
+	rowsAffected, _ := result.RowsAffected()
+	fmt.Printf("UPDATE completed, rows affected: %d\n", rowsAffected)
 
 	categoryID, _ := strconv.ParseUint(id, 10, 32)
 	existingCategory.ID = uint(categoryID)
@@ -300,7 +322,6 @@ func UpdateCategory(c *gin.Context) {
 	fmt.Printf("Returning updated category: %+v\n", existingCategory)
 	c.JSON(http.StatusOK, existingCategory)
 }
-
 
 func DeleteCategory(c *gin.Context) {
 	id := c.Param("id")
@@ -354,7 +375,10 @@ func GetPosts(c *gin.Context) {
 	categoryID := c.Query("category")
 
 	query := `SELECT p.id, p.title, p.content, p.summary, p.image_url, p.category_id, 
-			  p.published, p.created_at, p.updated_at, c.name, c.slug, c.description
+			  p.published, p.created_at, p.updated_at, 
+			  COALESCE(p.meta_title, '') as meta_title, COALESCE(p.meta_description, '') as meta_description,
+			  COALESCE(p.focus_keywords, '') as focus_keywords, COALESCE(p.og_image_url, '') as og_image_url, COALESCE(p.slug, '') as slug,
+			  c.name, c.slug, c.description
 			  FROM posts p 
 			  JOIN categories c ON p.category_id = c.id`
 
@@ -382,6 +406,7 @@ func GetPosts(c *gin.Context) {
 
 		err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.Summary, &post.ImageURL,
 			&post.CategoryID, &post.Published, &post.CreatedAt, &post.UpdatedAt,
+			&post.MetaTitle, &post.MetaDescription, &post.FocusKeywords, &post.OGImageURL, &post.Slug,
 			&category.Name, &category.Slug, &category.Description)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan post"})
@@ -404,10 +429,14 @@ func GetPost(c *gin.Context) {
 	}
 
 	var post models.Post
-	err = database.DB.QueryRow(`SELECT id, title, content, summary, image_url, category_id, published, created_at, updated_at
+	err = database.DB.QueryRow(`SELECT id, title, content, summary, image_url, category_id, published, 
+		COALESCE(meta_title, '') as meta_title, COALESCE(meta_description, '') as meta_description,
+		COALESCE(focus_keywords, '') as focus_keywords, COALESCE(og_image_url, '') as og_image_url, COALESCE(slug, '') as slug,
+		created_at, updated_at
 		FROM posts WHERE id = $1`, id).Scan(
 		&post.ID, &post.Title, &post.Content, &post.Summary, &post.ImageURL, &post.CategoryID,
-		&post.Published, &post.CreatedAt, &post.UpdatedAt)
+		&post.Published, &post.MetaTitle, &post.MetaDescription, &post.FocusKeywords, &post.OGImageURL, &post.Slug,
+		&post.CreatedAt, &post.UpdatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -441,9 +470,9 @@ func CreatePost(c *gin.Context) {
 	}
 
 	var newID uint
-	err := database.DB.QueryRow(`INSERT INTO posts (title, content, summary, image_url, category_id, published)
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-		post.Title, post.Content, post.Summary, post.ImageURL, post.CategoryID, post.Published).Scan(&newID)
+	err := database.DB.QueryRow(`INSERT INTO posts (title, content, summary, image_url, category_id, published, views, meta_title, meta_description, focus_keywords, og_image_url, slug)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
+		post.Title, post.Content, post.Summary, post.ImageURL, post.CategoryID, post.Published, post.Views, post.MetaTitle, post.MetaDescription, post.FocusKeywords, post.OGImageURL, post.Slug).Scan(&newID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
 		return
@@ -463,8 +492,10 @@ func UpdatePost(c *gin.Context) {
 	}
 
 	_, err := database.DB.Exec(`UPDATE posts SET title = $2, content = $3, summary = $4, image_url = $5,
-		category_id = $6, published = $7, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-		id, post.Title, post.Content, post.Summary, post.ImageURL, post.CategoryID, post.Published)
+		category_id = $6, published = $7, views = $8, meta_title = $9, meta_description = $10, focus_keywords = $11,
+		og_image_url = $12, slug = $13, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+		id, post.Title, post.Content, post.Summary, post.ImageURL, post.CategoryID, post.Published,
+		post.Views, post.MetaTitle, post.MetaDescription, post.FocusKeywords, post.OGImageURL, post.Slug)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update post"})
 		return
@@ -1033,7 +1064,7 @@ func UploadHomepageImage(c *gin.Context) {
 	fmt.Printf("   🔗 URL trả về: %s\n", imageURL)
 
 	c.JSON(http.StatusOK, gin.H{
-		"url": imageURL,
+		"url":      imageURL,
 		"filename": filename,
 	})
 }
@@ -1108,7 +1139,7 @@ func UploadHomepageVideo(c *gin.Context) {
 	baseURL := getBaseURL(c)
 	videoURL := fmt.Sprintf("%s/homepage/videos/%s", baseURL, filename)
 	c.JSON(http.StatusOK, gin.H{
-		"url": videoURL,
+		"url":      videoURL,
 		"filename": filename,
 	})
 }
@@ -1236,9 +1267,9 @@ func ReplaceHomepageMedia(c *gin.Context) {
 	baseURL := getBaseURL(c)
 	mediaURL := fmt.Sprintf("%s/homepage/%s/%s", baseURL, mediaType, oldFilename)
 	c.JSON(http.StatusOK, gin.H{
-		"url": mediaURL,
+		"url":      mediaURL,
 		"filename": oldFilename,
-		"message": "File replaced successfully",
+		"message":  "File replaced successfully",
 	})
 }
 
@@ -1485,21 +1516,21 @@ type SocialMediaItem struct {
 
 // FooterContentResponse represents the API response structure with services as array
 type FooterContentResponse struct {
-	ID           uint               `json:"id"`
-	CompanyName  string             `json:"company_name"`
-	Address      string             `json:"address"`
-	Phone        string             `json:"phone"`
-	Email        string             `json:"email"`
-	FacebookURL  string             `json:"facebook_url"`
-	InstagramURL string             `json:"instagram_url"`
-	YoutubeURL   string             `json:"youtube_url"`
-	LinkedinURL  string             `json:"linkedin_url"`
+	ID            uint              `json:"id"`
+	CompanyName   string            `json:"company_name"`
+	Address       string            `json:"address"`
+	Phone         string            `json:"phone"`
+	Email         string            `json:"email"`
+	FacebookURL   string            `json:"facebook_url"`
+	InstagramURL  string            `json:"instagram_url"`
+	YoutubeURL    string            `json:"youtube_url"`
+	LinkedinURL   string            `json:"linkedin_url"`
 	CopyrightText string            `json:"copyright_text"`
 	Description   string            `json:"description"`
-	Services      []string           `json:"services"`
-	SocialMedia   []SocialMediaItem  `json:"social_media"`
-	CreatedAt     time.Time          `json:"created_at"`
-	UpdatedAt     time.Time          `json:"updated_at"`
+	Services      []string          `json:"services"`
+	SocialMedia   []SocialMediaItem `json:"social_media"`
+	CreatedAt     time.Time         `json:"created_at"`
+	UpdatedAt     time.Time         `json:"updated_at"`
 }
 
 // Footer Content handlers
@@ -1577,15 +1608,15 @@ func GetFooterContent(c *gin.Context) {
 
 	// Create response object
 	response := FooterContentResponse{
-		ID:           footerContent.ID,
-		CompanyName:  footerContent.CompanyName,
-		Address:      footerContent.Address,
-		Phone:        footerContent.Phone,
-		Email:        footerContent.Email,
-		FacebookURL:  footerContent.FacebookURL,
-		InstagramURL: footerContent.InstagramURL,
-		YoutubeURL:   footerContent.YoutubeURL,
-		LinkedinURL:  footerContent.LinkedinURL,
+		ID:            footerContent.ID,
+		CompanyName:   footerContent.CompanyName,
+		Address:       footerContent.Address,
+		Phone:         footerContent.Phone,
+		Email:         footerContent.Email,
+		FacebookURL:   footerContent.FacebookURL,
+		InstagramURL:  footerContent.InstagramURL,
+		YoutubeURL:    footerContent.YoutubeURL,
+		LinkedinURL:   footerContent.LinkedinURL,
 		CopyrightText: footerContent.CopyrightText,
 		Description:   footerContent.Description,
 		Services:      services,
@@ -1666,4 +1697,61 @@ func UpdateFooterContent(c *gin.Context) {
 
 	// Return the updated content
 	GetFooterContent(c)
+}
+
+// GetGlobalSEOSettings retrieves the global SEO settings
+func GetGlobalSEOSettings(c *gin.Context) {
+	settings, err := database.GetGlobalSEOSettings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch SEO settings"})
+		return
+	}
+
+	if settings == nil {
+		// No settings found, return empty/default
+		c.JSON(http.StatusOK, models.GlobalSEOSettings{
+			SiteName:               "MMA Architectural Design",
+			DefaultMetaTitle:       "MMA Architectural Design - Thiết Kế & Thi Công Biệt Thự",
+			DefaultMetaDescription: "Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo. Uy tín tại 37 tỉnh thành, hơn 500 dự án hoàn thành.",
+			CompanyName:            "MMA Architectural Design",
+			CompanyDescription:     "Công ty chuyên thiết kế và thi công biệt thự, nhà ở cao cấp",
+			CompanyAddress:         "123 Đường ABC, Quận XYZ, TP.HCM",
+			CompanyPhone:           "0123 456 789",
+			CompanyEmail:           "contact@mma-design.com",
+			BusinessHours:          "Mo-Fr 08:00-17:00, Sa 08:00-12:00",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, settings)
+}
+
+// UpdateGlobalSEOSettings updates or creates global SEO settings
+func UpdateGlobalSEOSettings(c *gin.Context) {
+	var updateData models.GlobalSEOSettings
+	if err := c.ShouldBindJSON(&updateData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// If ID is 0, get the existing settings to update
+	if updateData.ID == 0 {
+		existing, err := database.GetGlobalSEOSettings()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch existing settings"})
+			return
+		}
+		if existing != nil {
+			updateData.ID = existing.ID
+		}
+	}
+
+	err := database.UpdateGlobalSEOSettings(&updateData)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update SEO settings"})
+		return
+	}
+
+	// Return the updated settings
+	GetGlobalSEOSettings(c)
 }
