@@ -112,6 +112,67 @@
       <textarea matInput [(ngModel)]="data.feature3_description" rows="2" placeholder="Mô tả tính năng 3"></textarea>
     </mat-form-field>
 
+    <!-- SEO Settings Section -->
+    <h3 style="margin: 24px 0 8px 0; color: #4caf50; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px;">
+      🔍 Cài Đặt SEO
+    </h3>
+
+    <mat-form-field>
+      <mat-label>Meta Title (SEO)</mat-label>
+      <input matInput [(ngModel)]="data.meta_title" placeholder="Tiêu đề SEO cho trang chủ">
+      <mat-hint>{{ getMetaTitleLength() }}/60 characters (optimal: 30-60)</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Meta Description</mat-label>
+      <textarea matInput [(ngModel)]="data.meta_description" rows="3"
+                placeholder="Mô tả SEO cho trang chủ (sẽ xuất hiện trong kết quả tìm kiếm)"></textarea>
+      <mat-hint>{{ getMetaDescriptionLength() }}/160 characters (optimal: 120-160)</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Meta Keywords</mat-label>
+      <input matInput [(ngModel)]="data.meta_keywords"
+             placeholder="Từ khóa SEO, phân cách bằng dấu phẩy">
+      <mat-hint>Example: thiết kế biệt thự, kiến trúc hiện đại, xây dựng nhà ở</mat-hint>
+    </mat-form-field>
+
+    <!-- Open Graph Fields -->
+    <h4 style="margin: 16px 0 8px 0; color: #666;">Open Graph (Chia sẻ mạng xã hội)</h4>
+
+    <mat-form-field>
+      <mat-label>OG Title</mat-label>
+      <input matInput [(ngModel)]="data.og_title"
+             placeholder="Tiêu đề khi chia sẻ trên Facebook/social media">
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>OG Description</mat-label>
+      <textarea matInput [(ngModel)]="data.og_description" rows="2"
+                placeholder="Mô tả khi chia sẻ trên mạng xã hội"></textarea>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>OG Image URL</mat-label>
+      <input matInput [(ngModel)]="data.og_image_url"
+             placeholder="URL hình ảnh khi chia sẻ (1200x630px)">
+    </mat-form-field>
+
+    <!-- Twitter Card Fields -->
+    <h4 style="margin: 16px 0 8px 0; color: #666;">Twitter Card</h4>
+
+    <mat-form-field>
+      <mat-label>Twitter Title</mat-label>
+      <input matInput [(ngModel)]="data.twitter_title"
+             placeholder="Tiêu đề khi chia sẻ trên Twitter">
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Twitter Description</mat-label>
+      <textarea matInput [(ngModel)]="data.twitter_description" rows="2"
+                placeholder="Mô tả khi chia sẻ trên Twitter"></textarea>
+    </mat-form-field>
+
   </div>
 </mat-dialog-content>
 <mat-dialog-actions align="end">

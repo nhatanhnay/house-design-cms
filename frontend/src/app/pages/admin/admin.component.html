@@ -30,6 +30,11 @@
             <mat-icon matListIcon>web</mat-icon>
             <span matLine>Quản Lý Footer</span>
           </mat-list-item>
+
+          <mat-list-item (click)="setCurrentSection('seo')" [class.active]="currentSection === 'seo'">
+            <mat-icon matListIcon>search</mat-icon>
+            <span matLine>Cài Đặt SEO</span>
+          </mat-list-item>
         </mat-nav-list>
       </mat-sidenav>
 
@@ -76,10 +81,10 @@
                           <span *ngIf="!mainCategory.is_active" class="inactive-badge">(Inactive)</span>
                         </div>
                         <div class="category-meta">
-                          <span class="category-type-badge" [class]="'type-' + mainCategory.category_type">
-                            {{ mainCategory.category_type === 'product' ? 'Sản phẩm' : 'Tin tức' }}
+                          <span class="category-type-badge" [class]="getCategoryHierarchyClass(mainCategory)">
+                            {{ getCategoryHierarchyType(mainCategory) }}
                           </span>
-                          {{ mainCategory.slug }} • {{ mainCategory.description }} • Level: {{ mainCategory.level }}
+                          {{ mainCategory.slug }} • {{ mainCategory.description }}
                         </div>
                       </div>
                     </div>
@@ -87,7 +92,7 @@
 
 
                       <!-- Regular Actions -->
-                      <button mat-icon-button [disabled]="mainCategory.category_type !== 'product'"
+                      <button mat-icon-button [disabled]="mainCategory.category_type === 'regular'"
                         (click)="openCategoryDialog(undefined, true, mainCategory.id)" matTooltip="Thêm danh mục con">
                         <mat-icon>add_circle_outline</mat-icon>
                       </button>
@@ -111,7 +116,7 @@
                       </div>
                       <!-- Expand Button -->
                       <button mat-icon-button class="expand-btn"
-                        [disabled]="!mainCategory.hasChildren || mainCategory.category_type !== 'product'"
+                        [disabled]="!mainCategory.hasChildren || mainCategory.category_type === 'regular'"
                         (click)="toggleCategory(mainCategory)">
                         <mat-icon>{{ mainCategory.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
                       </button>
@@ -120,7 +125,7 @@
 
                   <!-- Subcategories -->
                   <div class="subcategories"
-                    *ngIf="mainCategory.expanded && mainCategory.children?.length && mainCategory.category_type === 'product'">
+                    *ngIf="mainCategory.expanded && mainCategory.children?.length && mainCategory.category_type !== 'regular'">
                     <div cdkDropList class="subcategory-drop-list"
                       (cdkDropListDropped)="onSubcategoryDrop($event, mainCategory.children!)">
                       <div class="tree-item subcategory"
@@ -148,8 +153,12 @@
                                 {{ subcategory.name }}
                                 <span *ngIf="!subcategory.is_active" class="inactive-badge">(Inactive)</span>
                               </div>
-                              <div class="category-meta">{{ subcategory.slug }} • {{ subcategory.description }} • Level:
-                                {{ subcategory.level }}</div>
+                              <div class="category-meta">
+                                <span class="category-type-badge" [class]="getCategoryHierarchyClass(subcategory)">
+                                  {{ getCategoryHierarchyType(subcategory) }}
+                                </span>
+                                {{ subcategory.slug }} • {{ subcategory.description }}
+                              </div>
                             </div>
                           </div>
                           <div class="category-actions-inline">
@@ -676,6 +685,11 @@
 
             </div>
           </mat-card>
+        </div>
+
+        <!-- SEO Settings Section -->
+        <div *ngIf="currentSection === 'seo'" class="content-section">
+          <app-global-seo-settings></app-global-seo-settings>
         </div>
 
       </mat-sidenav-content>

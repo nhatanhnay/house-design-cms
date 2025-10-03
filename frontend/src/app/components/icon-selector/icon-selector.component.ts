@@ -320,18 +320,15 @@ export class IconSelectorDialog implements OnInit {
 
   uploadSvg() {
     if (!this.selectedSvgFile || !this.svgPreview) {
-      console.error('No SVG file selected or preview not available');
       return;
     }
 
     const formData = new FormData();
     formData.append('svg', this.selectedSvgFile);
 
-    console.log('Uploading SVG file:', this.selectedSvgFile.name);
 
     this.dataService.uploadSvgIcon(formData).subscribe({
       next: (response: any) => {
-        console.log('SVG upload successful:', response);
         this.selectedIcon = {
           name: this.selectedSvgFile!.name.replace('.svg', ''),
           type: 'svg',
@@ -346,11 +343,8 @@ export class IconSelectorDialog implements OnInit {
           svg: this.selectedIcon.svg
         });
 
-        console.log('Icon selected:', this.selectedIcon);
       },
       error: (error) => {
-        console.error('Failed to upload SVG:', error);
-        console.log('Using local preview as fallback');
 
         // For now, use local preview
         this.selectedIcon = {
@@ -360,7 +354,6 @@ export class IconSelectorDialog implements OnInit {
           svg: this.svgPreview
         };
 
-        console.log('Fallback icon selected:', this.selectedIcon);
       }
     });
   }

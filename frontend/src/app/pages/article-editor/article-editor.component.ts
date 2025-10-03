@@ -16,6 +16,7 @@ import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 import { DataService } from '../../services/data.service';
 import { Article, Category } from '../../models/models';
+import { SeoPreviewComponent } from '../../components/seo-preview/seo-preview.component';
 
 @Component({
   selector: 'app-article-editor',
@@ -32,7 +33,8 @@ import { Article, Category } from '../../models/models';
     MatIconModule,
     MatSnackBarModule,
     MatProgressSpinnerModule,
-    CKEditorModule
+    CKEditorModule,
+    SeoPreviewComponent
   ],
   templateUrl: './article-editor.component.html',
   styleUrls: ['./article-editor.component.scss']
@@ -101,6 +103,8 @@ export class ArticleEditorComponent implements OnInit {
       tags: [''],
       meta_title: ['', [Validators.maxLength(255)]],
       meta_description: [''],
+      focus_keywords: [''],
+      og_image_url: [''],
       slug: ['', [Validators.maxLength(500)]]
     });
   }
@@ -125,7 +129,6 @@ export class ArticleEditorComponent implements OnInit {
       },
       error: (error) => {
         this.snackBar.open('Error loading categories', 'Close', { duration: 3000 });
-        console.error('Error loading categories:', error);
       }
     });
   }
@@ -150,7 +153,6 @@ export class ArticleEditorComponent implements OnInit {
       },
       error: (error) => {
         this.snackBar.open('Error loading article', 'Close', { duration: 3000 });
-        console.error('Error loading article:', error);
         this.isLoading = false;
       }
     });
@@ -174,7 +176,6 @@ export class ArticleEditorComponent implements OnInit {
         error: (error) => {
           const action = this.isEditMode ? 'update' : 'create';
           this.snackBar.open(`Error ${action} article`, 'Close', { duration: 3000 });
-          console.error(`Error ${action} article:`, error);
           this.isLoading = false;
         }
       });
@@ -198,5 +199,21 @@ export class ArticleEditorComponent implements OnInit {
         .trim();
       this.articleForm.patchValue({ slug });
     }
+  }
+
+  updateSeoPreview(): void {
+    // This method is called when SEO fields are updated
+    // The preview component will automatically update via data binding
+  }
+
+  getMetaTitleLength(): number {
+    const metaTitle = this.articleForm.get('meta_title')?.value || '';
+    const title = this.articleForm.get('title')?.value || '';
+    return (metaTitle || title).length;
+  }
+
+  getMetaDescriptionLength(): number {
+    const metaDescription = this.articleForm.get('meta_description')?.value || '';
+    return metaDescription.length;
   }
 }

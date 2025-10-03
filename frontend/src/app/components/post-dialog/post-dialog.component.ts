@@ -120,6 +120,49 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
           </mat-error>
         </div>
 
+        <!-- SEO Settings Section -->
+        <div class="seo-section">
+          <h4>SEO Settings</h4>
+
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Meta Title</mat-label>
+            <input matInput formControlName="meta_title"
+                   placeholder="SEO title for this post (leave blank to use post title)">
+            <mat-hint>{{ getMetaTitleLength() }}/60 characters (optimal: 30-60)</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Meta Description</mat-label>
+            <textarea matInput formControlName="meta_description" rows="2"
+                     placeholder="SEO description for this post"></textarea>
+            <mat-hint>{{ getMetaDescriptionLength() }}/160 characters (optimal: 120-160)</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Focus Keywords</mat-label>
+            <input matInput formControlName="focus_keywords"
+                   placeholder="Primary keywords for this post (comma-separated)">
+            <mat-hint>Example: thiết kế biệt thự, kiến trúc hiện đại</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>URL Slug</mat-label>
+            <input matInput formControlName="slug"
+                   placeholder="SEO-friendly URL slug">
+            <button mat-icon-button matSuffix type="button" (click)="generateSlug()"
+                    matTooltip="Generate slug from title">
+              <mat-icon>refresh</mat-icon>
+            </button>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Open Graph Image URL</mat-label>
+            <input matInput formControlName="og_image_url"
+                   placeholder="Image URL for social media sharing">
+            <mat-hint>Recommended size: 1200x630px (leave blank to use post image)</mat-hint>
+          </mat-form-field>
+        </div>
+
         <mat-checkbox formControlName="published" class="published-checkbox">
           Xuất bản ngay
         </mat-checkbox>
@@ -316,6 +359,21 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
     .image-overlay button:hover {
       background: rgba(0, 0, 0, 0.9);
     }
+
+    .seo-section {
+      margin-top: 24px;
+      padding: 16px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #4caf50;
+    }
+
+    .seo-section h4 {
+      margin: 0 0 16px 0;
+      color: #2e7d32;
+      font-size: 16px;
+      font-weight: 500;
+    }
   `]
 })
 export class PostDialogComponent implements OnInit {
@@ -345,7 +403,13 @@ export class PostDialogComponent implements OnInit {
       summary: [''],
       image_url: [''],
       content: ['', [Validators.required]],
-      published: [false]
+      published: [false],
+      // SEO Fields
+      meta_title: [''],
+      meta_description: [''],
+      focus_keywords: [''],
+      slug: [''],
+      og_image_url: ['']
     });
 
     this.categories$ = this.dataService.getCategories();
@@ -354,7 +418,6 @@ export class PostDialogComponent implements OnInit {
   ngOnInit(): void {
     // Configure CKEditor with upload adapter - do this here to ensure token is available
     const token = this.authService.getToken();
-    console.log('Setting up CKEditor, token available:', !!token);
 
     this.editorConfig = {
       toolbar: {
@@ -407,14 +470,23 @@ export class PostDialogComponent implements OnInit {
 
     if (this.data.post) {
       const post = this.data.post;
+
       this.postForm.patchValue({
         title: post.title,
         category_id: post.category_id,
         summary: post.summary,
         image_url: post.image_url,
         content: this.convertContentImageUrls(post.content),
-        published: post.published
+        published: post.published,
+        // SEO Fields
+        meta_title: post.meta_title || '',
+        meta_description: post.meta_description || '',
+        focus_keywords: post.focus_keywords || '',
+        slug: post.slug || '',
+        og_image_url: post.og_image_url || ''
       });
+      
+      
       // Set the selected image URL for preview with URL conversion
       this.selectedImageUrl = post.image_url ? this.convertImageUrl(post.image_url) : null;
     }
@@ -447,7 +519,6 @@ export class PostDialogComponent implements OnInit {
         error: (error) => {
           this.isLoading = false;
           this.snackBar.open('Có lỗi xảy ra!', 'Đóng', { duration: 3000 });
-          console.error('Error saving post:', error);
         }
       });
     }
@@ -484,7 +555,6 @@ export class PostDialogComponent implements OnInit {
         this.isUploadingImage = false;
         this.imageUploadError = 'Lỗi khi tải lên hình ảnh. Vui lòng thử lại.';
         this.snackBar.open('Lỗi khi tải lên hình ảnh!', 'Đóng', { duration: 3000 });
-        console.error('Image upload error:', error);
       }
     });
   }
@@ -500,33 +570,27 @@ export class PostDialogComponent implements OnInit {
   private convertImageUrl = (url: string): string => {
     if (!url) return url;
 
-    console.log('PostDialog - Original URL:', url);
-    console.log('PostDialog - Current location:', window.location.href);
 
     // Handle localhost URLs
     if (url.startsWith('http://localhost:8080/')) {
       const converted = url.replace('http://localhost:8080/', '/');
-      console.log('PostDialog - Converted localhost URL:', converted);
       return converted;
     }
 
     // Handle HTTPS backend URLs
     if (url.startsWith('https://') && url.includes(':8080/')) {
       const converted = url.replace(/https:\/\/[^\/]+:8080\//, '/');
-      console.log('PostDialog - Converted HTTPS URL:', converted);
       return converted;
     }
 
     // Handle HTTP backend URLs with any domain
     if (url.startsWith('http://') && url.includes(':8080/')) {
       const converted = url.replace(/http:\/\/[^\/]+:8080\//, '/');
-      console.log('PostDialog - Converted HTTP URL:', converted);
       return converted;
     }
 
     // Handle URLs that are already absolute paths starting with /
     if (url.startsWith('/data/') || url.startsWith('/uploads/') || url.startsWith('/api/')) {
-      console.log('PostDialog - URL already relative:', url);
       return url;
     }
 
@@ -536,12 +600,10 @@ export class PostDialogComponent implements OnInit {
       const match = url.match(/https?:\/\/[^\/]+(.*)$/);
       if (match) {
         const converted = match[1];
-        console.log('PostDialog - VPS converted URL:', url, '->', converted);
         return converted;
       }
     }
 
-    console.log('PostDialog - URL not converted:', url);
     return url;
   }
 
@@ -549,20 +611,41 @@ export class PostDialogComponent implements OnInit {
   private convertContentImageUrls = (htmlContent: string): string => {
     if (!htmlContent) return htmlContent;
 
-    console.log('PostDialog - Original content:', htmlContent.substring(0, 200) + '...');
-    console.log('PostDialog - Converting content image URLs');
 
     // Replace img src attributes with absolute URLs
     const convertedContent = htmlContent.replace(
       /(<img[^>]+src=["'])([^"']+)(["'][^>]*>)/gi,
       (match, prefix, url, suffix) => {
         const convertedUrl = this.convertImageUrl(url);
-        console.log('PostDialog - Content image URL converted:', url, '->', convertedUrl);
         return prefix + convertedUrl + suffix;
       }
     );
 
-    console.log('PostDialog - Converted content:', convertedContent.substring(0, 200) + '...');
     return convertedContent;
+  }
+
+  // SEO Helper Methods
+  getMetaTitleLength(): number {
+    const metaTitle = this.postForm.get('meta_title')?.value || '';
+    const title = this.postForm.get('title')?.value || '';
+    return (metaTitle || title).length;
+  }
+
+  getMetaDescriptionLength(): number {
+    const metaDescription = this.postForm.get('meta_description')?.value || '';
+    return metaDescription.length;
+  }
+
+  generateSlug(): void {
+    const title = this.postForm.get('title')?.value;
+    if (title) {
+      const slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+      this.postForm.patchValue({ slug });
+    }
   }
 }

@@ -68,7 +68,6 @@ export class ArticleListComponent implements OnInit {
         this.categories = categories;
       },
       error: (error) => {
-        console.error('Error loading categories:', error);
       }
     });
   }
@@ -90,7 +89,6 @@ export class ArticleListComponent implements OnInit {
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error loading articles:', error);
         this.snackBar.open('Error loading articles', 'Close', { duration: 3000 });
         this.isLoading = false;
       }

@@ -98,7 +98,9 @@
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Meta Title</mat-label>
               <input matInput formControlName="meta_title"
-                     placeholder="SEO title (leave blank to use article title)">
+                     placeholder="SEO title (leave blank to use article title)"
+                     (input)="updateSeoPreview()">
+              <mat-hint>{{ getMetaTitleLength() }}/60 characters (optimal: 30-60)</mat-hint>
               <mat-error *ngIf="articleForm.get('meta_title')?.hasError('maxlength')">
                 Meta title must be less than 255 characters
               </mat-error>
@@ -109,9 +111,39 @@
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Meta Description</mat-label>
               <textarea matInput formControlName="meta_description"
-                        placeholder="SEO meta description" rows="2"></textarea>
+                        placeholder="SEO meta description" rows="3"
+                        (input)="updateSeoPreview()"></textarea>
+              <mat-hint>{{ getMetaDescriptionLength() }}/160 characters (optimal: 120-160)</mat-hint>
             </mat-form-field>
           </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Focus Keywords</mat-label>
+              <input matInput formControlName="focus_keywords"
+                     placeholder="Primary keywords for this article (comma-separated)">
+              <mat-hint>Example: thiết kế biệt thự, kiến trúc hiện đại</mat-hint>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Open Graph Image URL</mat-label>
+              <input matInput formControlName="og_image_url"
+                     placeholder="Image URL for social media sharing">
+              <mat-hint>Recommended size: 1200x630px</mat-hint>
+            </mat-form-field>
+          </div>
+
+          <!-- SEO Preview Component -->
+          <app-seo-preview
+            [title]="articleForm.get('title')?.value || ''"
+            [metaTitle]="articleForm.get('meta_title')?.value || ''"
+            [description]="articleForm.get('summary')?.value || ''"
+            [metaDescription]="articleForm.get('meta_description')?.value || ''"
+            [slug]="articleForm.get('slug')?.value || ''"
+            [ogImage]="articleForm.get('og_image_url')?.value || ''">
+          </app-seo-preview>
         </div>
 
         <div class="form-row">

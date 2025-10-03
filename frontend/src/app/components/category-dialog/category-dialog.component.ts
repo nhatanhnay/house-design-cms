@@ -52,15 +52,15 @@ import { Category } from '../../models/models';
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Loại danh mục</mat-label>
           <mat-select formControlName="category_type" (selectionChange)="onCategoryTypeChange($event)">
-            <mat-option value="product">Sản phẩm (có thể có danh mục con)</mat-option>
-            <mat-option value="news">Tin tức (chỉ chứa bài viết)</mat-option>
+            <mat-option value="parent">Danh mục cha (có thể có danh mục con)</mat-option>
+            <mat-option value="regular">Danh mục thường (chỉ chứa bài viết)</mat-option>
           </mat-select>
           <mat-error *ngIf="categoryForm.get('category_type')?.hasError('required')">
             Phải chọn loại danh mục
           </mat-error>
         </mat-form-field>
 
-        <mat-form-field appearance="fill" class="full-width" *ngIf="data.isSubcategory && !data.parentId && categoryForm.get('category_type')?.value === 'product'">
+        <mat-form-field appearance="fill" class="full-width" *ngIf="data.isSubcategory && !data.parentId && categoryForm.get('category_type')?.value === 'parent'">
           <mat-label>Danh mục cha</mat-label>
           <mat-select formControlName="parent_id" placeholder="Chọn danh mục cha">
             <mat-option *ngFor="let category of parentCategories$ | async" [value]="category.id">
@@ -72,9 +72,9 @@ import { Category } from '../../models/models';
           </mat-error>
         </mat-form-field>
 
-        <div *ngIf="categoryForm.get('category_type')?.value === 'news'" class="category-type-info">
+        <div *ngIf="categoryForm.get('category_type')?.value === 'regular'" class="category-type-info">
           <mat-icon>info</mat-icon>
-          <span>Danh mục tin tức không thể có danh mục con. Chỉ có thể chứa các bài viết.</span>
+          <span>Danh mục thường không thể có danh mục con. Chỉ có thể chứa các bài viết.</span>
         </div>
 
         <div *ngIf="data.isSubcategory && data.parentId" class="parent-info">
@@ -128,6 +128,39 @@ import { Category } from '../../models/models';
           </div>
         </div>
 
+        <!-- SEO Settings Section -->
+        <div class="seo-section">
+          <h4>SEO Settings</h4>
+
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Meta Title</mat-label>
+            <input matInput formControlName="meta_title"
+                   placeholder="SEO title for this category (leave blank to use category name)">
+            <mat-hint>{{ getMetaTitleLength() }}/60 characters (optimal: 30-60)</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Meta Description</mat-label>
+            <textarea matInput formControlName="meta_description" rows="2"
+                     placeholder="SEO description for this category page"></textarea>
+            <mat-hint>{{ getMetaDescriptionLength() }}/160 characters (optimal: 120-160)</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Meta Keywords</mat-label>
+            <input matInput formControlName="meta_keywords"
+                   placeholder="Keywords for this category (comma-separated)">
+            <mat-hint>Example: thiết kế biệt thự, kiến trúc hiện đại</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Open Graph Image URL</mat-label>
+            <input matInput formControlName="og_image_url"
+                   placeholder="Image URL for social media sharing">
+            <mat-hint>Recommended size: 1200x630px</mat-hint>
+          </mat-form-field>
+        </div>
+
         <!-- Active Status Checkbox -->
         <div class="status-section">
           <mat-checkbox formControlName="is_active" color="primary">
@@ -170,6 +203,8 @@ import { Category } from '../../models/models';
 
     mat-dialog-content {
       padding: 20px 24px;
+      max-height: 70vh;
+      overflow-y: auto;
     }
 
     mat-dialog-actions {
@@ -257,6 +292,25 @@ import { Category } from '../../models/models';
       color: #2196f3;
       font-size: 20px;
     }
+
+    .seo-section {
+      margin-top: 24px;
+      margin-bottom: 24px;
+      padding: 20px;
+      background-color: #fff3e0;
+      border-radius: 8px;
+      border: 3px solid #ff9800;
+      display: block !important;
+      visibility: visible !important;
+    }
+
+    .seo-section h4 {
+      margin: 0 0 16px 0;
+      color: #e65100;
+      font-size: 18px;
+      font-weight: 600;
+      display: block !important;
+    }
   `]
 })
 export class CategoryDialogComponent implements OnInit {
@@ -282,9 +336,14 @@ export class CategoryDialogComponent implements OnInit {
       slug: [''],
       description: [''],
       thumbnail_url: [''],
-      category_type: ['product', [Validators.required]], // Mặc định là product
+      category_type: ['parent', [Validators.required]], // Mặc định là parent
       parent_id: [null],
-      is_active: [true]  // Đảm bảo danh mục mới luôn được tạo ở trạng thái hoạt động
+      is_active: [true],  // Đảm bảo danh mục mới luôn được tạo ở trạng thái hoạt động
+      // SEO Fields
+      meta_title: [''],
+      meta_description: [''],
+      meta_keywords: [''],
+      og_image_url: ['']
     });
 
     // Set up parent categories for subcategory creation
@@ -298,17 +357,32 @@ export class CategoryDialogComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.data.category) {
-      console.log('Editing category:', this.data.category);
-      this.categoryForm.patchValue({
-        name: this.data.category.name,
-        slug: this.data.category.slug,
-        description: this.data.category.description,
-        thumbnail_url: this.data.category.thumbnail_url || '',
-        category_type: this.data.category.category_type || 'product',
-        parent_id: this.data.category.parent_id,
-        is_active: this.data.category.is_active
+      const category = this.data.category as any;
+
+      console.log('🔍 Category data received:', category);
+      console.log('📋 SEO fields:', {
+        meta_title: category.meta_title,
+        meta_description: category.meta_description,
+        meta_keywords: category.meta_keywords,
+        og_image_url: category.og_image_url
       });
-      console.log('Form values after patch:', this.categoryForm.value);
+
+      this.categoryForm.patchValue({
+        name: category.name,
+        slug: category.slug,
+        description: category.description,
+        thumbnail_url: category.thumbnail_url || '',
+        category_type: category.category_type || 'parent',
+        parent_id: category.parent_id,
+        is_active: category.is_active,
+        // SEO Fields - backend returns flat structure
+        meta_title: category.meta_title || '',
+        meta_description: category.meta_description || '',
+        meta_keywords: category.meta_keywords || '',
+        og_image_url: category.og_image_url || ''
+      });
+
+      console.log('✅ Form values after patch:', this.categoryForm.value);
     }
 
     // Set parent_id if provided
@@ -349,21 +423,26 @@ export class CategoryDialogComponent implements OnInit {
         name: formValue.name,
         slug: formValue.slug,
         description: formValue.description || '',
-        category_type: formValue.category_type || 'product',
-        is_active: formValue.is_active !== undefined ? formValue.is_active : true
+        category_type: formValue.category_type || 'parent',
+        is_active: formValue.is_active !== undefined ? formValue.is_active : true,
+        // SEO Fields
+        meta_title: formValue.meta_title || '',
+        meta_description: formValue.meta_description || '',
+        meta_keywords: formValue.meta_keywords || '',
+        og_image_url: formValue.og_image_url || ''
       };
 
       // Ensure category_type is always sent
       if (!categoryData.category_type) {
-        categoryData.category_type = 'product';
+        categoryData.category_type = 'parent';
       }
 
       // Handle parent_id based on category type
-      if (categoryData.category_type === 'news') {
-        // News categories should never have parents
+      if (categoryData.category_type === 'regular') {
+        // Regular categories should never have parents
         categoryData.parent_id = null;
       } else if (this.data.isSubcategory || formValue.parent_id) {
-        // Product categories can have parents
+        // Parent/child categories can have parents
         if (this.data.parentId) {
           // Parent ID was provided (inline add button)
           categoryData.parent_id = this.data.parentId;
@@ -381,13 +460,15 @@ export class CategoryDialogComponent implements OnInit {
         categoryData.thumbnail_url = formValue.thumbnail_url;
       }
 
-      console.log('💾 SAVE TRIGGERED');
-      console.log('📋 Form value before saving:', formValue);
-      console.log('📦 Category data prepared:', categoryData);
-      console.log('✏️ Is editing existing category:', !!this.data.category);
-      console.log('🆔 Category ID:', this.data.category?.id);
-      console.log('🏷️ Original category type:', this.data.category?.category_type);
-      console.log('🔄 New category type:', categoryData.category_type);
+      console.log('📦 Category Update Request:', {
+        id: this.data.category?.id,
+        seo: {
+          meta_title: categoryData.meta_title,
+          meta_description: categoryData.meta_description,
+          meta_keywords: categoryData.meta_keywords,
+          og_image_url: categoryData.og_image_url
+        }
+      });
 
       const operation = this.data.category
         ? this.dataService.updateCategory(this.data.category.id, categoryData)
@@ -396,9 +477,15 @@ export class CategoryDialogComponent implements OnInit {
       operation.subscribe({
         next: (result) => {
           this.isLoading = false;
-          console.log('✅ SUCCESS: Category saved successfully');
-          console.log('📤 Server response:', result);
-          console.log('🆔 Response category type:', result?.category_type);
+          console.log('✅ Category Response:', {
+            id: result?.id,
+            seo: {
+              meta_title: result?.meta_title,
+              meta_description: result?.meta_description,
+              meta_keywords: result?.meta_keywords,
+              og_image_url: result?.og_image_url
+            }
+          });
           this.snackBar.open(
             this.data.category ? 'Cập nhật danh mục thành công!' : 'Thêm danh mục thành công!',
             'Đóng',
@@ -408,8 +495,6 @@ export class CategoryDialogComponent implements OnInit {
         },
         error: (error) => {
           this.isLoading = false;
-          console.error('❌ ERROR saving category:', error);
-          console.error('📤 Error details:', error.error);
           this.snackBar.open('Có lỗi xảy ra!', 'Đóng', { duration: 3000 });
         }
       });
@@ -418,21 +503,17 @@ export class CategoryDialogComponent implements OnInit {
 
   onCategoryTypeChange(event: any): void {
     const categoryType = event.value;
-    console.log('⚡ Category type changed to:', categoryType);
 
-    // If changing to news, clear parent_id and remove subcategory restrictions
-    if (categoryType === 'news') {
-      console.log('🗞️ Setting to news type - clearing parent_id');
+    // If changing to regular, clear parent_id and remove subcategory restrictions
+    if (categoryType === 'regular') {
       this.categoryForm.patchValue({ parent_id: null });
       this.categoryForm.get('parent_id')?.clearValidators();
-    } else if (categoryType === 'product' && this.data.isSubcategory && !this.data.parentId) {
-      // If changing to product and it's a subcategory dialog, add validators back
-      console.log('📦 Setting to product type - adding parent validation');
+    } else if (categoryType === 'parent' && this.data.isSubcategory && !this.data.parentId) {
+      // If changing to parent and it's a subcategory dialog, add validators back
       this.categoryForm.get('parent_id')?.setValidators([Validators.required]);
     }
 
     this.categoryForm.get('parent_id')?.updateValueAndValidity();
-    console.log('📝 Form state after category type change:', this.categoryForm.value);
   }
 
   getParentCategoryName(): string {
@@ -483,7 +564,6 @@ export class CategoryDialogComponent implements OnInit {
         this.uploadProgress = 0;
         this.isLoading = false;
         this.snackBar.open('Lỗi khi tải lên hình đại diện!', 'Đóng', { duration: 3000 });
-        console.error('Upload error:', error);
       }
     });
   }
@@ -491,5 +571,16 @@ export class CategoryDialogComponent implements OnInit {
   removeThumbnail(): void {
     this.categoryForm.patchValue({ thumbnail_url: '' });
     this.uploadProgress = 0;
+  }
+
+  // SEO Helper Methods
+  getMetaTitleLength(): number {
+    const metaTitle = this.categoryForm.get('meta_title')?.value || '';
+    return metaTitle.length;
+  }
+
+  getMetaDescriptionLength(): number {
+    const metaDescription = this.categoryForm.get('meta_description')?.value || '';
+    return metaDescription.length;
   }
 }

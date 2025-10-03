@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Article, Category, CategoryTreeItem, CreateCategoryRequest, HomeContent, Post, UpdateCategoryRequest } from '../models/models';
+import { Article, Category, CategoryTreeItem, CreateCategoryRequest, GlobalSEOSettings, HomeContent, Post, UpdateCategoryRequest } from '../models/models';
 import { AuthService } from './auth.service';
 import { FooterContent } from '../pages/admin/admin.component';
 
@@ -30,7 +30,6 @@ export class DataService {
       this.apiUrl = envUrl;
     }
 
-    console.log('DataService API URL resolved to:', this.apiUrl);
   }
 
   // Categories
@@ -51,6 +50,11 @@ export class DataService {
           order_index: apiCategory.order_index || 0,
           display_order: apiCategory.display_order || 0,
           is_active: apiCategory.is_active !== undefined ? apiCategory.is_active : true,
+          // SEO Fields
+          meta_title: apiCategory.meta_title || '',
+          meta_description: apiCategory.meta_description || '',
+          meta_keywords: apiCategory.meta_keywords || '',
+          og_image_url: apiCategory.og_image_url || '',
           created_at: apiCategory.created_at,
           updated_at: apiCategory.updated_at
         } as Category))
@@ -218,25 +222,11 @@ export class DataService {
 
   // Footer Content
   getFooterContent(): Observable<FooterContent> {
-    return this.http.get<FooterContent>(`${this.apiUrl}/footer-content`).pipe(
-      map(response => {
-        console.log('DataService: GET footer content from API:', response);
-        console.log('DataService: GET services received:', response.services);
-        return response;
-      })
-    );
+    return this.http.get<FooterContent>(`${this.apiUrl}/footer-content`);
   }
 
   updateFooterContent(content: Partial<FooterContent>): Observable<FooterContent> {
-    console.log('DataService: Sending footer content to API:', content);
-    console.log('DataService: Services being sent:', content.services);
-    return this.http.put<FooterContent>(`${this.apiUrl}/footer-content`, content).pipe(
-      map(response => {
-        console.log('DataService: Received footer content from API:', response);
-        console.log('DataService: Services received:', response.services);
-        return response;
-      })
-    );
+    return this.http.put<FooterContent>(`${this.apiUrl}/footer-content`, content);
   }
 
   // Homepage Media Management
@@ -262,8 +252,6 @@ export class DataService {
 
   // General image upload for category thumbnails and other purposes
   uploadImage(file: File): Observable<{ url: string }> {
-    console.log('Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
-
     const formData = new FormData();
     formData.append('upload', file);
 
@@ -275,9 +263,6 @@ export class DataService {
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
-
-    console.log('Upload URL:', `${this.apiUrl}/upload`);
-    console.log('Token present:', !!token);
 
     return this.http.post<{ url: string }>(`${this.apiUrl}/upload`, formData, { headers });
   }
@@ -310,5 +295,23 @@ export class DataService {
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ 'Authorization': `Bearer ${token}` }) : undefined;
     return this.http.post<{ url: string, svg: string, name: string }>(`${this.apiUrl}/upload-svg-icon`, formData, { headers });
+  }
+
+  // Global SEO Settings
+  getGlobalSEOSettings(): Observable<GlobalSEOSettings> {
+    return this.http.get<GlobalSEOSettings>(`${this.apiUrl}/seo-settings`);
+  }
+
+  updateGlobalSEOSettings(settings: GlobalSEOSettings): Observable<GlobalSEOSettings> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.put<GlobalSEOSettings>(`${this.apiUrl}/seo-settings`, settings, { headers });
   }
 }

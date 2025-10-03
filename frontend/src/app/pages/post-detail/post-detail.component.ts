@@ -472,7 +472,6 @@ export class PostDetailComponent implements OnInit {
     this.post$ = this.route.params.pipe(
       switchMap(params => {
         const id = parseInt(params['id']);
-        console.log('Loading post with ID:', id);
         return this.dataService.getPost(id);
       })
     );
@@ -482,7 +481,6 @@ export class PostDetailComponent implements OnInit {
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       const id = parseInt(params['id']);
-      console.log('Route params changed, loading post ID:', id);
 
       if (id) {
         this.isLoading = true;
@@ -491,7 +489,6 @@ export class PostDetailComponent implements OnInit {
 
         this.dataService.getPost(id).subscribe({
           next: (post) => {
-            console.log('Post loaded successfully:', post);
             this.isLoading = false;
             this.post = post;
             this.hasError = false;
@@ -502,14 +499,12 @@ export class PostDetailComponent implements OnInit {
             });
           },
           error: (error) => {
-            console.error('Error loading post:', error);
             this.isLoading = false;
             this.hasError = true;
             this.post = null;
           }
         });
       } else {
-        console.error('Invalid post ID:', params['id']);
         this.isLoading = false;
         this.hasError = true;
         this.post = null;
@@ -529,7 +524,6 @@ export class PostDetailComponent implements OnInit {
 
   copyLink(): void {
     navigator.clipboard.writeText(window.location.href).then(() => {
-      console.log('Link copied to clipboard');
       // You could show a snackbar here
     });
   }

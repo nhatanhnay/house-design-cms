@@ -55,11 +55,8 @@ export class FooterComponent implements OnInit {
             { name: 'LinkedIn', url: 'https://linkedin.com/company/company', icon: 'business' }
           ];
         }
-        console.log('Footer loaded services:', content.services);
-        console.log('Footer loaded social media:', content.social_media);
       },
       error: (error) => {
-        console.error('Error loading footer content:', error);
         // Keep using default values if API fails
       }
     });

@@ -28,6 +28,7 @@ import { UrlConverter } from '../../utils/url-converter.util';
 import { FileValidator } from '../../utils/file-validator.util';
 import { LoggerService } from '../../services/logger.service';
 import { IconSelectorComponent } from '../../components/icon-selector/icon-selector.component';
+import { GlobalSeoSettingsComponent } from '../global-seo-settings/global-seo-settings.component';
 
 export interface SocialMediaItem {
   name: string;
@@ -68,7 +69,8 @@ export interface FooterContent {
     MatFormFieldModule,
     MatInputModule,
     DragDropModule,
-    IconSelectorComponent
+    IconSelectorComponent,
+    GlobalSeoSettingsComponent
   ],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss']
@@ -185,6 +187,13 @@ export class AdminComponent implements OnInit {
         this.dataService.getCategories().pipe(
           map(categories => {
             this.logger.logCategoryOperation('loaded', { count: categories.length });
+            console.log('🔎 Raw categories from API:', categories);
+            console.log('🔎 First category SEO fields:', {
+              id: categories[0]?.id,
+              meta_title: categories[0]?.meta_title,
+              meta_description: categories[0]?.meta_description,
+              meta_keywords: categories[0]?.meta_keywords
+            });
             this.logger.debug('Category details:', categories.map(c => ({
               id: c.id,
               name: c.name,
@@ -551,20 +560,18 @@ export class AdminComponent implements OnInit {
   loadHomepageContent(): void {
     this.dataService.getHomeContent().subscribe({
       next: (content) => {
-        console.log('Loaded homepage content from server:', content);
-        console.log('Features data loaded:', {
+        this.logger.debug('Loading homepage content', {
           features_title: content.features_title,
           feature1_title: content.feature1_title,
           feature2_title: content.feature2_title,
           feature3_title: content.feature3_title,
           feature4_title: content.feature4_title
-        });
+        }, 'ContentManagement');
         this.homepageContent = { ...content };
         this.originalHomepageContent = { ...content };
         this.isContentModified = false;
       },
       error: (error) => {
-        console.error('Error loading homepage content:', error);
         // Use default values if API fails
         this.homepageContent = {
           id: 0,
@@ -621,8 +628,7 @@ export class AdminComponent implements OnInit {
   }
 
   saveHomepageContent(): void {
-    console.log('Saving homepage content:', this.homepageContent);
-    console.log('Features data being saved:', {
+    this.logger.debug('Saving homepage content', {
       features_title: this.homepageContent.features_title,
       feature1_icon: this.homepageContent.feature1_icon,
       feature1_title: this.homepageContent.feature1_title,
@@ -636,25 +642,23 @@ export class AdminComponent implements OnInit {
       feature4_icon: this.homepageContent.feature4_icon,
       feature4_title: this.homepageContent.feature4_title,
       feature4_description: this.homepageContent.feature4_description
-    });
+    }, 'ContentManagement');
 
     this.dataService.updateHomeContent(this.homepageContent).subscribe({
       next: (updatedContent) => {
-        console.log('Received updated content from server:', updatedContent);
-        console.log('Features data received:', {
+        this.logger.debug('Homepage content saved successfully', {
           features_title: updatedContent.features_title,
           feature1_title: updatedContent.feature1_title,
           feature2_title: updatedContent.feature2_title,
           feature3_title: updatedContent.feature3_title,
           feature4_title: updatedContent.feature4_title
-        });
+        }, 'ContentManagement');
         this.homepageContent = { ...updatedContent };
         this.originalHomepageContent = { ...updatedContent };
         this.isContentModified = false;
         this.showSuccessMessage('Nội dung trang chủ đã được lưu');
       },
       error: (error) => {
-        console.error('Error saving homepage content:', error);
         this.logger.error('Error saving homepage content', error, 'ContentManagement');
         this.showErrorMessage('Lỗi khi lưu nội dung trang chủ');
       }
@@ -739,7 +743,6 @@ export class AdminComponent implements OnInit {
         this.isFooterContentModified = false;
       },
       error: (error) => {
-        console.error('Error loading footer content:', error);
         // Use default values if API fails
         this.footerContent = {
           company_name: 'MMA Architectural Design',
@@ -771,23 +774,19 @@ export class AdminComponent implements OnInit {
     const currentContent = JSON.parse(JSON.stringify(this.footerContent));
     const originalContent = JSON.parse(JSON.stringify(this.originalFooterContent));
     this.isFooterContentModified = JSON.stringify(currentContent) !== JSON.stringify(originalContent);
-    console.log('Footer content modified:', this.isFooterContentModified);
   }
 
   saveFooterContent(): void {
-    console.log('Saving footer content:', this.footerContent);
-    console.log('Services being saved:', this.footerContent.services);
+    this.logger.debug('Saving footer content', this.footerContent, 'ContentManagement');
 
     this.dataService.updateFooterContent(this.footerContent).subscribe({
       next: (updatedContent) => {
-        console.log('Received updated footer content from server:', updatedContent);
         this.footerContent = JSON.parse(JSON.stringify(updatedContent)); // Deep copy
         this.originalFooterContent = JSON.parse(JSON.stringify(updatedContent)); // Deep copy
         this.isFooterContentModified = false;
         this.showSuccessMessage('Nội dung footer đã được lưu');
       },
       error: (error) => {
-        console.error('Error saving footer content:', error);
         this.logger.error('Error saving footer content', error, 'ContentManagement');
         this.showErrorMessage('Lỗi khi lưu nội dung footer');
       }
@@ -796,8 +795,6 @@ export class AdminComponent implements OnInit {
 
   // Service Management Methods
   addService(): void {
-    console.log('addService called');
-    console.log('Current services:', this.footerContent.services);
     // Ensure services array exists
     if (!this.footerContent.services) {
       this.footerContent.services = [];
@@ -805,7 +802,6 @@ export class AdminComponent implements OnInit {
 
     // Create a new array to trigger change detection
     this.footerContent.services = [...this.footerContent.services, ''];
-    console.log('Services after adding:', this.footerContent.services);
 
     // Force change detection
     setTimeout(() => {
@@ -836,7 +832,6 @@ export class AdminComponent implements OnInit {
 
   // Social Media Management Methods
   addSocialMedia(): void {
-    console.log('addSocialMedia called');
     // Ensure social media array exists
     if (!this.footerContent.social_media) {
       this.footerContent.social_media = [];
@@ -851,7 +846,6 @@ export class AdminComponent implements OnInit {
 
     // Create a new array to trigger change detection
     this.footerContent.social_media = [...this.footerContent.social_media, newSocialMedia];
-    console.log('Social media after adding:', this.footerContent.social_media);
 
     // Force change detection
     setTimeout(() => {
@@ -881,7 +875,6 @@ export class AdminComponent implements OnInit {
   }
 
   onSocialMediaIconChange(index: number, iconName: string): void {
-    console.log(`Social media ${index} icon changed to:`, iconName);
     if (this.footerContent.social_media && index >= 0 && index < this.footerContent.social_media.length) {
       this.footerContent.social_media[index].icon = iconName;
       setTimeout(() => {
@@ -892,5 +885,35 @@ export class AdminComponent implements OnInit {
 
   trackByIndex(index: number): number {
     return index;
+  }
+
+  // Get category hierarchy type for display
+  getCategoryHierarchyType(category: any): string {
+    if (category.category_type === 'regular') {
+      return 'Danh mục thường';
+    }
+    // All parent categories - check if they have children or parent
+    if (category.children && category.children.length > 0) {
+      return 'Danh mục cha';
+    }
+    if (category.parent_id || category.level > 0) {
+      return 'Danh mục thường';
+    }
+    return 'Danh mục cha';
+  }
+
+  // Get CSS class for hierarchy badge
+  getCategoryHierarchyClass(category: any): string {
+    if (category.category_type === 'regular') {
+      return 'type-regular';
+    }
+    // Check hierarchy for parent categories
+    if (category.children && category.children.length > 0) {
+      return 'type-parent';
+    }
+    if (category.parent_id || category.level > 0) {
+      return 'type-regular';
+    }
+    return 'type-parent';
   }
 }

@@ -1,6 +1,6 @@
-<div class="home-page">
+<main class="home-page">
   <!-- Hero Carousel Section -->
-  <section class="hero-carousel">
+  <section class="hero-carousel" aria-label="Featured architectural projects">
     <div class="carousel-container">
       <div class="carousel-slide" *ngFor="let image of homepageImages; let i = index"
         [class.active]="i === currentSlideIndex">
@@ -28,9 +28,9 @@
   </section>
 
   <!-- Hero Content Section - Separate section between carousel and main-categories -->
-  <section class="hero-content-section">
+  <section class="hero-content-section" aria-label="Company introduction">
     <div class="container">
-      <div class="hero-content">
+      <header class="hero-content">
         <h1>{{ homeContent?.hero_title || 'MMA Architectural Design' }}</h1>
         <p>{{ homeContent?.hero_description || 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến
           trúc độc đáo' }}</p>
@@ -52,12 +52,12 @@
             Liên Hệ Tư Vấn
           </button>
         </div>
-      </div>
+      </header>
     </div>
   </section>
 
   <!-- Main Categories Section -->
-  <section class="main-categories">
+  <section class="main-categories" aria-label="Service categories">
     <div class="container">
       <h2 class="section-title text-center">Danh Mục Chính</h2>
       <div class="categories-grid" *ngIf="mainCategories$ | async as mainCategories">
@@ -88,7 +88,7 @@
   </section>
 
   <!-- Features Section -->
-  <section class="features-section">
+  <section class="features-section" aria-label="Company advantages">
     <div class="container">
       <h2 class="section-title text-center">{{ homeContent?.features_title || 'Ưu Thế MMA Architectural Design' }}</h2>
       <div class="features-strips">
@@ -146,13 +146,13 @@
   </section>
 
   <!-- Dynamic Categories Section -->
-  <section class="dynamic-categories-section">
+  <section class="dynamic-categories-section" aria-label="Project categories">
     <div class="container">
       <div class="category-group" *ngFor="let category of mainCategories$ | async">
         <h2 class="section-title text-center">{{ category.name }}</h2>
 
-        <!-- For product categories: show subcategories -->
-        <div class="subcategories-grid" *ngIf="category.category_type === 'product' && category.children?.length">
+        <!-- For parent categories: show subcategories -->
+        <div class="subcategories-grid" *ngIf="category.category_type === 'parent' && category.children?.length">
           <mat-card class="subcategory-card" *ngFor="let subcategory of (category.children || []).slice(0, 3)"
             [routerLink]="'/category/' + subcategory.slug">
             <div class="subcategory-image">
@@ -168,8 +168,8 @@
           </mat-card>
         </div>
 
-        <!-- For news categories: show recent posts -->
-        <div class="category-posts-grid" *ngIf="category.category_type === 'news'">
+        <!-- For regular categories: show recent posts -->
+        <div class="category-posts-grid" *ngIf="category.category_type === 'regular'">
           <mat-card class="post-card" *ngFor="let post of getCategoryPosts(category.id).slice(0, 3)"
             [routerLink]="'/post/' + post.id">
             <div class="post-image">
@@ -211,4 +211,4 @@
     </div>
   </section>
 
-</div>
+</main>

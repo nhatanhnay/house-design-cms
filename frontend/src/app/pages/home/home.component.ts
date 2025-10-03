@@ -4,16 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { HomeContentEditDialog } from './home-content-edit-dialog.component';
+import { HomeContentEditDialog } from '../home-content-edit-dialog/home-content-edit-dialog.component';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { RouterModule } from '@angular/router';
+import { Title, Meta } from '@angular/platform-browser';
 import { Observable, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Admin, Category, HomeContent, Post } from '../../models/models';
 import { AuthService } from '../../services/auth.service';
 import { DataService } from '../../services/data.service';
+import { StructuredDataService } from '../../services/structured-data.service';
 
 @Component({
   selector: 'app-home',
@@ -51,7 +53,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   constructor(
     private dataService: DataService,
     private authService: AuthService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private titleService: Title,
+    private metaService: Meta,
+    private structuredDataService: StructuredDataService
   ) {
     this.currentUser$ = this.authService.currentUser$;
 
@@ -97,28 +102,26 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.setPageMetadata();
+    this.setupStructuredData();
     this.loadHomepageMedia();
 
     this.latestPosts$.subscribe({
       next: (posts) => {
         this.isLoadingPosts = false;
         this.allPosts = posts;
-        console.log('Latest posts loaded:', posts.length);
       },
       error: (error) => {
         this.isLoadingPosts = false;
-        console.error('Error loading posts:', error);
       }
     });
 
     this.mainCategories$.subscribe({
       next: (categories) => {
         this.isLoadingCategories = false;
-        console.log('Main categories loaded:', categories.length);
       },
       error: (error) => {
         this.isLoadingCategories = false;
-        console.error('Error loading main categories:', error);
       }
     });
 
@@ -126,18 +129,125 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.dataService.getHomeContent().subscribe({
       next: (content) => {
         this.homeContent = content;
-        console.log('Home content loaded:', content);
+        // Update meta tags with dynamic content
+        this.updateDynamicMetadata();
       },
       error: (error) => {
-        console.error('Error loading home content:', error);
         // Use default values if API fails
         this.homeContent = null;
       }
     });
   }
 
+  private setPageMetadata(): void {
+    // Set base meta tags
+    this.titleService.setTitle('MMA Architectural Design - Thiết Kế & Thi Công Biệt Thự Hiện Đại');
+
+    this.metaService.updateTag({
+      name: 'description',
+      content: 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo. Đội ngũ chuyên nghiệp với hơn 10 năm kinh nghiệm trên toàn quốc.'
+    });
+
+    this.metaService.updateTag({
+      name: 'keywords',
+      content: 'thiết kế biệt thự, kiến trúc hiện đại, xây dựng nhà ở, thi công biệt thự, kiến trúc sư chuyên nghiệp'
+    });
+
+    // Open Graph tags
+    this.metaService.updateTag({
+      property: 'og:title',
+      content: 'MMA Architectural Design - Thiết Kế & Thi Công Biệt Thự Hiện Đại'
+    });
+
+    this.metaService.updateTag({
+      property: 'og:description',
+      content: 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo.'
+    });
+
+    this.metaService.updateTag({
+      property: 'og:type',
+      content: 'website'
+    });
+
+    this.metaService.updateTag({
+      property: 'og:url',
+      content: window.location.href
+    });
+
+    // Twitter Card tags
+    this.metaService.updateTag({
+      name: 'twitter:card',
+      content: 'summary_large_image'
+    });
+
+    this.metaService.updateTag({
+      name: 'twitter:title',
+      content: 'MMA Architectural Design'
+    });
+
+    this.metaService.updateTag({
+      name: 'twitter:description',
+      content: 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo.'
+    });
+  }
+
+  private updateDynamicMetadata(): void {
+    if (this.homeContent) {
+      // Update title with dynamic content
+      const dynamicTitle = this.homeContent.hero_title || 'MMA Architectural Design';
+      this.titleService.setTitle(`${dynamicTitle} - Thiết Kế & Thi Công Biệt Thự Hiện Đại`);
+
+      // Update description with dynamic content
+      const dynamicDescription = this.homeContent.hero_description ||
+        'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo.';
+
+      this.metaService.updateTag({
+        name: 'description',
+        content: dynamicDescription
+      });
+
+      this.metaService.updateTag({
+        property: 'og:title',
+        content: dynamicTitle
+      });
+
+      this.metaService.updateTag({
+        property: 'og:description',
+        content: dynamicDescription
+      });
+    }
+  }
+
+  private setupStructuredData(): void {
+    // Add organization schema
+    this.structuredDataService.addOrganizationSchema();
+
+    // Add website schema
+    this.structuredDataService.addWebsiteSchema();
+
+    // Add local business schema with default data
+    const businessData = {
+      name: 'MMA Architectural Design',
+      description: 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo',
+      address: {
+        street: '',
+        city: '',
+        region: 'Vietnam',
+        postal: ''
+      },
+      phone: '',
+      email: '',
+      logo: '/assets/images/logo.png',
+      openingHours: [
+        'Mo-Fr 08:00-17:00',
+        'Sa 08:00-12:00'
+      ]
+    };
+
+    this.structuredDataService.addLocalBusinessSchema(businessData);
+  }
+
   onImageError(event: any, imageUrl?: string): void {
-    console.error('Image failed to load:', imageUrl);
     const target = event.target;
     target.style.display = 'none';
 
@@ -150,7 +260,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   onImageLoad(event: any, imageUrl?: string): void {
-    console.log('Image loaded successfully:', imageUrl);
   }
 
   // Homepage carousel methods
@@ -161,14 +270,11 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.homepageImages = (response.images || []).map((url: string) => {
           return this.convertImageUrl(url);
         });
-        console.log('Image URLs received:', response.images);
-        console.log('Image URLs converted:', this.homepageImages);
         if (this.homepageImages.length > 0) {
           this.startCarouselAutoPlay();
         }
       },
       error: (error) => {
-        console.error('Error loading homepage media:', error);
         // Set default placeholder image if API fails
         this.homepageImages = [];
       }
@@ -227,12 +333,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   private convertImageUrl = (url: string): string => {
     if (!url) return url;
 
-    console.log('Original URL:', url);
 
     // Handle localhost URLs
     if (url.startsWith('http://localhost:8080/')) {
       const converted = url.replace('http://localhost:8080/', '/');
-      console.log('Converted localhost URL:', converted);
       return converted;
     }
 
@@ -244,18 +348,15 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Handle HTTPS backend URLs
     if (url.startsWith('https://') && url.includes(':8080/')) {
       const converted = url.replace(/https:\/\/[^\/]+:8080\//, '/');
-      console.log('Converted HTTPS URL:', converted);
       return converted;
     }
 
     // Handle HTTP backend URLs with any domain
     if (url.startsWith('http://') && url.includes(':8080/')) {
       const converted = url.replace(/http:\/\/[^\/]+:8080\//, '/');
-      console.log('Converted HTTP URL:', converted);
       return converted;
     }
 
-    console.log('URL not converted:', url);
     return url;
   }
 
@@ -277,10 +378,8 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.dataService.updateHomeContent(result).subscribe({
           next: (updatedContent) => {
             this.homeContent = updatedContent;
-            console.log('Home content updated successfully');
           },
           error: (error) => {
-            console.error('Error updating home content:', error);
           }
         });
       }

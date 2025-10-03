@@ -5,7 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
-import { HomeContentEditDialog } from './home-content-edit-dialog.component';
+import { HomeContentEditDialog } from '../home-content-edit-dialog/home-content-edit-dialog.component';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
@@ -53,22 +53,18 @@ export class HomeComponent implements OnInit {
     this.latestPosts$.subscribe({
       next: (posts) => {
         this.isLoadingPosts = false;
-        console.log('Latest posts loaded:', posts.length);
       },
       error: (error) => {
         this.isLoadingPosts = false;
-        console.error('Error loading posts:', error);
       }
     });
 
     this.categories$.subscribe({
       next: (categories) => {
         this.isLoadingCategories = false;
-        console.log('Categories loaded:', categories.length);
       },
       error: (error) => {
         this.isLoadingCategories = false;
-        console.error('Error loading categories:', error);
       }
     });
 
@@ -76,10 +72,8 @@ export class HomeComponent implements OnInit {
     this.dataService.getHomeContent().subscribe({
       next: (content) => {
         this.homeContent = content;
-        console.log('Home content loaded:', content);
       },
       error: (error) => {
-        console.error('Error loading home content:', error);
         // Use default values if API fails
         this.homeContent = null;
       }
@@ -144,10 +138,8 @@ export class HomeComponent implements OnInit {
         this.dataService.updateHomeContent(result).subscribe({
           next: (updatedContent) => {
             this.homeContent = updatedContent;
-            console.log('Home content updated successfully');
           },
           error: (error) => {
-            console.error('Error updating home content:', error);
           }
         });
       }

@@ -9,7 +9,7 @@ export interface Category {
   slug: string;
   description: string;
   thumbnail_url?: string;
-  category_type: 'product' | 'news'; // Type of category
+  category_type: 'parent' | 'regular'; // Type of category
   parent_id?: number | null;
   parent?: Category;
   children?: Category[];
@@ -17,6 +17,11 @@ export interface Category {
   order_index?: number;
   display_order?: number;
   is_active: boolean;
+  // SEO Fields
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  og_image_url?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -31,6 +36,12 @@ export interface Post {
   category?: Category;
   published: boolean;
   views: number;
+  // SEO Fields
+  meta_title?: string;
+  meta_description?: string;
+  focus_keywords?: string;
+  og_image_url?: string;
+  slug?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -47,6 +58,9 @@ export interface Article {
   tags: string;
   meta_title: string;
   meta_description: string;
+  focus_keywords?: string;
+  og_image_url?: string;
+  canonical_url?: string;
   slug: string;
   author_id: number;
   author?: Admin;
@@ -70,10 +84,15 @@ export interface CreateCategoryRequest {
   slug: string;
   description: string;
   thumbnail_url?: string;
-  category_type: 'product' | 'news';
+  category_type: 'parent' | 'regular';
   parent_id?: number | null;
   order_index?: number;
   is_active?: boolean;
+  // SEO Fields
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  og_image_url?: string;
 }
 
 export interface UpdateCategoryRequest {
@@ -86,6 +105,11 @@ export interface UpdateCategoryRequest {
   parent_id?: number | null;
   order_index?: number;
   is_active?: boolean;
+  // SEO Fields
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  og_image_url?: string;
 }
 
 export interface CategoryTreeItem extends Category {
@@ -116,6 +140,37 @@ export interface HomeContent {
   feature4_icon: string;
   feature4_title: string;
   feature4_description: string;
+  // SEO Fields
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  og_title?: string;
+  og_description?: string;
+  og_image_url?: string;
+  twitter_title?: string;
+  twitter_description?: string;
+  twitter_image_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface GlobalSEOSettings {
+  id: number;
+  site_name: string;
+  default_meta_title: string;
+  default_meta_description: string;
+  default_og_image_url: string;
+  google_analytics_id?: string;
+  google_search_console_id?: string;
+  facebook_app_id?: string;
+  twitter_handle?: string;
+  company_name: string;
+  company_description: string;
+  company_address: string;
+  company_phone: string;
+  company_email: string;
+  company_logo_url: string;
+  business_hours: string;
   created_at?: string;
   updated_at?: string;
 }

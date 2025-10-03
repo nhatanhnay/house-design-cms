@@ -43,7 +43,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.categories$ = this.dataService.getCategories();
     this.mainCategories$ = this.categories$.pipe(
       catchError(error => {
-        console.error('Error loading categories from API:', error);
         return of([]);
       }),
       map(categories => {
@@ -64,7 +63,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.mainCategories = categories;
       },
       error: (error) => {
-        console.error('Error loading main categories:', error);
         // Set empty array on error
         this.mainCategories = [];
       }
@@ -120,7 +118,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
         // Logout successful
       },
       error: (error) => {
-        console.error('Logout error:', error);
         // Even if API call fails, clear local storage
         this.authService.logout();
       }

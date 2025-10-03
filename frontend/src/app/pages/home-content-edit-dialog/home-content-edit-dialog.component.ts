@@ -25,4 +25,16 @@ export class HomeContentEditDialog {
     public dialogRef: MatDialogRef<HomeContentEditDialog>,
     @Inject(MAT_DIALOG_DATA) public data: HomeContent
   ) {}
+
+  // SEO Helper Methods
+  getMetaTitleLength(): number {
+    const metaTitle = this.data.meta_title || '';
+    const heroTitle = this.data.hero_title || '';
+    return (metaTitle || heroTitle).length;
+  }
+
+  getMetaDescriptionLength(): number {
+    const metaDescription = this.data.meta_description || '';
+    return metaDescription.length;
+  }
 }

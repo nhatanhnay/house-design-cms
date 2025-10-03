@@ -9,6 +9,7 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { Title, Meta } from '@angular/platform-browser';
 
 import { DataService } from '../../services/data.service';
+import { StructuredDataService } from '../../services/structured-data.service';
 import { Article } from '../../models/models';
 
 @Component({
@@ -36,7 +37,8 @@ export class ArticleDetailComponent implements OnInit {
     private dataService: DataService,
     private snackBar: MatSnackBar,
     private titleService: Title,
-    private metaService: Meta
+    private metaService: Meta,
+    private structuredDataService: StructuredDataService
   ) {}
 
   ngOnInit(): void {
@@ -58,7 +60,6 @@ export class ArticleDetailComponent implements OnInit {
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error loading article:', error);
         this.snackBar.open('Article not found', 'Close', { duration: 3000 });
         this.router.navigate(['/articles']);
         this.isLoading = false;
@@ -93,6 +94,17 @@ export class ArticleDetailComponent implements OnInit {
       // Set canonical URL
       const currentUrl = window.location.href;
       this.metaService.updateTag({ rel: 'canonical', href: currentUrl });
+
+      // Add article structured data
+      this.structuredDataService.addArticleSchema(this.article);
+
+      // Add breadcrumb structured data
+      const breadcrumbs = [
+        { name: 'Trang chủ', url: window.location.origin },
+        { name: 'Bài viết', url: `${window.location.origin}/articles` },
+        { name: this.article.title, url: currentUrl }
+      ];
+      this.structuredDataService.addBreadcrumbSchema(breadcrumbs);
     }
   }
 

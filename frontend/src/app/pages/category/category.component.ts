@@ -438,14 +438,11 @@ export class CategoryComponent implements OnInit {
       switchMap(params => {
         this.isLoading = true;
         this.categoryName = params['slug'];
-        console.log('Category slug from URL:', params['slug']);
 
         // First get categories to find the category ID by slug
         return this.dataService.getCategories().pipe(
           switchMap(categories => {
-            console.log('Available categories:', categories);
             const category = categories.find(cat => cat.slug === params['slug']);
-            console.log('Found category:', category);
 
             if (category) {
               this.categoryName = category.name; // Use the actual category name
@@ -453,7 +450,6 @@ export class CategoryComponent implements OnInit {
               this.categoryThumbnail = category.thumbnail_url || '';
               return this.dataService.getPosts(category.id);
             } else {
-              console.log('Category not found for slug:', params['slug']);
               this.categoryName = 'Danh mục không tìm thấy';
               this.categoryDescription = '';
               this.categoryThumbnail = '';
@@ -471,11 +467,9 @@ export class CategoryComponent implements OnInit {
     this.posts$.subscribe({
       next: (posts) => {
         this.isLoading = false;
-        console.log('Posts loaded:', posts.length);
       },
       error: (error) => {
         this.isLoading = false;
-        console.error('Error loading posts:', error);
       }
     });
   }
