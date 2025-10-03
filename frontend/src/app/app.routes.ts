@@ -15,10 +15,6 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/post-detail/post-detail.component').then(c => c.PostDetailComponent)
   },
   {
-    path: 'article/:slug',
-    loadComponent: () => import('./pages/article-detail/article-detail.component').then(c => c.ArticleDetailComponent)
-  },
-  {
     path: 'sitemap.xml',
     loadComponent: () => import('./components/sitemap/sitemap.component').then(c => c.SitemapComponent)
   },

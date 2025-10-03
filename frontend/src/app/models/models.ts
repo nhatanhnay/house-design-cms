@@ -46,29 +46,6 @@ export interface Post {
   updated_at?: string;
 }
 
-export interface Article {
-  id: number;
-  title: string;
-  content: string;
-  summary: string;
-  featured_image_url: string;
-  category_id: number;
-  category?: Category;
-  published: boolean;
-  tags: string;
-  meta_title: string;
-  meta_description: string;
-  focus_keywords?: string;
-  og_image_url?: string;
-  canonical_url?: string;
-  slug: string;
-  author_id: number;
-  author?: Admin;
-  view_count: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
 export interface LoginRequest {
   username: string;
   password: string;

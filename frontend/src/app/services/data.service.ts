@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Article, Category, CategoryTreeItem, CreateCategoryRequest, GlobalSEOSettings, HomeContent, Post, UpdateCategoryRequest } from '../models/models';
+import { Category, CategoryTreeItem, CreateCategoryRequest, GlobalSEOSettings, HomeContent, Post, UpdateCategoryRequest } from '../models/models';
 import { AuthService } from './auth.service';
 import { FooterContent } from '../pages/admin/admin.component';
 
@@ -166,49 +166,6 @@ export class DataService {
 
   incrementPostViews(id: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/posts/${id}/view`, {});
-  }
-
-  // Articles
-  getArticles(params?: {
-    category?: number;
-    published?: boolean;
-    tag?: string;
-    limit?: number;
-    offset?: number;
-  }): Observable<Article[]> {
-    let httpParams = new HttpParams();
-    if (params?.category) {
-      httpParams = httpParams.set('category', params.category.toString());
-    }
-    if (params?.published !== undefined) {
-      httpParams = httpParams.set('published', params.published.toString());
-    }
-    if (params?.tag) {
-      httpParams = httpParams.set('tag', params.tag);
-    }
-    if (params?.limit) {
-      httpParams = httpParams.set('limit', params.limit.toString());
-    }
-    if (params?.offset) {
-      httpParams = httpParams.set('offset', params.offset.toString());
-    }
-    return this.http.get<Article[]>(`${this.apiUrl}/articles`, { params: httpParams });
-  }
-
-  getArticle(identifier: string | number): Observable<Article> {
-    return this.http.get<Article>(`${this.apiUrl}/articles/${identifier}`);
-  }
-
-  createArticle(article: Partial<Article>): Observable<Article> {
-    return this.http.post<Article>(`${this.apiUrl}/articles`, article);
-  }
-
-  updateArticle(id: number, article: Partial<Article>): Observable<Article> {
-    return this.http.put<Article>(`${this.apiUrl}/articles/${id}`, article);
-  }
-
-  deleteArticle(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/articles/${id}`);
   }
 
   // Home Content

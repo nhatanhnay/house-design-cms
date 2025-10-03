@@ -53,28 +53,6 @@ type Post struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
-type Article struct {
-	ID               uint      `json:"id" gorm:"primaryKey"`
-	Title            string    `json:"title" gorm:"not null"`
-	Content          string    `json:"content" gorm:"type:text;not null"`
-	Summary          string    `json:"summary"`
-	FeaturedImageURL string    `json:"featured_image_url"`
-	CategoryID       uint      `json:"category_id" gorm:"not null"`
-	Category         Category  `json:"category" gorm:"foreignKey:CategoryID"`
-	Published        bool      `json:"published" gorm:"default:false"`
-	Tags             string    `json:"tags"`
-	MetaTitle        string    `json:"meta_title"`
-	MetaDescription  string    `json:"meta_description"`
-	FocusKeywords    string    `json:"focus_keywords"`
-	OGImageURL       string    `json:"og_image_url"`
-	CanonicalURL     string    `json:"canonical_url"`
-	Slug             string    `json:"slug" gorm:"unique;not null"`
-	AuthorID         uint      `json:"author_id"`
-	Author           Admin     `json:"author" gorm:"foreignKey:AuthorID"`
-	ViewCount        int       `json:"view_count" gorm:"default:0"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
-}
 
 type LoginRequest struct {
 	Username string `json:"username" binding:"required"`

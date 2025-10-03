@@ -63,8 +63,6 @@ func main() {
 		api.GET("/categories", handlers.GetCategories)
 		api.GET("/posts", handlers.GetPosts)
 		api.GET("/posts/:id", handlers.GetPost)
-		api.GET("/articles", handlers.GetArticles)
-		api.GET("/articles/:identifier", handlers.GetArticle)
 		api.GET("/homepage/media", handlers.GetHomepageImages)
 		api.GET("/home-content", handlers.GetHomeContent)
 		api.GET("/footer-content", handlers.GetFooterContent)
@@ -84,11 +82,6 @@ func main() {
 			protected.POST("/posts", handlers.CreatePost)
 			protected.PUT("/posts/:id", handlers.UpdatePost)
 			protected.DELETE("/posts/:id", handlers.DeletePost)
-
-			// Articles management
-			protected.POST("/articles", handlers.CreateArticle)
-			protected.PUT("/articles/:id", handlers.UpdateArticle)
-			protected.DELETE("/articles/:id", handlers.DeleteArticle)
 
 			// Media uploads
 			protected.POST("/upload", handlers.UploadImage)

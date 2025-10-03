@@ -75,39 +75,6 @@ export class StructuredDataService {
     document.head.appendChild(script);
   }
 
-  addArticleSchema(article: any): void {
-    this.removeExistingSchema('article');
-
-    const script = document.createElement('script');
-    script.type = 'application/ld+json';
-    script.setAttribute('data-schema', 'article');
-    script.text = JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "Article",
-      "headline": article.title,
-      "description": article.summary || article.meta_description,
-      "image": article.featured_image_url || "",
-      "author": {
-        "@type": "Organization",
-        "name": "MMA Architectural Design"
-      },
-      "publisher": {
-        "@type": "Organization",
-        "name": "MMA Architectural Design",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://yourdomain.com/assets/images/logo.png"
-        }
-      },
-      "datePublished": article.created_at,
-      "dateModified": article.updated_at || article.created_at,
-      "mainEntityOfPage": {
-        "@type": "WebPage",
-        "@id": window.location.href
-      }
-    });
-    document.head.appendChild(script);
-  }
 
   addBreadcrumbSchema(breadcrumbs: Array<{name: string, url: string}>): void {
     this.removeExistingSchema('breadcrumb');
