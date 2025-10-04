@@ -127,7 +127,6 @@ func GetCategories(c *gin.Context) {
 	}
 
 	// Build the hierarchy - attach children to their parents
-	var rootCategories []models.Category
 	for i := range allCategories {
 		cat := &allCategories[i]
 		if cat.ParentID != nil {
@@ -135,16 +134,6 @@ func GetCategories(c *gin.Context) {
 			if parent, exists := categoryMap[*cat.ParentID]; exists {
 				parent.Children = append(parent.Children, *cat)
 			}
-		} else {
-			// This is a root category
-			rootCategories = append(rootCategories, *cat)
-		}
-	}
-
-	// Update the rootCategories with the populated children
-	for i := range rootCategories {
-		if mapped, exists := categoryMap[rootCategories[i].ID]; exists {
-			rootCategories[i].Children = mapped.Children
 		}
 	}
 
