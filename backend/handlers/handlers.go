@@ -99,7 +99,9 @@ func GetCategories(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	var categories []models.Category
+	var allCategories []models.Category
+	categoryMap := make(map[uint]*models.Category)
+
 	for rows.Next() {
 		var category models.Category
 		var parentID sql.NullInt64
@@ -117,10 +119,36 @@ func GetCategories(c *gin.Context) {
 			category.ParentID = &parentIDUint
 		}
 
-		categories = append(categories, category)
+		// Initialize Children slice
+		category.Children = []models.Category{}
+
+		allCategories = append(allCategories, category)
+		categoryMap[category.ID] = &allCategories[len(allCategories)-1]
 	}
 
-	c.JSON(http.StatusOK, categories)
+	// Build the hierarchy - attach children to their parents
+	var rootCategories []models.Category
+	for i := range allCategories {
+		cat := &allCategories[i]
+		if cat.ParentID != nil {
+			// This is a child category, attach to parent
+			if parent, exists := categoryMap[*cat.ParentID]; exists {
+				parent.Children = append(parent.Children, *cat)
+			}
+		} else {
+			// This is a root category
+			rootCategories = append(rootCategories, *cat)
+		}
+	}
+
+	// Update the rootCategories with the populated children
+	for i := range rootCategories {
+		if mapped, exists := categoryMap[rootCategories[i].ID]; exists {
+			rootCategories[i].Children = mapped.Children
+		}
+	}
+
+	c.JSON(http.StatusOK, allCategories)
 }
 
 func CreateCategory(c *gin.Context) {
