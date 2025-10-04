@@ -149,67 +149,64 @@
   <section class="dynamic-categories-section" aria-label="Project categories">
     <div class="container">
       <div class="category-group" *ngFor="let category of mainCategories$ | async">
-        <!-- Only show category sections that have content -->
-        <ng-container *ngIf="(category.category_type === 'parent' && category.children?.length) || (category.category_type === 'regular' && getCategoryPosts(category.id).length)">
-          <h2 class="section-title text-center">{{ category.name }}</h2>
+        <h2 class="section-title text-center">{{ category.name }}</h2>
 
-          <!-- For parent categories: show subcategories -->
-          <div class="subcategories-grid" *ngIf="category.category_type === 'parent' && category.children?.length">
-            <mat-card class="subcategory-card" *ngFor="let subcategory of (category.children || []).slice(0, 3)"
-              [routerLink]="'/category/' + subcategory.slug">
-              <div class="subcategory-image">
-                <div class="subcategory-image-placeholder" *ngIf="!subcategory.thumbnail_url"></div>
-                <img *ngIf="subcategory.thumbnail_url" [src]="subcategory.thumbnail_url" [alt]="subcategory.name"
-                  (error)="onImageError($event)">
+        <!-- For parent categories: show subcategories -->
+        <div class="subcategories-grid" *ngIf="category.category_type === 'parent' && category.children && category.children.length > 0">
+          <mat-card class="subcategory-card" *ngFor="let subcategory of category.children.slice(0, 3)"
+            [routerLink]="'/category/' + subcategory.slug">
+            <div class="subcategory-image">
+              <div class="subcategory-image-placeholder" *ngIf="!subcategory.thumbnail_url"></div>
+              <img *ngIf="subcategory.thumbnail_url" [src]="subcategory.thumbnail_url" [alt]="subcategory.name"
+                (error)="onImageError($event)">
+            </div>
+            <mat-card-content class="subcategory-content">
+              <h3 class="subcategory-title">{{ subcategory.name }}</h3>
+              <p class="subcategory-description">{{ subcategory.description || 'Khám phá các thiết kế trong danh mục
+                này' }}</p>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <!-- For regular categories: show recent posts -->
+        <div class="category-posts-grid" *ngIf="category.category_type === 'regular'">
+          <mat-card class="post-card" *ngFor="let post of getCategoryPosts(category.id).slice(0, 3)"
+            [routerLink]="'/post/' + post.id">
+            <div class="post-image">
+              <div class="post-image-placeholder" *ngIf="!post.image_url"></div>
+              <img *ngIf="post.image_url" [src]="post.image_url" [alt]="post.title" (error)="onImageError($event)">
+              <div class="post-overlay">
+                <div class="post-category">{{ category.name }}</div>
               </div>
-              <mat-card-content class="subcategory-content">
-                <h3 class="subcategory-title">{{ subcategory.name }}</h3>
-                <p class="subcategory-description">{{ subcategory.description || 'Khám phá các thiết kế trong danh mục
-                  này' }}</p>
-              </mat-card-content>
-            </mat-card>
-          </div>
-
-          <!-- For regular categories: show recent posts -->
-          <div class="category-posts-grid" *ngIf="category.category_type === 'regular'">
-            <mat-card class="post-card" *ngFor="let post of getCategoryPosts(category.id).slice(0, 3)"
-              [routerLink]="'/post/' + post.id">
-              <div class="post-image">
-                <div class="post-image-placeholder" *ngIf="!post.image_url"></div>
-                <img *ngIf="post.image_url" [src]="post.image_url" [alt]="post.title" (error)="onImageError($event)">
-                <div class="post-overlay">
-                  <div class="post-category">{{ category.name }}</div>
+            </div>
+            <mat-card-content class="post-content">
+              <h3 class="post-title">{{ post.title }}</h3>
+              <p class="post-summary">{{ post.summary || 'Không có mô tả' }}</p>
+              <div class="post-meta">
+                <div class="meta-item">
+                  <mat-icon>event</mat-icon>
+                  <span class="post-date">{{ post.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+                <div class="meta-item" *ngIf="!(currentUser$ | async)">
+                  <mat-icon>visibility</mat-icon>
+                  <span>{{ post.views || 0 }} lượt xem</span>
                 </div>
               </div>
-              <mat-card-content class="post-content">
-                <h3 class="post-title">{{ post.title }}</h3>
-                <p class="post-summary">{{ post.summary || 'Không có mô tả' }}</p>
-                <div class="post-meta">
-                  <div class="meta-item">
-                    <mat-icon>event</mat-icon>
-                    <span class="post-date">{{ post.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
-                  </div>
-                  <div class="meta-item" *ngIf="!(currentUser$ | async)">
-                    <mat-icon>visibility</mat-icon>
-                    <span>{{ post.views || 0 }} lượt xem</span>
-                  </div>
-                </div>
-                <div class="read-more">
-                  <span>Xem chi tiết</span>
-                  <mat-icon>arrow_forward</mat-icon>
-                </div>
-              </mat-card-content>
-            </mat-card>
-          </div>
+              <div class="read-more">
+                <span>Xem chi tiết</span>
+                <mat-icon>arrow_forward</mat-icon>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
 
-          <!-- View all button -->
-          <div class="text-center mt-4">
-            <button mat-raised-button [routerLink]="'/category/' + category.slug" class="btn-primary view-all-btn">
-              <mat-icon>view_list</mat-icon>
-              Xem Tất Cả {{ category.name }}
-            </button>
-          </div>
-        </ng-container>
+        <!-- View all button -->
+        <div class="text-center mt-4" *ngIf="(category.children && category.children.length > 0) || getCategoryPosts(category.id).length > 0">
+          <button mat-raised-button [routerLink]="'/category/' + category.slug" class="btn-primary view-all-btn">
+            <mat-icon>view_list</mat-icon>
+            Xem Tất Cả {{ category.name }}
+          </button>
+        </div>
       </div>
     </div>
   </section>
