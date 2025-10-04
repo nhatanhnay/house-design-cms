@@ -133,9 +133,19 @@ func GetCategories(c *gin.Context) {
 			// This is a child category, attach to parent
 			if parent, exists := categoryMap[*cat.ParentID]; exists {
 				parent.Children = append(parent.Children, *cat)
+				fmt.Printf("✅ Attached child '%s' (ID:%d) to parent '%s' (ID:%d)\n", cat.Name, cat.ID, parent.Name, parent.ID)
 			}
 		}
 	}
+
+	// Debug logging - print final category structure
+	fmt.Printf("\n📊 GetCategories API Response Summary:\n")
+	for i := range allCategories {
+		cat := &allCategories[i]
+		fmt.Printf("  Category: %s (ID:%d, Type:%s, Level:%d, Children:%d)\n",
+			cat.Name, cat.ID, cat.CategoryType, cat.Level, len(cat.Children))
+	}
+	fmt.Printf("\n")
 
 	c.JSON(http.StatusOK, allCategories)
 }

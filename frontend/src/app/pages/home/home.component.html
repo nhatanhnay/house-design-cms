@@ -151,6 +151,14 @@
       <div class="category-group" *ngFor="let category of mainCategories$ | async">
         <h2 class="section-title text-center">{{ category.name }}</h2>
 
+        <!-- DEBUG INFO - Remove after fixing -->
+        <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; font-size: 12px;">
+          <strong>DEBUG:</strong> Type: {{ category.category_type }} |
+          Children: {{ category.children?.length || 0 }} |
+          Has Children: {{ category.children ? 'YES' : 'NO' }} |
+          Children Array: {{ category.children | json }}
+        </div>
+
         <!-- For parent categories: show subcategories -->
         <div class="subcategories-grid" *ngIf="category.category_type === 'parent' && category.children && category.children.length > 0">
           <mat-card class="subcategory-card" *ngFor="let subcategory of category.children.slice(0, 3)"
