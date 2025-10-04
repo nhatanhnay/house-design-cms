@@ -119,9 +119,20 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.mainCategories$.subscribe({
       next: (categories) => {
         this.isLoadingCategories = false;
+        // Debug logging for categories
+        console.log('🏠 Homepage - Main Categories:', categories);
+        categories.forEach(cat => {
+          console.log(`📁 Category: ${cat.name} (type: ${cat.category_type}, children: ${cat.children?.length || 0})`);
+          if (cat.children?.length) {
+            cat.children.forEach(child => {
+              console.log(`  └─ Child: ${child.name}`);
+            });
+          }
+        });
       },
       error: (error) => {
         this.isLoadingCategories = false;
+        console.error('❌ Error loading categories:', error);
       }
     });
 
