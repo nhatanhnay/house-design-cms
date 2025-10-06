@@ -148,19 +148,14 @@
   <!-- Dynamic Categories Section -->
   <section class="dynamic-categories-section" aria-label="Project categories">
     <div class="container">
-      <div class="category-group" *ngFor="let category of mainCategories$ | async">
+      <div class="category-group" *ngFor="let category of mainCategories">
         <h2 class="section-title text-center">{{ category.name }}</h2>
 
-        <!-- DEBUG INFO - Remove after fixing -->
-        <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; font-size: 12px;">
-          <strong>DEBUG:</strong> Type: {{ category.category_type }} |
-          Children: {{ category.children?.length || 0 }} |
-          Has Children: {{ category.children ? 'YES' : 'NO' }} |
-          Children Array: {{ category.children | json }}
-        </div>
+        <!-- Debug info -->
+        <div style="display:none;">DEBUG: {{ category.category_type }} | Children: {{ category.children?.length || 0 }}</div>
 
         <!-- For parent categories: show subcategories -->
-        <div class="subcategories-grid" *ngIf="category.category_type === 'parent' && category.children && category.children.length > 0">
+        <div class="subcategories-grid" *ngIf="(category.category_type === 'parent' || category.category_type === 'product') && category.children && category.children.length > 0">
           <mat-card class="subcategory-card" *ngFor="let subcategory of category.children.slice(0, 3)"
             [routerLink]="'/category/' + subcategory.slug">
             <div class="subcategory-image">

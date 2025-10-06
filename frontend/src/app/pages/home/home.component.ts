@@ -37,6 +37,7 @@ import { StructuredDataService } from '../../services/structured-data.service';
 export class HomeComponent implements OnInit, OnDestroy {
   latestPosts$: Observable<Post[]>;
   mainCategories$: Observable<Category[]>;
+  mainCategories: Category[] = []; // Add explicit array for template
   currentUser$: Observable<Admin | null>;
   homeContent: HomeContent | null = null;
   isLoadingPosts = true;
@@ -95,6 +96,9 @@ export class HomeComponent implements OnInit, OnDestroy {
           mainCategory.children = processedCategories.filter(category =>
             category.parent_id === mainCategory.id
           );
+
+          // Debug log for dynamic-categories-section
+          console.log(`DEBUG: Type: ${mainCategory.category_type} | Children: ${mainCategory.children?.length || 0} | Has Children: ${mainCategory.children && mainCategory.children.length > 0 ? 'YES' : 'NO'} | Children Array:`, JSON.stringify(mainCategory.children));
         });
         return mainCategories;
       })
@@ -119,20 +123,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.mainCategories$.subscribe({
       next: (categories) => {
         this.isLoadingCategories = false;
-        // Debug logging for categories
-        console.log('🏠 Homepage - Main Categories:', categories);
-        categories.forEach(cat => {
-          console.log(`📁 Category: ${cat.name} (type: ${cat.category_type}, children: ${cat.children?.length || 0})`);
-          if (cat.children?.length) {
-            cat.children.forEach(child => {
-              console.log(`  └─ Child: ${child.name}`);
-            });
-          }
-        });
+        this.mainCategories = categories; // Store in component property
       },
       error: (error) => {
         this.isLoadingCategories = false;
-        console.error('❌ Error loading categories:', error);
       }
     });
 

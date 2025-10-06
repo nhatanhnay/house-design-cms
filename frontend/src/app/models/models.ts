@@ -9,7 +9,7 @@ export interface Category {
   slug: string;
   description: string;
   thumbnail_url?: string;
-  category_type: 'parent' | 'regular'; // Type of category
+  category_type: 'parent' | 'regular' | 'product' | 'news'; // Type of category
   parent_id?: number | null;
   parent?: Category;
   children?: Category[];
@@ -61,7 +61,7 @@ export interface CreateCategoryRequest {
   slug: string;
   description: string;
   thumbnail_url?: string;
-  category_type: 'parent' | 'regular';
+  category_type: 'parent' | 'regular' | 'product' | 'news';
   parent_id?: number | null;
   order_index?: number;
   is_active?: boolean;
@@ -78,7 +78,7 @@ export interface UpdateCategoryRequest {
   slug?: string;
   description?: string;
   thumbnail_url?: string;
-  category_type?: 'product' | 'news';
+  category_type?: 'parent' | 'regular' | 'product' | 'news';
   parent_id?: number | null;
   order_index?: number;
   is_active?: boolean;
