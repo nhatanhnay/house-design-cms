@@ -1021,27 +1021,15 @@
     }
 
     app-icon-selector {
-      width: auto;
+      width: 100%;
+      display: block;
     }
-    /* Override icon-selector component styling completely */
-    app-icon-selector .icon-selector-container {
-      display: flex !important;
-      justify-content: flex-start !important;
-      align-items: center !important;
-      width: auto !important;
-      overflow: hidden !important;
-      position: relative !important;
-      gap: 8px !important;
-    }
-
-    app-icon-selector .icon-selector-container .current-icon-preview {
-      flex: 0 0 auto !important;
-    }
-
-    app-icon-selector .icon-selector-container button {
-      flex: 0 0 auto !important;
-      margin-left: 0 !important;
-      width: auto !important;
+    
+    /* Override icon-selector component styling for admin */
+    app-icon-selector ::ng-deep .icon-selector-container {
+      width: 100%;
+      max-width: 260px;
+      box-sizing: border-box;
     }
 
     app-icon-selector .icon-selector-modal {
@@ -1167,17 +1155,30 @@
     }
 
     .icon-name-row {
-      display: grid;
-      grid-template-columns: 180px 1fr;
+      display: flex;
       gap: 16px;
-      align-items: start;
+      align-items: flex-end;
+    }
+
+    .icon-field {
+      overflow: visible;
+      width: 220px;
+      min-width: 220px;
+      flex-shrink: 0;
+
+      .icon-selector-label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: #666;
+      }
     }
 
     .name-field,
     .url-field {
       display: flex;
       flex-direction: column;
-      margin-bottom: 12px;
+      flex: 1;
     }
 
     .name-field .field-label,
@@ -1217,4 +1218,142 @@
       }
     }
 
+    // Product table specific styles
+    .price {
+      font-weight: 600;
+      color: #d32f2f;
+    }
+
+    .original-price {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+
+      del {
+        margin-right: 4px;
+      }
+
+      .discount {
+        color: #d32f2f;
+        font-weight: 600;
+      }
+    }
+
+    .images-count {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      background: #e3f2fd;
+      border-radius: 12px;
+      font-size: 12px;
+      color: #1976d2;
+      font-weight: 500;
+    }
+
+    // Clickable rows for posts and products
+    .clickable-row {
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .clickable-row:hover {
+      background-color: #f5f5f5 !important;
+    }
+
+    // ============================================
+    // CONSULTATIONS SECTION STYLES
+    // ============================================
+
+    .consultations-table-card {
+      margin-top: 20px;
+      overflow-x: auto;
+
+      .consultations-table {
+        width: 100%;
+
+        // Action buttons in same row
+        .mat-column-actions {
+          white-space: nowrap;
+          width: 180px;
+          min-width: 180px;
+
+          button {
+            vertical-align: middle;
+            display: inline-block;
+          }
+        }
+
+        .details-cell {
+          max-width: 250px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .phone-link,
+        .email-link {
+          color: #1976d2;
+          text-decoration: none;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+
+        .no-data {
+          color: #999;
+        }
+
+        .status-chip {
+          border-radius: 16px;
+          font-size: 12px;
+          font-weight: 500;
+
+          &.status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+          }
+
+          &.status-contacted {
+            background-color: #d1ecf1;
+            color: #0c5460;
+          }
+
+          &.status-completed {
+            background-color: #d4edda;
+            color: #155724;
+          }
+        }
+
+        .no-data-message {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 40px 20px;
+          color: #999;
+
+          mat-icon {
+            font-size: 64px;
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+          }
+
+          p {
+            margin: 0;
+            font-size: 16px;
+          }
+        }
+      }
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 16px;
+
+      .status-filter {
+        min-width: 200px;
+      }
+    }
 

@@ -174,7 +174,7 @@
         <!-- For regular categories: show recent posts -->
         <div class="category-posts-grid" *ngIf="category.category_type === 'regular'">
           <mat-card class="post-card" *ngFor="let post of getCategoryPosts(category.id).slice(0, 3)"
-            [routerLink]="'/post/' + post.id">
+            [routerLink]="'/post/' + (post.slug || post.id)">
             <div class="post-image">
               <div class="post-image-placeholder" *ngIf="!post.image_url"></div>
               <img *ngIf="post.image_url" [src]="post.image_url" [alt]="post.title" (error)="onImageError($event)">
@@ -213,5 +213,8 @@
       </div>
     </div>
   </section>
+
+  <!-- Consultation Form Section -->
+  <app-consultation-form></app-consultation-form>
 
 </main>

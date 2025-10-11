@@ -266,6 +266,26 @@ body {
   }
 }
 
+/* Content HTML Image Fixes - Global */
+.content-html {
+  figure {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 20px 0 !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  img {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .container {

@@ -43,6 +43,22 @@ if [ $? -eq 0 ]; then
     echo "📁 Backup saved to: $BACKUP_DIR/$BACKUP_FILE"
     echo "📊 File size: $(du -h "$BACKUP_DIR/$BACKUP_FILE" | cut -f1)"
 
+    # Backup uploaded files
+    echo ""
+    echo "📁 Backing up uploaded files..."
+    UPLOADS_DIR="./backend/data/uploads"
+    UPLOADS_BACKUP="$BACKUP_DIR/uploads_backup_${DATE}.tar.gz"
+
+    if [ -d "$UPLOADS_DIR" ]; then
+        tar -czf "$UPLOADS_BACKUP" -C "./backend/data" uploads
+        echo "✅ Uploaded files backed up successfully!"
+        echo "📁 Uploads backup: $UPLOADS_BACKUP"
+        echo "📊 File size: $(du -h "$UPLOADS_BACKUP" | cut -f1)"
+        echo "📊 Total files: $(find "$UPLOADS_DIR" -type f | wc -l)"
+    else
+        echo "⚠️  Warning: Uploads directory not found at $UPLOADS_DIR"
+    fi
+
     # Create VPS restore script
     cat > "$BACKUP_DIR/vps_restore_${DATE}.sh" << EOF
 #!/bin/bash
@@ -102,8 +118,32 @@ if [ \$? -eq 0 ]; then
     psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -d "\$DB_NAME" << SQL
 SELECT 'Categories: ' || COUNT(*) FROM categories;
 SELECT 'Posts: ' || COUNT(*) FROM posts;
-SELECT 'Articles: ' || COUNT(*) FROM articles;
+SELECT 'Products: ' || COUNT(*) FROM products;
+SELECT 'Product Images: ' || COUNT(*) FROM product_images;
 SQL
+
+    # Restore uploaded files
+    echo ""
+    echo "📁 Step 3: Restoring uploaded files..."
+    UPLOADS_BACKUP="uploads_backup_${DATE}.tar.gz"
+
+    if [ -f "\$UPLOADS_BACKUP" ]; then
+        # Create backend/data directory if it doesn't exist
+        mkdir -p ./backend/data
+
+        # Extract uploads
+        tar -xzf "\$UPLOADS_BACKUP" -C ./backend/data
+
+        if [ \$? -eq 0 ]; then
+            echo "✅ Uploaded files restored successfully!"
+            echo "📊 Total files: \$(find ./backend/data/uploads -type f 2>/dev/null | wc -l)"
+        else
+            echo "⚠️  Warning: Failed to restore uploaded files"
+        fi
+    else
+        echo "⚠️  Warning: Uploads backup file not found: \$UPLOADS_BACKUP"
+        echo "You may need to manually transfer the uploads directory"
+    fi
 else
     echo "❌ Failed to restore backup to VPS!"
     exit 1
@@ -118,7 +158,8 @@ EOF
     echo "📊 Backup statistics:"
     echo "Categories: $(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM categories;")"
     echo "Posts: $(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM posts;")"
-    echo "Articles: $(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM articles;")"
+    echo "Products: $(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM products;")"
+    echo "Product Images: $(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM product_images;")"
 
 else
     echo ""

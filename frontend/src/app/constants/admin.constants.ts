@@ -51,11 +51,13 @@ export const ADMIN_CONSTANTS = {
   SECTIONS: {
     CATEGORIES: 'categories',
     POSTS: 'posts',
-    MEDIA: 'media',
+    PRODUCTS: 'products',
     HOMEPAGE: 'homepage',
-    FOOTER: 'footer'
+    FOOTER: 'footer',
+    CONSULTATIONS: 'consultations'
   },
 
   // Table columns
-  POST_COLUMNS: ['id', 'title', 'category', 'published', 'views', 'created_at', 'actions']
+  POST_COLUMNS: ['id', 'title', 'category', 'published', 'views', 'created_at', 'actions'],
+  CONSULTATION_COLUMNS: ['id', 'name', 'phone', 'email', 'details', 'status', 'created_at', 'actions']
 } as const;

@@ -16,9 +16,9 @@
             <span matLine>Quản Lý Bài Viết</span>
           </mat-list-item>
 
-          <mat-list-item (click)="setCurrentSection('media')" [class.active]="currentSection === 'media'">
-            <mat-icon matListIcon>perm_media</mat-icon>
-            <span matLine>Quản Lý Media</span>
+          <mat-list-item (click)="setCurrentSection('products')" [class.active]="currentSection === 'products'">
+            <mat-icon matListIcon>shopping_bag</mat-icon>
+            <span matLine>Quản Lý Sản Phẩm</span>
           </mat-list-item>
 
           <mat-list-item (click)="setCurrentSection('homepage')" [class.active]="currentSection === 'homepage'">
@@ -34,6 +34,11 @@
           <mat-list-item (click)="setCurrentSection('seo')" [class.active]="currentSection === 'seo'">
             <mat-icon matListIcon>search</mat-icon>
             <span matLine>Cài Đặt SEO</span>
+          </mat-list-item>
+
+          <mat-list-item (click)="setCurrentSection('consultations')" [class.active]="currentSection === 'consultations'">
+            <mat-icon matListIcon>contact_support</mat-icon>
+            <span matLine>Yêu Cầu Tư Vấn</span>
           </mat-list-item>
         </mat-nav-list>
       </mat-sidenav>
@@ -252,34 +257,95 @@
 
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef>Hành động</th>
-                <td mat-cell *matCellDef="let post">
-                  <button mat-icon-button (click)="editPost(post)">
+                <td mat-cell *matCellDef="let post" (click)="$event.stopPropagation()">
+                  <button mat-icon-button (click)="editPost(post)" matTooltip="Chỉnh sửa">
                     <mat-icon>edit</mat-icon>
                   </button>
-                  <button mat-icon-button color="warn" (click)="deletePost(post.id)">
+                  <button mat-icon-button color="warn" (click)="deletePost(post.id)" matTooltip="Xóa">
                     <mat-icon>delete</mat-icon>
                   </button>
                 </td>
               </ng-container>
 
               <tr mat-header-row *matHeaderRowDef="postColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: postColumns;"></tr>
+              <tr mat-row *matRowDef="let row; columns: postColumns;" class="clickable-row" (click)="viewPost(row)">
+              </tr>
             </table>
           </mat-card>
         </div>
 
-        <!-- Media Section -->
-        <div *ngIf="currentSection === 'media'" class="content-section">
+        <!-- Products Section -->
+        <div *ngIf="currentSection === 'products'" class="content-section">
           <div class="section-header">
-            <h2>Quản Lý Media</h2>
-            <button mat-raised-button color="primary">
-              <mat-icon>cloud_upload</mat-icon>
-              Tải Lên Media
+            <h2>Quản Lý Sản Phẩm</h2>
+            <button mat-raised-button color="primary" (click)="openProductDialog()">
+              <mat-icon>add</mat-icon>
+              Thêm Sản Phẩm
             </button>
           </div>
 
           <mat-card class="data-table-card">
-            <p>Tính năng quản lý media đang được phát triển...</p>
+            <table mat-table [dataSource]="(products$ | async) || []" class="admin-table">
+              <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef>ID</th>
+                <td mat-cell *matCellDef="let product">{{ product.id }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="thumbnail">
+                <th mat-header-cell *matHeaderCellDef>Ảnh</th>
+                <td mat-cell *matCellDef="let product">
+                  <img *ngIf="product.thumbnail_url" [src]="product.thumbnail_url" alt="{{ product.title }}"
+                    style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="title">
+                <th mat-header-cell *matHeaderCellDef>Tiêu đề</th>
+                <td mat-cell *matCellDef="let product">{{ product.title }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="category">
+                <th mat-header-cell *matHeaderCellDef>Danh mục</th>
+                <td mat-cell *matCellDef="let product">{{ product.category?.name }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="images">
+                <th mat-header-cell *matHeaderCellDef>Ảnh SP</th>
+                <td mat-cell *matCellDef="let product">
+                  <span class="images-count">{{ product.images?.length || 0 }} ảnh</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="published">
+                <th mat-header-cell *matHeaderCellDef>Trạng thái</th>
+                <td mat-cell *matCellDef="let product">
+                  <span class="status-badge" [class.published]="product.published" [class.draft]="!product.published">
+                    {{ product.published ? 'Đã xuất bản' : 'Nháp' }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="views">
+                <th mat-header-cell *matHeaderCellDef>Lượt xem</th>
+                <td mat-cell *matCellDef="let product">{{ product.views || 0 }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Hành động</th>
+                <td mat-cell *matCellDef="let product" (click)="$event.stopPropagation()">
+                  <button mat-icon-button (click)="editProduct(product)" matTooltip="Chỉnh sửa">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="deleteProduct(product.id)" matTooltip="Xóa">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="productColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: productColumns;" class="clickable-row"
+                (click)="viewProduct(row)"></tr>
+            </table>
           </mat-card>
         </div>
 
@@ -690,6 +756,133 @@
         <!-- SEO Settings Section -->
         <div *ngIf="currentSection === 'seo'" class="content-section">
           <app-global-seo-settings></app-global-seo-settings>
+        </div>
+
+        <!-- Consultations Section -->
+        <div *ngIf="currentSection === 'consultations'" class="content-section">
+          <div class="section-header">
+            <h2>Yêu Cầu Tư Vấn</h2>
+            <div class="filter-actions">
+              <mat-form-field appearance="outline" class="status-filter">
+                <mat-label>Trạng thái</mat-label>
+                <mat-select [(value)]="consultationFilter" (selectionChange)="filterConsultations()">
+                  <mat-option value="all">Tất cả</mat-option>
+                  <mat-option value="pending">Chưa xử lý</mat-option>
+                  <mat-option value="contacted">Đã liên hệ</mat-option>
+                  <mat-option value="completed">Hoàn thành</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <mat-card class="consultations-table-card">
+            <table mat-table [dataSource]="filteredConsultations" class="consultations-table" matSort>
+              <!-- ID Column -->
+              <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
+                <td mat-cell *matCellDef="let consultation">{{ consultation.id }}</td>
+              </ng-container>
+
+              <!-- Name Column -->
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Họ và tên</th>
+                <td mat-cell *matCellDef="let consultation">{{ consultation.name }}</td>
+              </ng-container>
+
+              <!-- Phone Column -->
+              <ng-container matColumnDef="phone">
+                <th mat-header-cell *matHeaderCellDef>Số điện thoại</th>
+                <td mat-cell *matCellDef="let consultation">
+                  <a [href]="'tel:' + consultation.phone" class="phone-link">{{ consultation.phone }}</a>
+                </td>
+              </ng-container>
+
+              <!-- Email Column -->
+              <ng-container matColumnDef="email">
+                <th mat-header-cell *matHeaderCellDef>Email</th>
+                <td mat-cell *matCellDef="let consultation">
+                  <a *ngIf="consultation.email" [href]="'mailto:' + consultation.email" class="email-link">
+                    {{ consultation.email }}
+                  </a>
+                  <span *ngIf="!consultation.email" class="no-data">—</span>
+                </td>
+              </ng-container>
+
+              <!-- Details Column -->
+              <ng-container matColumnDef="details">
+                <th mat-header-cell *matHeaderCellDef>Chi tiết</th>
+                <td mat-cell *matCellDef="let consultation">
+                  <div class="details-cell" [title]="consultation.details">
+                    {{ consultation.details || '—' }}
+                  </div>
+                </td>
+              </ng-container>
+
+              <!-- Status Column -->
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Trạng thái</th>
+                <td mat-cell *matCellDef="let consultation">
+                  <mat-chip-set>
+                    <mat-chip [class]="'status-chip status-' + consultation.status">
+                      {{ getStatusLabel(consultation.status) }}
+                    </mat-chip>
+                  </mat-chip-set>
+                </td>
+              </ng-container>
+
+              <!-- Created At Column -->
+              <ng-container matColumnDef="created_at">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Ngày gửi</th>
+                <td mat-cell *matCellDef="let consultation">
+                  {{ consultation.created_at | date:'dd/MM/yyyy HH:mm' }}
+                </td>
+              </ng-container>
+
+              <!-- Actions Column -->
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Thao tác</th>
+                <td mat-cell *matCellDef="let consultation">
+                  <button mat-icon-button (click)="openConsultationDetail(consultation)" matTooltip="Xem chi tiết" color="primary">
+                    <mat-icon>visibility</mat-icon>
+                  </button>
+                  <button mat-icon-button [matMenuTriggerFor]="statusMenu" matTooltip="Cập nhật trạng thái">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <mat-menu #statusMenu="matMenu">
+                    <button mat-menu-item (click)="updateConsultationStatus(consultation.id, 'pending')">
+                      <mat-icon>schedule</mat-icon>
+                      <span>Chưa xử lý</span>
+                    </button>
+                    <button mat-menu-item (click)="updateConsultationStatus(consultation.id, 'contacted')">
+                      <mat-icon>phone</mat-icon>
+                      <span>Đã liên hệ</span>
+                    </button>
+                    <button mat-menu-item (click)="updateConsultationStatus(consultation.id, 'completed')">
+                      <mat-icon>check_circle</mat-icon>
+                      <span>Hoàn thành</span>
+                    </button>
+                  </mat-menu>
+
+                  <button mat-icon-button color="warn" (click)="deleteConsultation(consultation.id)" matTooltip="Xóa">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="consultationColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: consultationColumns;"></tr>
+
+              <!-- No data row -->
+              <tr class="mat-row no-data-row" *matNoDataRow>
+                <td class="mat-cell" [attr.colspan]="consultationColumns.length">
+                  <div class="no-data-message">
+                    <mat-icon>inbox</mat-icon>
+                    <p>Chưa có yêu cầu tư vấn nào</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </mat-card>
         </div>
 
       </mat-sidenav-content>

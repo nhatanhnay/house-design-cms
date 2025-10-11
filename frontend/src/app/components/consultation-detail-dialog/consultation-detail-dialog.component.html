@@ -1,0 +1,119 @@
+<div class="consultation-detail-dialog">
+  <h2 mat-dialog-title>Chi tiết yêu cầu tư vấn #{{ data.consultation.id }}</h2>
+
+  <mat-dialog-content>
+    <div class="detail-section">
+      <div class="detail-row">
+        <div class="detail-label">
+          <mat-icon>person</mat-icon>
+          <span>Họ và tên</span>
+        </div>
+        <div class="detail-value">{{ data.consultation.name }}</div>
+      </div>
+
+      <div class="detail-row">
+        <div class="detail-label">
+          <mat-icon>phone</mat-icon>
+          <span>Số điện thoại</span>
+        </div>
+        <div class="detail-value">
+          <a [href]="'tel:' + data.consultation.phone" class="phone-link">
+            {{ data.consultation.phone }}
+          </a>
+        </div>
+      </div>
+
+      <div class="detail-row" *ngIf="data.consultation.email">
+        <div class="detail-label">
+          <mat-icon>email</mat-icon>
+          <span>Email</span>
+        </div>
+        <div class="detail-value">
+          <a [href]="'mailto:' + data.consultation.email" class="email-link">
+            {{ data.consultation.email }}
+          </a>
+        </div>
+      </div>
+
+      <div class="detail-row">
+        <div class="detail-label">
+          <mat-icon>info</mat-icon>
+          <span>Trạng thái</span>
+        </div>
+        <div class="detail-value">
+          <mat-chip-set>
+            <mat-chip [class]="'status-chip status-' + data.consultation.status">
+              {{ getStatusLabel(data.consultation.status) }}
+            </mat-chip>
+          </mat-chip-set>
+        </div>
+      </div>
+
+      <div class="detail-row">
+        <div class="detail-label">
+          <mat-icon>calendar_today</mat-icon>
+          <span>Ngày gửi</span>
+        </div>
+        <div class="detail-value">
+          {{ data.consultation.created_at | date:'dd/MM/yyyy HH:mm:ss' }}
+        </div>
+      </div>
+
+      <div class="detail-row full-width" *ngIf="data.consultation.details">
+        <div class="detail-label">
+          <mat-icon>description</mat-icon>
+          <span>Chi tiết yêu cầu</span>
+        </div>
+        <div class="detail-value details-content">
+          {{ data.consultation.details }}
+        </div>
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <div class="action-section">
+      <h3>Cập nhật trạng thái</h3>
+      <mat-radio-group [(ngModel)]="selectedStatus" class="status-radio-group">
+        <mat-radio-button value="pending" class="status-radio">
+          <div class="radio-content">
+            <mat-icon>schedule</mat-icon>
+            <span>Chưa xử lý</span>
+          </div>
+        </mat-radio-button>
+        <mat-radio-button value="contacted" class="status-radio">
+          <div class="radio-content">
+            <mat-icon>phone</mat-icon>
+            <span>Đã liên hệ</span>
+          </div>
+        </mat-radio-button>
+        <mat-radio-button value="completed" class="status-radio">
+          <div class="radio-content">
+            <mat-icon>check_circle</mat-icon>
+            <span>Hoàn thành</span>
+          </div>
+        </mat-radio-button>
+      </mat-radio-group>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Đóng</button>
+    <button
+      mat-raised-button
+      color="warn"
+      (click)="onDelete()"
+      class="delete-btn">
+      <mat-icon>delete</mat-icon>
+      Xóa
+    </button>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="onSave()"
+      [disabled]="selectedStatus === data.consultation.status">
+      <mat-icon>save</mat-icon>
+      Lưu thay đổi
+    </button>
+  </mat-dialog-actions>
+</div>

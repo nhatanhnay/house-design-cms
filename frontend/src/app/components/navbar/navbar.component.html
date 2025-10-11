@@ -27,7 +27,6 @@
           <div class="dropdown-menu">
             <a *ngFor="let subcategory of mainCategory.children" [routerLink]="'/category/' + subcategory.slug"
               class="dropdown-item">
-              <mat-icon>{{ getCategoryIcon(subcategory.slug) }}</mat-icon>
               <span>{{ subcategory.name }}</span>
             </a>
           </div>

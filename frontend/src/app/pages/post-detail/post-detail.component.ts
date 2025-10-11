@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -17,29 +17,27 @@ import { Post, Admin } from '../../models/models';
   template: `
     <div class="post-detail-page">
       <div class="container">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb" *ngIf="post && !isLoading">
+          <a routerLink="/">Trang chủ</a>
+          <mat-icon>chevron_right</mat-icon>
+          <a [routerLink]="'/category/' + post.category.slug" *ngIf="post.category">
+            {{ post.category.name }}
+          </a>
+        </div>
+
         <!-- Loading State -->
         <div class="loading-state" *ngIf="isLoading">
           <div class="loading-spinner"></div>
           <p>Đang tải bài viết...</p>
         </div>
 
-        <!-- Post Content -->
-        <article class="post-article" *ngIf="post && !isLoading && !hasError">
+        <!-- Two Column Layout -->
+        <div class="two-column-layout" *ngIf="post && !isLoading && !hasError">
+          <!-- Main Content (Left) -->
+          <article class="post-article">
           <!-- Post Header -->
           <header class="post-header">
-            <div class="breadcrumb">
-              <button mat-button routerLink="/">
-                <mat-icon>home</mat-icon>
-                Trang chủ
-              </button>
-              <mat-icon>chevron_right</mat-icon>
-              <button mat-button [routerLink]="'/category/' + post.category.slug" *ngIf="post.category">
-                {{ post.category.name }}
-              </button>
-              <mat-icon>chevron_right</mat-icon>
-              <span>{{ post.title }}</span>
-            </div>
-
             <h1 class="post-title">{{ post.title }}</h1>
 
             <div class="post-meta">
@@ -105,16 +103,62 @@ import { Post, Admin } from '../../models/models';
           </footer>
         </article>
 
-        <!-- Error State -->
-        <div class="error-state" *ngIf="!isLoading && (hasError || !post)">
-          <mat-icon class="error-icon">error_outline</mat-icon>
-          <h3>Không tìm thấy bài viết</h3>
-          <p>Bài viết bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.</p>
-          <button mat-raised-button color="primary" routerLink="/">
-            <mat-icon>home</mat-icon>
-            Về trang chủ
-          </button>
+        <!-- Sidebar (Right) -->
+        <aside class="sidebar">
+          <div class="sidebar-section">
+            <h3>Có thể bạn quan tâm</h3>
+            <div class="related-posts">
+              <div class="related-post-card" *ngFor="let relatedPost of relatedPosts" [routerLink]="'/post/' + (relatedPost.slug || relatedPost.id)">
+                <div class="related-post-image">
+                  <img [src]="relatedPost.image_url || 'assets/images/placeholder-post.jpg'"
+                       [alt]="relatedPost.title"
+                       (error)="onImageError($event)">
+                </div>
+                <div class="related-post-info">
+                  <h4>{{ relatedPost.title }}</h4>
+                  <div class="related-post-meta">
+                    <mat-icon>event</mat-icon>
+                    <span>{{ relatedPost.created_at | date:'dd/MM/yyyy' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Bottom Suggestions -->
+      <div class="bottom-suggestions" *ngIf="suggestedPosts && suggestedPosts.length > 0">
+        <div class="container">
+          <h3>Có thể bạn quan tâm</h3>
+          <div class="suggestions-grid">
+            <mat-card class="suggestion-card" *ngFor="let suggested of suggestedPosts" [routerLink]="'/post/' + (suggested.slug || suggested.id)">
+              <div class="suggestion-image">
+                <img [src]="suggested.image_url || 'assets/images/placeholder-post.jpg'"
+                     [alt]="suggested.title"
+                     (error)="onImageError($event)">
+              </div>
+              <mat-card-content>
+                <h4>{{ suggested.title }}</h4>
+                <div class="suggestion-meta">
+                  <mat-icon>event</mat-icon>
+                  <span>{{ suggested.created_at | date:'dd/MM/yyyy' }}</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
         </div>
+      </div>
+
+      <!-- Error State -->
+      <div class="error-state" *ngIf="!isLoading && (hasError || !post)">
+        <mat-icon class="error-icon">error_outline</mat-icon>
+        <h3>Không tìm thấy bài viết</h3>
+        <p>Bài viết bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.</p>
+        <button mat-raised-button color="primary" routerLink="/">
+          <mat-icon>home</mat-icon>
+          Về trang chủ
+        </button>
       </div>
     </div>
   `,
@@ -122,13 +166,47 @@ import { Post, Admin } from '../../models/models';
     .post-detail-page {
       padding: 20px 0;
       min-height: 100vh;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      background: #f5f5f5;
     }
 
     .container {
-      max-width: 900px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 0 20px;
+    }
+
+    /* Top Breadcrumb */
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+    }
+
+    .breadcrumb a {
+      color: #666;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .breadcrumb a:hover {
+      color: #3498db;
+    }
+
+    .breadcrumb mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: #999;
+    }
+
+    /* Two Column Layout */
+    .two-column-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 30px;
+      margin-bottom: 40px;
     }
 
     /* Loading State */
@@ -167,43 +245,16 @@ import { Post, Admin } from '../../models/models';
 
     /* Post Header */
     .post-header {
-      padding: 40px;
+      padding: 30px;
       border-bottom: 1px solid #eee;
     }
 
-    .breadcrumb {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 30px;
-      font-size: 0.9rem;
-      color: #6c757d;
-    }
-
-    .breadcrumb button {
-      color: var(--primary-blue, #3498db) !important;
-      min-width: auto;
-      padding: 0 8px;
-      height: auto;
-    }
-
-    .breadcrumb mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      color: #6c757d;
-    }
-
     .post-title {
-      font-size: 2.5rem;
+      font-size: 1.8rem;
       font-weight: 700;
-      color: var(--dark-blue, #2c3e50);
-      line-height: 1.2;
-      margin-bottom: 25px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: #333;
+      line-height: 1.3;
+      margin-bottom: 15px;
     }
 
     .post-meta {
@@ -268,12 +319,17 @@ import { Post, Admin } from '../../models/models';
     /* Post Content */
     .post-content {
       padding: 40px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .content-html {
       font-size: 1.1rem;
       line-height: 1.8;
       color: #333;
+      width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
     .content-html h1,
@@ -297,11 +353,23 @@ import { Post, Admin } from '../../models/models';
       margin-bottom: 1.5em;
     }
 
-    .content-html img {
-      max-width: 100%;
-      height: auto;
+    ::ng-deep .content-html figure {
+      max-width: 100% !important;
+      width: 100% !important;
+      height: auto !important;
+      margin: 20px 0 !important;
+      display: block !important;
+      box-sizing: border-box !important;
+      overflow: hidden !important;
+    }
+
+    ::ng-deep .content-html img {
+      max-width: 100% !important;
+      width: 100% !important;
+      height: auto !important;
+      display: block !important;
       border-radius: 8px;
-      margin: 20px 0;
+      margin: 0 !important;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     }
 
@@ -411,7 +479,190 @@ import { Post, Admin } from '../../models/models';
       gap: 8px;
     }
 
+    /* Sidebar */
+    .sidebar {
+      position: sticky;
+      top: 20px;
+      height: fit-content;
+    }
+
+    .sidebar-section {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-section h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #3498db;
+    }
+
+    .related-posts {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .related-post-card {
+      display: flex;
+      gap: 12px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .related-post-card:hover {
+      transform: translateX(5px);
+      background: #f8f9fa;
+    }
+
+    .related-post-image {
+      width: 80px;
+      height: 80px;
+      flex-shrink: 0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .related-post-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .related-post-info {
+      flex: 1;
+    }
+
+    .related-post-info h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 8px 0;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .related-post-meta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: #999;
+    }
+
+    .related-post-meta mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Bottom Suggestions */
+    .bottom-suggestions {
+      background: white;
+      padding: 40px 0;
+      margin-top: 40px;
+    }
+
+    .bottom-suggestions .container h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #3498db;
+    }
+
+    .suggestions-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .suggestion-card {
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .suggestion-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .suggestion-image {
+      width: 100%;
+      height: 180px;
+      overflow: hidden;
+    }
+
+    .suggestion-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s;
+    }
+
+    .suggestion-card:hover .suggestion-image img {
+      transform: scale(1.1);
+    }
+
+    .suggestion-card mat-card-content {
+      padding: 15px;
+    }
+
+    .suggestion-card h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 10px 0;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .suggestion-meta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8rem;
+      color: #999;
+    }
+
+    .suggestion-meta mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
     /* Responsive */
+    @media (max-width: 1024px) {
+      .two-column-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        order: 2;
+      }
+
+      .suggestions-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
     @media (max-width: 768px) {
       .post-detail-page {
         padding: 10px 0;
@@ -422,19 +673,19 @@ import { Post, Admin } from '../../models/models';
       }
 
       .post-header {
-        padding: 30px 20px;
+        padding: 20px;
       }
 
       .post-title {
-        font-size: 2rem;
+        font-size: 1.5rem;
       }
 
       .post-content {
-        padding: 30px 20px;
+        padding: 20px;
       }
 
       .post-footer {
-        padding: 30px 20px;
+        padding: 20px;
       }
 
       .meta-item {
@@ -454,15 +705,26 @@ import { Post, Admin } from '../../models/models';
       .social-buttons {
         flex-direction: column;
       }
+
+      .suggestions-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .bottom-suggestions {
+        padding: 20px 0;
+      }
     }
   `]
 })
-export class PostDetailComponent implements OnInit {
+export class PostDetailComponent implements OnInit, AfterViewChecked {
   post$: Observable<Post>;
   isLoading = true;
   post: Post | null = null;
   hasError = false;
   currentUser$: Observable<Admin | null>;
+  relatedPosts: Post[] = [];
+  suggestedPosts: Post[] = [];
+  private imagesProcessed = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -480,23 +742,40 @@ export class PostDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
-      const id = parseInt(params['id']);
+      const slugOrId = params['slug'];
 
-      if (id) {
+      if (slugOrId) {
         this.isLoading = true;
         this.hasError = false;
         this.post = null;
 
-        this.dataService.getPost(id).subscribe({
+        // Try to parse as ID first (if it's a number, use old method)
+        const numericId = parseInt(slugOrId);
+        const isNumeric = !isNaN(numericId) && slugOrId === numericId.toString();
+
+        const postObservable = isNumeric
+          ? this.dataService.getPost(numericId)
+          : this.dataService.getPostBySlug(slugOrId);
+
+        postObservable.subscribe({
           next: (post) => {
             this.isLoading = false;
             this.post = post;
             this.hasError = false;
-            // Increment view count
-            this.dataService.incrementPostViews(id).subscribe({
-              next: () => console.log('View count incremented'),
-              error: (error) => console.error('Error incrementing views:', error)
-            });
+            this.imagesProcessed = false; // Reset flag for new post
+
+            // Load related posts from the same category
+            if (post.category_id) {
+              this.loadRelatedPosts(post.category_id, post.id);
+            }
+
+            // Increment view count (only if not logged in as admin)
+            if (!this.authService.getToken()) {
+              this.dataService.incrementPostView(post.id).subscribe({
+                next: () => console.log('View count incremented'),
+                error: (error) => console.error('Error incrementing views:', error)
+              });
+            }
           },
           error: (error) => {
             this.isLoading = false;
@@ -509,6 +788,30 @@ export class PostDetailComponent implements OnInit {
         this.hasError = true;
         this.post = null;
       }
+    });
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.post && !this.imagesProcessed) {
+      this.removeImageDimensions();
+      this.imagesProcessed = true;
+    }
+  }
+
+  private removeImageDimensions(): void {
+    // Remove width and height attributes from all images and figures in content
+    const contentImages = document.querySelectorAll('.content-html img');
+    contentImages.forEach((img: Element) => {
+      img.removeAttribute('width');
+      img.removeAttribute('height');
+    });
+
+    const contentFigures = document.querySelectorAll('.content-html figure');
+    contentFigures.forEach((figure: Element) => {
+      figure.removeAttribute('width');
+      figure.removeAttribute('height');
+      (figure as HTMLElement).style.width = '';
+      (figure as HTMLElement).style.height = '';
     });
   }
 
@@ -525,6 +828,37 @@ export class PostDetailComponent implements OnInit {
   copyLink(): void {
     navigator.clipboard.writeText(window.location.href).then(() => {
       // You could show a snackbar here
+    });
+  }
+
+  loadRelatedPosts(categoryId: number, currentPostId: number): void {
+    this.dataService.getPosts().subscribe({
+      next: (posts) => {
+        // Filter posts from the same category, exclude current post
+        const sameCategoryPosts = posts.filter(p =>
+          p.category_id === categoryId &&
+          p.id !== currentPostId &&
+          p.published
+        );
+
+        // Take 3 for sidebar, 4 for bottom (different sets)
+        this.relatedPosts = sameCategoryPosts.slice(0, 3);
+        this.suggestedPosts = sameCategoryPosts.slice(3, 7);
+
+        // If not enough posts, fill with other published posts
+        if (this.suggestedPosts.length < 4) {
+          const otherPosts = posts.filter(p =>
+            p.id !== currentPostId &&
+            p.published &&
+            !this.relatedPosts.some(rp => rp.id === p.id) &&
+            !this.suggestedPosts.some(sp => sp.id === p.id)
+          );
+          this.suggestedPosts = [...this.suggestedPosts, ...otherPosts].slice(0, 4);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading related posts:', error);
+      }
     });
   }
 }

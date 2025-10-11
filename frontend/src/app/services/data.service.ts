@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Category, CategoryTreeItem, CreateCategoryRequest, GlobalSEOSettings, HomeContent, Post, UpdateCategoryRequest } from '../models/models';
+import { Category, CategoryTreeItem, Consultation, CreateCategoryRequest, GlobalSEOSettings, HomeContent, Post, Product, UpdateCategoryRequest } from '../models/models';
 import { AuthService } from './auth.service';
 import { FooterContent } from '../pages/admin/admin.component';
 
@@ -46,6 +46,7 @@ export class DataService {
           thumbnail_url: apiCategory.thumbnail_url,
           category_type: apiCategory.category_type || 'product',
           parent_id: apiCategory.parent_id || null,
+          parent: apiCategory.parent || null,
           level: apiCategory.level || 0,
           order_index: apiCategory.order_index || 0,
           display_order: apiCategory.display_order || 0,
@@ -118,25 +119,64 @@ export class DataService {
   }
 
   createCategory(category: CreateCategoryRequest): Observable<Category> {
-    return this.http.post<Category>(`${this.apiUrl}/categories`, category);
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.post<Category>(`${this.apiUrl}/categories`, category, { headers });
   }
 
   updateCategory(id: number, category: UpdateCategoryRequest): Observable<Category> {
-    return this.http.put<Category>(`${this.apiUrl}/categories/${id}`, category);
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.put<Category>(`${this.apiUrl}/categories/${id}`, category, { headers });
   }
 
   deleteCategory(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/categories/${id}`);
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.delete(`${this.apiUrl}/categories/${id}`, { headers });
   }
 
   // Reorder categories
   reorderCategories(categoryOrders: Array<{id: number, order_index: number}>): Observable<any> {
-    return this.http.put(`${this.apiUrl}/categories/reorder`, { categories: categoryOrders });
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.put(`${this.apiUrl}/categories/reorder`, { categories: categoryOrders }, { headers });
   }
 
   // Update category display order
   updateCategoryOrder(orderUpdates: Array<{id: number, display_order: number}>): Observable<any> {
-    return this.http.put(`${this.apiUrl}/categories/update-order`, { categories: orderUpdates });
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.put(`${this.apiUrl}/categories/update-order`, { categories: orderUpdates }, { headers });
   }
 
   // Posts
@@ -152,16 +192,43 @@ export class DataService {
     return this.http.get<Post>(`${this.apiUrl}/posts/${id}`);
   }
 
+  getPostBySlug(slug: string): Observable<Post> {
+    return this.http.get<Post>(`${this.apiUrl}/posts/slug/${slug}`);
+  }
+
   createPost(post: Partial<Post>): Observable<Post> {
-    return this.http.post<Post>(`${this.apiUrl}/posts`, post);
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.post<Post>(`${this.apiUrl}/posts`, post, { headers });
   }
 
   updatePost(id: number, post: Partial<Post>): Observable<Post> {
-    return this.http.put<Post>(`${this.apiUrl}/posts/${id}`, post);
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.put<Post>(`${this.apiUrl}/posts/${id}`, post, { headers });
   }
 
   deletePost(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/posts/${id}`);
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.delete(`${this.apiUrl}/posts/${id}`, { headers });
   }
 
   incrementPostViews(id: number): Observable<any> {
@@ -174,7 +241,15 @@ export class DataService {
   }
 
   updateHomeContent(content: Partial<HomeContent>): Observable<HomeContent> {
-    return this.http.put<HomeContent>(`${this.apiUrl}/home-content`, content);
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.put<HomeContent>(`${this.apiUrl}/home-content`, content, { headers });
   }
 
   // Footer Content
@@ -183,7 +258,15 @@ export class DataService {
   }
 
   updateFooterContent(content: Partial<FooterContent>): Observable<FooterContent> {
-    return this.http.put<FooterContent>(`${this.apiUrl}/footer-content`, content);
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.put<FooterContent>(`${this.apiUrl}/footer-content`, content, { headers });
   }
 
   // Homepage Media Management
@@ -192,19 +275,47 @@ export class DataService {
   }
 
   uploadHomepageImage(formData: FormData): Observable<any> {
-    return this.http.post(`${this.apiUrl}/homepage/upload-image`, formData);
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.post(`${this.apiUrl}/homepage/upload-image`, formData, { headers });
   }
 
   uploadHomepageVideo(formData: FormData): Observable<any> {
-    return this.http.post(`${this.apiUrl}/homepage/upload-video`, formData);
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.post(`${this.apiUrl}/homepage/upload-video`, formData, { headers });
   }
 
   replaceHomepageMedia(formData: FormData, type: string, filename: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/homepage/${type}/${filename}`, formData);
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.put(`${this.apiUrl}/homepage/${type}/${filename}`, formData, { headers });
   }
 
   deleteHomepageMedia(type: string, filename: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/homepage/${type}/${filename}`);
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.delete(`${this.apiUrl}/homepage/${type}/${filename}`, { headers });
   }
 
   // General image upload for category thumbnails and other purposes
@@ -217,9 +328,14 @@ export class DataService {
       throw new Error('Authentication token not found. Please log in again.');
     }
 
+    // Don't set Content-Type header - let browser set it with boundary for multipart/form-data
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
+      // DO NOT set 'Content-Type': browser will set 'multipart/form-data; boundary=...' automatically
     });
+
+    console.log('Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
+    console.log('Token:', token ? 'Present' : 'Missing');
 
     return this.http.post<{ url: string }>(`${this.apiUrl}/upload`, formData, { headers });
   }
@@ -270,5 +386,214 @@ export class DataService {
     });
 
     return this.http.put<GlobalSEOSettings>(`${this.apiUrl}/seo-settings`, settings, { headers });
+  }
+
+  // ============================================
+  // PRODUCT MANAGEMENT
+  // ============================================
+
+  // Get all products
+  getProducts(): Observable<Product[]> {
+    const cacheBuster = new Date().getTime();
+    return this.http.get<Product[]>(`${this.apiUrl}/products?_t=${cacheBuster}`);
+  }
+
+  // Get single product by ID
+  getProduct(id: number): Observable<Product> {
+    return this.http.get<Product>(`${this.apiUrl}/products/${id}`);
+  }
+
+  getProductBySlug(slug: string): Observable<Product> {
+    return this.http.get<Product>(`${this.apiUrl}/products/slug/${slug}`);
+  }
+
+  // Create a new product
+  createProduct(product: Product): Observable<Product> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.post<Product>(`${this.apiUrl}/products`, product, { headers });
+  }
+
+  // Update an existing product
+  updateProduct(id: number, product: Product): Observable<Product> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.put<Product>(`${this.apiUrl}/products/${id}`, product, { headers });
+  }
+
+  // Delete a product
+  deleteProduct(id: number): Observable<void> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.delete<void>(`${this.apiUrl}/products/${id}`, { headers });
+  }
+
+  // Add image to product
+  addProductImage(productId: number, imageData: { image_url: string; display_order?: number; alt_text?: string; is_primary?: boolean }): Observable<any> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.post(`${this.apiUrl}/products/${productId}/images`, imageData, { headers });
+  }
+
+  // Delete product image
+  deleteProductImage(productId: number, imageId: number): Observable<void> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.delete<void>(`${this.apiUrl}/products/${productId}/images/${imageId}`, { headers });
+  }
+
+  // Update product images order
+  updateProductImageOrder(productId: number, images: { id: number; display_order: number }[]): Observable<any> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.put(`${this.apiUrl}/products/${productId}/images/order`, { images }, { headers });
+  }
+
+  // ============================================
+  // CONSULTATIONS
+  // ============================================
+
+  // Get all consultations (admin only)
+  getConsultations(): Observable<Consultation[]> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.get<Consultation[]>(`${this.apiUrl}/consultations`, { headers });
+  }
+
+  // Create consultation (public endpoint)
+  createConsultation(consultation: Partial<Consultation>): Observable<any> {
+    return this.http.post(`${this.apiUrl}/consultations`, consultation);
+  }
+
+  // Update consultation status
+  updateConsultationStatus(id: number, status: string): Observable<any> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.put(`${this.apiUrl}/consultations/${id}/status`, { status }, { headers });
+  }
+
+  // Delete consultation
+  deleteConsultation(id: number): Observable<any> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.delete(`${this.apiUrl}/consultations/${id}`, { headers });
+  }
+
+  // ============================================
+  // VIEWS & VISITOR TRACKING
+  // ============================================
+
+  // Increment post view count
+  incrementPostView(postId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/posts/${postId}/view`, {});
+  }
+
+  // Increment product view count
+  incrementProductView(productId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/products/${productId}/view`, {});
+  }
+
+  // Track visitor
+  trackVisitor(pageUrl: string, referrer: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/track-visitor`, {
+      page_url: pageUrl,
+      referrer: referrer
+    });
+  }
+
+  // Get visitor stats (admin only)
+  getVisitorStats(): Observable<any> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.get(`${this.apiUrl}/visitor-stats`, { headers });
+  }
+
+  // Get daily visitors (admin only)
+  getDailyVisitors(): Observable<any> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.get(`${this.apiUrl}/daily-visitors`, { headers });
   }
 }

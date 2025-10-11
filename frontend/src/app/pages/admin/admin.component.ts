@@ -12,15 +12,21 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSortModule } from '@angular/material/sort';
+import { MatChipsModule } from '@angular/material/chips';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Observable, of, Subject } from 'rxjs';
 import { map, catchError, switchMap, startWith } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { DataService } from '../../services/data.service';
 import { AuthService } from '../../services/auth.service';
-import { Category, Post, Admin, CategoryTreeItem } from '../../models/models';
+import { Category, Post, Admin, CategoryTreeItem, Product, Consultation } from '../../models/models';
 import { CategoryDialogComponent } from '../../components/category-dialog/category-dialog.component';
 import { PostDialogComponent } from '../../components/post-dialog/post-dialog.component';
+import { ProductDialogComponent } from '../../components/product-dialog/product-dialog.component';
+import { ConsultationDetailDialogComponent, ConsultationDetailDialogResult } from '../../components/consultation-detail-dialog/consultation-detail-dialog.component';
 import { ADMIN_CONSTANTS } from '../../constants/admin.constants';
 import { OrderUpdate, HomepageMediaResponse } from '../../interfaces/admin.interfaces';
 import { HomeContent } from '../../models/models';
@@ -68,6 +74,10 @@ export interface FooterContent {
     MatTooltipModule,
     MatFormFieldModule,
     MatInputModule,
+    MatMenuModule,
+    MatSelectModule,
+    MatSortModule,
+    MatChipsModule,
     DragDropModule,
     IconSelectorComponent,
     GlobalSeoSettingsComponent
@@ -78,10 +88,18 @@ export interface FooterContent {
 export class AdminComponent implements OnInit {
   categories$: Observable<Category[]>;
   posts$: Observable<Post[]>;
+  products$: Observable<Product[]>;
   currentUser$: Observable<Admin | null>;
   categoryTree$: Observable<CategoryTreeItem[]>;
   currentSection: string = ADMIN_CONSTANTS.SECTIONS.CATEGORIES;
   postColumns: string[] = [...ADMIN_CONSTANTS.POST_COLUMNS];
+  productColumns: string[] = ['id', 'thumbnail', 'title', 'category', 'images', 'published', 'views', 'actions'];
+  consultationColumns: string[] = ['id', 'name', 'phone', 'email', 'details', 'status', 'created_at', 'actions'];
+
+  // Consultations Management Properties
+  consultations: Consultation[] = [];
+  filteredConsultations: Consultation[] = [];
+  consultationFilter: string = 'all';
 
   // Homepage Management Properties
   homepageImages: string[] = [];
@@ -148,6 +166,11 @@ export class AdminComponent implements OnInit {
       map(posts => this.processPostImageUrls(posts))
     );
 
+    // Process products with URL conversion
+    this.products$ = this.dataService.getProducts().pipe(
+      map(products => this.processProductImageUrls(products))
+    );
+
     this.currentUser$ = this.authService.currentUser$;
 
     this.categoryTree$ = this.createCategoryTreeObservable();
@@ -168,6 +191,9 @@ export class AdminComponent implements OnInit {
     if (section === ADMIN_CONSTANTS.SECTIONS.FOOTER) {
       this.loadFooterContent();
     }
+    if (section === ADMIN_CONSTANTS.SECTIONS.CONSULTATIONS) {
+      this.loadConsultations();
+    }
   }
 
   // Helper Methods
@@ -177,6 +203,21 @@ export class AdminComponent implements OnInit {
         post.image_url = UrlConverter.convertImageUrl(post.image_url);
       }
       return post;
+    });
+  }
+
+  private processProductImageUrls(products: Product[]): Product[] {
+    return products.map(product => {
+      if (product.thumbnail_url) {
+        product.thumbnail_url = UrlConverter.convertImageUrl(product.thumbnail_url);
+      }
+      if (product.images) {
+        product.images = product.images.map(img => {
+          img.image_url = UrlConverter.convertImageUrl(img.image_url);
+          return img;
+        });
+      }
+      return product;
     });
   }
 
@@ -392,6 +433,10 @@ export class AdminComponent implements OnInit {
       processedPost.image_url = UrlConverter.convertImageUrl(processedPost.image_url);
     }
     this.openPostDialog(processedPost);
+  }
+
+  viewPost(post: Post): void {
+    window.open(`/post/${post.id}`, '_blank');
   }
 
   deletePost(id: number): void {
@@ -915,5 +960,138 @@ export class AdminComponent implements OnInit {
       return 'type-regular';
     }
     return 'type-parent';
+  }
+
+  // ============================================
+  // PRODUCT MANAGEMENT METHODS
+  // ============================================
+
+  openProductDialog(product?: Product): void {
+    const dialogRef = this.dialog.open(ProductDialogComponent, {
+      width: '900px',
+      data: { product: product || null }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.refreshProductsList();
+      }
+    });
+  }
+
+  editProduct(product: Product): void {
+    const processedProduct = { ...product };
+    if (processedProduct.thumbnail_url) {
+      processedProduct.thumbnail_url = UrlConverter.convertImageUrl(processedProduct.thumbnail_url);
+    }
+    this.openProductDialog(processedProduct);
+  }
+
+  viewProduct(product: Product): void {
+    window.open(`/product/${product.id}`, '_blank');
+  }
+
+  deleteProduct(id: number): void {
+    if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+      this.dataService.deleteProduct(id).subscribe({
+        next: () => {
+          this.refreshProductsList();
+          this.showSuccessMessage('Sản phẩm đã được xóa');
+        },
+        error: (error) => {
+          this.logger.error('Error deleting product', error, 'ProductManagement');
+          this.showErrorMessage('Lỗi khi xóa sản phẩm');
+        }
+      });
+    }
+  }
+
+  private refreshProductsList(): void {
+    this.products$ = this.dataService.getProducts().pipe(
+      map(products => this.processProductImageUrls(products))
+    );
+  }
+
+  // ============================================
+  // CONSULTATIONS MANAGEMENT
+  // ============================================
+
+  loadConsultations(): void {
+    this.dataService.getConsultations().subscribe({
+      next: (consultations) => {
+        this.consultations = consultations;
+        this.filterConsultations();
+      },
+      error: (error) => {
+        this.logger.error('Error loading consultations', error, 'ConsultationManagement');
+        this.showErrorMessage('Lỗi khi tải danh sách yêu cầu tư vấn');
+      }
+    });
+  }
+
+  filterConsultations(): void {
+    if (this.consultationFilter === 'all') {
+      this.filteredConsultations = [...this.consultations];
+    } else {
+      this.filteredConsultations = this.consultations.filter(
+        c => c.status === this.consultationFilter
+      );
+    }
+  }
+
+  updateConsultationStatus(id: number, status: string): void {
+    this.dataService.updateConsultationStatus(id, status).subscribe({
+      next: () => {
+        this.loadConsultations();
+        this.showSuccessMessage('Cập nhật trạng thái thành công');
+      },
+      error: (error) => {
+        this.logger.error('Error updating consultation status', error, 'ConsultationManagement');
+        this.showErrorMessage('Lỗi khi cập nhật trạng thái');
+      }
+    });
+  }
+
+  deleteConsultation(id: number): void {
+    if (confirm('Bạn có chắc chắn muốn xóa yêu cầu tư vấn này?')) {
+      this.dataService.deleteConsultation(id).subscribe({
+        next: () => {
+          this.loadConsultations();
+          this.showSuccessMessage('Đã xóa yêu cầu tư vấn');
+        },
+        error: (error) => {
+          this.logger.error('Error deleting consultation', error, 'ConsultationManagement');
+          this.showErrorMessage('Lỗi khi xóa yêu cầu tư vấn');
+        }
+      });
+    }
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: { [key: string]: string } = {
+      'pending': 'Chưa xử lý',
+      'contacted': 'Đã liên hệ',
+      'completed': 'Hoàn thành'
+    };
+    return labels[status] || status;
+  }
+
+  openConsultationDetail(consultation: Consultation): void {
+    const dialogRef = this.dialog.open(ConsultationDetailDialogComponent, {
+      width: '700px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      data: { consultation }
+    });
+
+    dialogRef.afterClosed().subscribe((result: ConsultationDetailDialogResult) => {
+      if (!result) return;
+
+      if (result.action === 'save' && result.status) {
+        this.updateConsultationStatus(consultation.id, result.status);
+      } else if (result.action === 'delete') {
+        this.deleteConsultation(consultation.id);
+      }
+    });
   }
 }

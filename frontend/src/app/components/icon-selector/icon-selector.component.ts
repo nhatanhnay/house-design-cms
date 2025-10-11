@@ -147,19 +147,28 @@ export interface IconOption {
 
     .icons-container {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
       gap: 12px;
       max-height: 400px;
       overflow-y: auto;
+      padding: 8px;
     }
 
     .icon-button {
       display: flex !important;
       flex-direction: column;
       align-items: center;
-      padding: 12px !important;
-      min-height: 80px;
+      justify-content: flex-start;
+      padding: 12px 8px !important;
+      min-height: 100px;
+      height: auto;
       border: 2px solid transparent;
+      overflow: hidden;
+    }
+
+    .icon-button mat-icon {
+      flex-shrink: 0;
+      margin-bottom: 8px;
     }
 
     .icon-button:hover {
@@ -176,6 +185,13 @@ export interface IconOption {
       margin-top: 4px;
       text-align: center;
       word-break: break-word;
+      overflow-wrap: break-word;
+      line-height: 1.2;
+      max-width: 100%;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .svg-upload-section {
@@ -194,6 +210,7 @@ export interface IconOption {
       width: 40px;
       height: 40px;
       margin: 8px auto;
+      flex-shrink: 0;
     }
 
     .svg-preview-container svg, .custom-icon-preview svg, .svg-preview-selected svg {
@@ -214,12 +231,21 @@ export interface IconOption {
       gap: 12px;
     }
 
+    .preview-container mat-icon {
+      flex-shrink: 0;
+    }
+
     .full-width {
       width: 100%;
     }
 
     .custom-svg-button {
       position: relative;
+    }
+
+    mat-dialog-content {
+      max-height: 600px;
+      overflow-y: auto;
     }
   `]
 })
@@ -385,7 +411,8 @@ export class IconSelectorDialog implements OnInit {
     CommonModule,
     MatButtonModule,
     MatIconModule,
-    MatDialogModule
+    MatDialogModule,
+    MatTooltipModule
   ],
   template: `
     <div class="icon-selector-container">
@@ -398,9 +425,8 @@ export class IconSelectorDialog implements OnInit {
         <span class="icon-label">{{ getIconLabel() }}</span>
       </div>
 
-      <button mat-raised-button color="primary" (click)="openIconSelector()">
-        <mat-icon>palette</mat-icon>
-        Choose Icon
+      <button mat-icon-button color="primary" (click)="openIconSelector()" matTooltip="Choose Icon">
+        <mat-icon>edit</mat-icon>
       </button>
     </div>
   `,
@@ -408,32 +434,88 @@ export class IconSelectorDialog implements OnInit {
     .icon-selector-container {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 12px;
-      padding: 8px;
+      padding: 8px 12px;
       border: 1px solid #ddd;
       border-radius: 4px;
+      background: white;
     }
 
     .current-icon-preview {
       display: flex;
       align-items: center;
-      gap: 8px;
-      min-width: 120px;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .icon-display {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-display mat-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
     }
 
     .svg-icon {
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
+    .svg-icon img,
     .svg-icon svg {
       width: 100%;
       height: 100%;
+      object-fit: contain;
     }
 
     .icon-label {
-      font-size: 12px;
-      color: #666;
+      flex: 1;
+      font-size: 13px;
+      color: #333;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+      background: #f5f5f5;
+      border-radius: 4px;
+      padding: 2px;
+    }
+
+    button[mat-icon-button] {
+      width: 32px !important;
+      height: 32px !important;
+      line-height: 32px !important;
+      padding: 0 !important;
+      background: transparent;
+      transition: background-color 0.2s;
+    }
+
+    button[mat-icon-button]:hover {
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    button[mat-icon-button] mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
     }
   `]
 })

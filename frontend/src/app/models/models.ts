@@ -151,3 +151,45 @@ export interface GlobalSEOSettings {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface ProductImage {
+  id: number;
+  product_id: number;
+  image_url: string;
+  display_order: number;
+  alt_text?: string;
+  is_primary: boolean;
+  created_at?: string;
+}
+
+export interface Product {
+  id: number;
+  title: string;
+  content: string;
+  summary: string;
+  thumbnail_url: string;
+  category_id: number;
+  category?: Category;
+  published: boolean;
+  views: number;
+  images?: ProductImage[];
+  // SEO Fields
+  meta_title?: string;
+  meta_description?: string;
+  focus_keywords?: string;
+  og_image_url?: string;
+  slug?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Consultation {
+  id: number;
+  name: string;
+  phone: string;
+  email?: string;
+  details?: string;
+  status: 'pending' | 'contacted' | 'completed';
+  created_at?: string;
+  updated_at?: string;
+}

@@ -16,6 +16,7 @@ import { Admin, Category, HomeContent, Post } from '../../models/models';
 import { AuthService } from '../../services/auth.service';
 import { DataService } from '../../services/data.service';
 import { StructuredDataService } from '../../services/structured-data.service';
+import { ConsultationFormComponent } from '../../components/consultation-form/consultation-form.component';
 
 @Component({
   selector: 'app-home',
@@ -29,7 +30,8 @@ import { StructuredDataService } from '../../services/structured-data.service';
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
-    FormsModule
+    FormsModule,
+    ConsultationFormComponent
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']

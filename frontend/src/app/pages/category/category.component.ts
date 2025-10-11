@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { Observable, switchMap, of } from 'rxjs';
 import { DataService } from '../../services/data.service';
 import { AuthService } from '../../services/auth.service';
-import { Post, Admin } from '../../models/models';
+import { Post, Admin, Category, Product } from '../../models/models';
 
 @Component({
   selector: 'app-category',
@@ -17,20 +17,65 @@ import { Post, Admin } from '../../models/models';
     <div class="category-page">
       <!-- Category Header -->
       <div class="category-header">
-        <div class="left-content">
-          <h1 class="category-title">{{ categoryName || 'Danh mục không tìm thấy' }}</h1>
-          <div class="category-description" *ngIf="categoryDescription">
+        <img [src]="categoryThumbnail || 'assets/images/placeholder-category.jpg'"
+             [alt]="categoryName"
+             class="category-thumbnail"
+             (error)="onImageError($event)">
+        <div class="header-overlay">
+          <div class="title-bar">
+            <h1 class="category-title">{{ categoryName || 'Danh mục không tìm thấy' }}</h1>
+          </div>
+          <div class="description-bar" *ngIf="categoryDescription">
             <p>{{ categoryDescription }}</p>
           </div>
         </div>
-        <div class="right-content">
-          <img [src]="categoryThumbnail || 'assets/images/placeholder-category.jpg'"
-               [alt]="categoryName"
-               class="category-thumbnail"
-               (error)="onImageError($event)">
-        </div>
       </div>
       <div class="container">
+
+        <!-- Subcategories Section -->
+        <div class="subcategories-section" *ngIf="allSubcategories && allSubcategories.length > 0">
+          <!-- Breadcrumb -->
+          <div class="breadcrumb" *ngIf="breadcrumb.length > 0">
+            <span *ngFor="let item of breadcrumb; let i = index">
+              <a [routerLink]="item.slug ? '/category/' + item.slug : '/'">{{ item.name }}</a>
+              <mat-icon *ngIf="i < breadcrumb.length - 1">chevron_right</mat-icon>
+            </span>
+          </div>
+
+          <h2 class="section-title">Danh mục con</h2>
+
+          <div class="subcategories-grid">
+            <mat-card class="subcategory-card" *ngFor="let subcat of subcategories" [routerLink]="'/category/' + subcat.slug">
+              <div class="subcategory-thumbnail">
+                <img [src]="subcat.thumbnail_url || 'assets/images/placeholder-category.jpg'"
+                     [alt]="subcat.name"
+                     (error)="onImageError($event)">
+              </div>
+              <mat-card-content>
+                <h3>{{ subcat.name }}</h3>
+                <p *ngIf="subcat.description">{{ subcat.description }}</p>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <!-- Subcategory Pagination -->
+          <div class="pagination" *ngIf="subcategoryTotalPages > 1">
+            <button mat-icon-button (click)="prevSubcategoryPage()" [disabled]="subcategoryPage === 0">
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+            <div class="page-numbers">
+              <button mat-button
+                      *ngFor="let page of [].constructor(subcategoryTotalPages); let i = index"
+                      [class.active]="i === subcategoryPage"
+                      (click)="goToSubcategoryPage(i)">
+                {{ i + 1 }}
+              </button>
+            </div>
+            <button mat-icon-button (click)="nextSubcategoryPage()" [disabled]="subcategoryPage === subcategoryTotalPages - 1">
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+        </div>
 
         <!-- Loading State -->
         <div class="loading-state" *ngIf="isLoading">
@@ -38,52 +83,80 @@ import { Post, Admin } from '../../models/models';
           <p>Đang tải bài viết...</p>
         </div>
 
-        <!-- Posts Grid -->
-        <div class="posts-grid" *ngIf="posts$ | async as posts; else noPosts">
-          <mat-card class="post-card" *ngFor="let post of posts" [routerLink]="'/post/' + post.id">
+        <!-- Combined Posts & Products Grid -->
+        <div class="posts-section" *ngIf="allItems && allItems.length > 0; else noItems">
+          <h2 class="section-title">{{ categoryName }}</h2>
+
+          <div class="posts-grid">
+            <!-- Post/Product Card -->
+            <mat-card class="post-card" *ngFor="let item of getPaginatedItems()" [routerLink]="isProduct(item) ? '/product/' + (item.slug || item.id) : '/post/' + (item.slug || item.id)">
             <div class="post-image">
               <img
-                [src]="post.image_url || 'assets/images/placeholder-post.jpg'"
-                [alt]="post.title"
+                [src]="getImageUrl(item) || 'assets/images/placeholder-post.jpg'"
+                [alt]="item.title"
                 (error)="onImageError($event)">
               <div class="post-overlay">
                 <div class="post-category-badge">{{ categoryName }}</div>
+                <div class="item-type-badge" *ngIf="isProduct(item)">
+                  <mat-icon>shopping_cart</mat-icon>
+                  Sản phẩm
+                </div>
               </div>
             </div>
 
             <mat-card-content class="post-content">
-              <h3 class="post-title">{{ post.title }}</h3>
-              <p class="post-summary">{{ post.summary || 'Không có mô tả' }}</p>
+              <h3 class="post-title">{{ item.title }}</h3>
+
+              <p class="post-summary">{{ item.summary || 'Không có mô tả' }}</p>
 
               <div class="post-meta">
                 <div class="post-date">
                   <mat-icon>event</mat-icon>
-                  <span>{{ post.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                  <span>{{ item.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
                 </div>
-                <div class="post-status" *ngIf="currentUser$ | async" [class.published]="post.published" [class.draft]="!post.published">
-                  <mat-icon>{{ post.published ? 'visibility' : 'visibility_off' }}</mat-icon>
-                  <span>{{ post.published ? 'Đã xuất bản' : 'Bản nháp' }}</span>
+                <div class="post-status" *ngIf="currentUser$ | async" [class.published]="item.published" [class.draft]="!item.published">
+                  <mat-icon>{{ item.published ? 'visibility' : 'visibility_off' }}</mat-icon>
+                  <span>{{ item.published ? 'Đã xuất bản' : 'Bản nháp' }}</span>
                 </div>
                 <div class="post-views" *ngIf="!(currentUser$ | async)">
                   <mat-icon>visibility</mat-icon>
-                  <span>{{ post.views || 0 }} lượt xem</span>
+                  <span>{{ item.views || 0 }} lượt xem</span>
                 </div>
               </div>
 
               <div class="read-more">
-                <span>Xem chi tiết</span>
+                <span>{{ isProduct(item) ? 'Xem sản phẩm' : 'Xem chi tiết' }}</span>
                 <mat-icon>arrow_forward</mat-icon>
               </div>
             </mat-card-content>
           </mat-card>
+          </div>
+
+          <!-- Item Pagination -->
+          <div class="pagination" *ngIf="itemTotalPages > 1">
+            <button mat-icon-button (click)="prevItemPage()" [disabled]="itemPage === 0">
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+            <div class="page-numbers">
+              <button mat-button
+                      *ngFor="let page of [].constructor(itemTotalPages); let i = index"
+                      [class.active]="i === itemPage"
+                      (click)="goToItemPage(i)">
+                {{ i + 1 }}
+              </button>
+            </div>
+            <button mat-icon-button (click)="nextItemPage()" [disabled]="itemPage === itemTotalPages - 1">
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
         </div>
 
         <!-- Empty State -->
-        <ng-template #noPosts>
+        <ng-template #noItems>
           <div class="no-posts">
             <mat-icon class="no-posts-icon">article</mat-icon>
-            <h3>Chưa có bài viết nào</h3>
-            <p>Danh mục này hiện tại chưa có bài viết nào. Hãy quay lại sau nhé!</p>
+            <h3>Chưa có bài viết hoặc sản phẩm nào</h3>
+            <p>Danh mục này hiện tại chưa có nội dung nào. Hãy quay lại sau nhé!</p>
             <button mat-raised-button color="primary" routerLink="/">
               <mat-icon>home</mat-icon>
               Về trang chủ
@@ -102,7 +175,7 @@ import { Post, Admin } from '../../models/models';
     }
 
     .category-page {
-      padding: 0px 0;
+      padding: 0px 0 40px 0;
       min-height: 100vh;
       background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     }
@@ -110,71 +183,50 @@ import { Post, Admin } from '../../models/models';
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 20px;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .breadcrumb span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .breadcrumb a {
+      color: #666;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.3s;
+    }
+
+    .breadcrumb a:hover {
+      color: var(--primary-blue, #3498db);
+    }
+
+    .breadcrumb mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #999;
     }
 
     /* Category Header */
     .category-header {
-      display: flex;
+      position: relative;
       width: 100%;
       height: calc(100vh - 64px);
       margin-bottom: 40px;
-      background: white;
+      overflow: hidden;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    }
-
-    .left-content {
-      width: 20%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: flex-end;
-      text-align: right;
-      padding: 20px;
-      font-family: 'UVF BankGothic Md BT', sans-serif;
-      position: relative;
-      overflow: visible;
-    }
-
-    .right-content {
-      width: 80%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .category-title {
-      align-items: center;
-      justify-content: center;
-      display: flex;
-      font-size: 60px;
-      height: auto;
-      font-weight: 700;
-      color: var(--dark-blue, #2c3e50);
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      transform: rotate(-90deg);
-      transform-origin: center;
-      white-space: nowrap;
-      margin: 0;
-      font-family: 'UVF BankGothic Md BT', sans-serif;
-      position: absolute;
-      right: 20px;
-      top: calc(50vh - 32px);
-      transform-origin: center;
-    }
-
-    .category-description {
-      margin-bottom: 20px;
-    }
-
-    .category-description p {
-      font-size: 1.1rem;
-      color: #6c757d;
-      line-height: 1.6;
     }
 
     .category-thumbnail {
@@ -182,6 +234,59 @@ import { Post, Admin } from '../../models/models';
       height: 100%;
       object-fit: cover;
       object-position: center;
+    }
+
+    .header-overlay {
+      position: absolute;
+      top: 80px;
+      left: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-start;
+      padding: 0;
+      pointer-events: none;
+    }
+
+    .title-bar {
+      background: rgba(102, 126, 234, 0.95);
+      padding: 30px 60px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      border-radius: 0 8px 8px 0;
+      width: auto;
+      max-width: 70%;
+    }
+
+    .category-title {
+      font-size: 64px;
+      font-weight: 900;
+      color: white;
+      margin: 0;
+      font-family: 'UVF BankGothic Md BT', sans-serif;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      text-shadow: 2px 4px 8px rgba(0, 0, 0, 0.3);
+      line-height: 1.2;
+    }
+
+    .description-bar {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px 40px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      border-radius: 0 8px 8px 0;
+      max-width: 600px;
+      width: auto;
+    }
+
+    .description-bar p {
+      font-size: 1.1rem;
+      color: #333;
+      line-height: 1.6;
+      margin: 0;
     }
 
     .posts-count {
@@ -218,12 +323,108 @@ import { Post, Admin } from '../../models/models';
       100% { transform: rotate(360deg); }
     }
 
-    /* Posts Grid */
+    /* Section Titles */
+    .section-title {
+      font-size: 1.8rem;
+      margin: 30px 0 20px 0;
+      color: #333;
+      font-weight: 600;
+      padding-bottom: 10px;
+      border-bottom: 3px solid var(--primary-blue, #3498db);
+    }
+
+    /* Subcategories Section */
+    .subcategories-section {
+      margin-bottom: 50px;
+      padding: 20px 0;
+    }
+
+    .subcategories-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 360px);
+      gap: 30px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+
+    .subcategory-card {
+      cursor: pointer;
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      background: white;
+      border: none;
+      width: 360px;
+      height: 350px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .subcategory-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+    }
+
+    .subcategory-thumbnail {
+      position: relative;
+      height: 200px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .subcategory-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .subcategory-card:hover .subcategory-thumbnail img {
+      transform: scale(1.05);
+    }
+
+    .subcategory-card mat-card-content {
+      padding: 24px !important;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .subcategory-card h3 {
+      margin: 0 0 12px 0;
+      font-size: 1.25rem;
+      color: #1a1a1a;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .subcategory-card p {
+      margin: 0;
+      font-size: 0.95rem;
+      color: #666;
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Posts Section */
+    .posts-section {
+      margin-bottom: 50px;
+      padding: 20px 0;
+    }
+
+    /* Posts Grid - 3x2 = 6 items */
     .posts-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      grid-template-columns: repeat(3, 360px);
       gap: 30px;
-      margin-top: 30px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+      justify-content: center;
     }
 
     /* Post Cards */
@@ -235,6 +436,10 @@ import { Post, Admin } from '../../models/models';
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
       background: white;
       border: none;
+      width: 360px;
+      height: 500px;
+      display: flex;
+      flex-direction: column;
     }
 
     .post-card:hover {
@@ -244,8 +449,9 @@ import { Post, Admin } from '../../models/models';
 
     .post-image {
       position: relative;
-      height: 240px;
+      height: 220px;
       overflow: hidden;
+      flex-shrink: 0;
     }
 
     .post-image img {
@@ -280,9 +486,33 @@ import { Post, Admin } from '../../models/models';
       font-weight: 500;
     }
 
+    .item-type-badge {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #28a745;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .item-type-badge mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
     /* Post Content */
     .post-content {
-      padding: 24px !important;
+      padding: 20px !important;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .post-title {
@@ -300,7 +530,8 @@ import { Post, Admin } from '../../models/models';
     .post-summary {
       color: #6c757d;
       line-height: 1.6;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
+      flex: 1;
       display: -webkit-box;
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
@@ -358,6 +589,63 @@ import { Post, Admin } from '../../models/models';
 
     .post-card:hover .read-more mat-icon {
       transform: translateX(4px);
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-top: 40px;
+      padding: 20px;
+    }
+
+    .pagination button[mat-icon-button] {
+      background: white;
+      border: 2px solid #e0e0e0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      transition: all 0.3s;
+    }
+
+    .pagination button[mat-icon-button]:hover:not([disabled]) {
+      background: var(--primary-blue, #3498db);
+      border-color: var(--primary-blue, #3498db);
+      color: white;
+    }
+
+    .pagination button[mat-icon-button]:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .page-numbers {
+      display: flex;
+      gap: 8px;
+    }
+
+    .page-numbers button {
+      min-width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: 2px solid #e0e0e0;
+      background: white;
+      color: #333;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .page-numbers button:hover {
+      background: #f5f5f5;
+      border-color: var(--primary-blue, #3498db);
+    }
+
+    .page-numbers button.active {
+      background: var(--primary-blue, #3498db);
+      border-color: var(--primary-blue, #3498db);
+      color: white;
     }
 
     /* Empty State */
@@ -422,19 +710,31 @@ import { Post, Admin } from '../../models/models';
   `]
 })
 export class CategoryComponent implements OnInit {
-  posts$: Observable<Post[]>;
+  items$: Observable<(Post | Product)[]>;
   currentUser$: Observable<Admin | null>;
   categoryName = '';
   categoryDescription = '';
   categoryThumbnail = '';
+  subcategories: Category[] = [];
+  allSubcategories: Category[] = [];
+  allItems: (Post | Product)[] = [];
+  breadcrumb: Array<{name: string, slug?: string}> = [];
   isLoading = true;
+
+  // Pagination for subcategories
+  subcategoryPage = 0;
+  subcategoryPageSize = 3;
+
+  // Pagination for posts/products
+  itemPage = 0;
+  itemPageSize = 6; // 3x2 grid
 
   constructor(
     private route: ActivatedRoute,
     private dataService: DataService,
     private authService: AuthService
   ) {
-    this.posts$ = this.route.params.pipe(
+    this.items$ = this.route.params.pipe(
       switchMap(params => {
         this.isLoading = true;
         this.categoryName = params['slug'];
@@ -445,14 +745,65 @@ export class CategoryComponent implements OnInit {
             const category = categories.find(cat => cat.slug === params['slug']);
 
             if (category) {
-              this.categoryName = category.name; // Use the actual category name
+              this.categoryName = category.name;
               this.categoryDescription = category.description;
               this.categoryThumbnail = category.thumbnail_url || '';
-              return this.dataService.getPosts(category.id);
+
+              // Build breadcrumb
+              this.breadcrumb = [{name: 'Trang chủ'}];
+              if (category.parent_id) {
+                const parent = categories.find(c => c.id === category.parent_id);
+                if (parent) {
+                  this.breadcrumb.push({name: parent.name, slug: parent.slug});
+                }
+              }
+              this.breadcrumb.push({name: category.name, slug: category.slug});
+
+              // Get all category IDs including subcategories
+              const categoryIds = [category.id];
+              this.allSubcategories = categories.filter(cat => cat.parent_id === category.id);
+              this.subcategories = this.getPaginatedSubcategories();
+              this.allSubcategories.forEach(sub => categoryIds.push(sub.id));
+
+              // Get both posts and products from all these categories
+              return this.dataService.getPosts().pipe(
+                switchMap(allPosts => {
+                  return this.dataService.getProducts().pipe(
+                    switchMap(allProducts => {
+                      console.log('🔍 CategoryComponent - All Posts:', allPosts);
+                      console.log('🔍 CategoryComponent - All Products:', allProducts);
+                      console.log('🔍 CategoryComponent - Category IDs to filter:', categoryIds);
+                      
+                      const filteredPosts = allPosts.filter(post =>
+                        categoryIds.includes(post.category_id)
+                      );
+                      const filteredProducts = allProducts.filter(product =>
+                        categoryIds.includes(product.category_id)
+                      );
+
+                      console.log('✅ Filtered Posts:', filteredPosts.length, filteredPosts);
+                      console.log('✅ Filtered Products:', filteredProducts.length, filteredProducts);
+
+                      // Combine and sort by created_at
+                      const combined = [...filteredPosts, ...filteredProducts].sort((a, b) => {
+                        const dateA = new Date(a.created_at || 0).getTime();
+                        const dateB = new Date(b.created_at || 0).getTime();
+                        return dateB - dateA; // Newest first
+                      });
+
+                      console.log('📦 Combined items:', combined.length, combined);
+                      console.log('🔎 First item type check:', combined[0], 'isProduct:', this.isProduct(combined[0]));
+
+                      return of(combined);
+                    })
+                  );
+                })
+              );
             } else {
               this.categoryName = 'Danh mục không tìm thấy';
               this.categoryDescription = '';
               this.categoryThumbnail = '';
+              this.breadcrumb = [];
               return of([]);
             }
           })
@@ -463,10 +814,11 @@ export class CategoryComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Subscribe to posts observable to handle loading state
-    this.posts$.subscribe({
-      next: (posts) => {
+    // Subscribe to items observable to handle loading state and store items
+    this.items$.subscribe({
+      next: (items) => {
         this.isLoading = false;
+        this.allItems = items;
       },
       error: (error) => {
         this.isLoading = false;
@@ -474,7 +826,86 @@ export class CategoryComponent implements OnInit {
     });
   }
 
+  // Subcategory pagination
+  getPaginatedSubcategories(): Category[] {
+    const start = this.subcategoryPage * this.subcategoryPageSize;
+    const end = start + this.subcategoryPageSize;
+    return this.allSubcategories.slice(start, end);
+  }
+
+  get subcategoryTotalPages(): number {
+    return Math.ceil(this.allSubcategories.length / this.subcategoryPageSize);
+  }
+
+  nextSubcategoryPage(): void {
+    if (this.subcategoryPage < this.subcategoryTotalPages - 1) {
+      this.subcategoryPage++;
+      this.subcategories = this.getPaginatedSubcategories();
+    }
+  }
+
+  prevSubcategoryPage(): void {
+    if (this.subcategoryPage > 0) {
+      this.subcategoryPage--;
+      this.subcategories = this.getPaginatedSubcategories();
+    }
+  }
+
+  goToSubcategoryPage(page: number): void {
+    this.subcategoryPage = page;
+    this.subcategories = this.getPaginatedSubcategories();
+  }
+
+  // Item (post/product) pagination
+  getPaginatedItems(): (Post | Product)[] {
+    const start = this.itemPage * this.itemPageSize;
+    const end = start + this.itemPageSize;
+    return this.allItems.slice(start, end);
+  }
+
+  get itemTotalPages(): number {
+    return Math.ceil(this.allItems.length / this.itemPageSize);
+  }
+
+  nextItemPage(): void {
+    if (this.itemPage < this.itemTotalPages - 1) {
+      this.itemPage++;
+    }
+  }
+
+  prevItemPage(): void {
+    if (this.itemPage > 0) {
+      this.itemPage--;
+    }
+  }
+
+  goToItemPage(page: number): void {
+    this.itemPage = page;
+  }
+
   onImageError(event: any): void {
     event.target.src = 'assets/images/placeholder-post.jpg';
+  }
+
+  isProduct(item: Post | Product): item is Product {
+    // Products have thumbnail_url instead of image_url
+    // Check for thumbnail_url existence (Products) vs image_url (Posts)
+    return 'thumbnail_url' in item && !('image_url' in item);
+  }
+
+  asProduct(item: Post | Product): Product {
+    return item as Product;
+  }
+
+  getImageUrl(item: Post | Product): string {
+    if (this.isProduct(item)) {
+      // For products, use thumbnail_url first, then fallback to gallery or og_image_url
+      return item.thumbnail_url ||
+             (item.images && item.images.length > 0 ? item.images[0].image_url : '') ||
+             item.og_image_url || '';
+    } else {
+      // For posts, use image_url
+      return (item as Post).image_url || '';
+    }
   }
 }

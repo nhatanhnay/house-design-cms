@@ -18,7 +18,7 @@ type Category struct {
 	ThumbnailURL string    `json:"thumbnail_url"`
 	CategoryType string    `json:"category_type" gorm:"default:'parent'"` // 'parent' or 'regular'
 	ParentID     *uint     `json:"parent_id" gorm:"default:null"`
-	Parent       *Category `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
+	Parent       *Category `json:"parent" gorm:"foreignKey:ParentID"`
 	Children     []Category `json:"children,omitempty" gorm:"foreignKey:ParentID"`
 	Level        int       `json:"level" gorm:"default:0"`
 	OrderIndex   int       `json:"order_index" gorm:"default:0"`
@@ -137,4 +137,46 @@ type GlobalSEOSettings struct {
 	BusinessHours           string    `json:"business_hours"`
 	CreatedAt               time.Time `json:"created_at"`
 	UpdatedAt               time.Time `json:"updated_at"`
+}
+
+type Product struct {
+	ID                 uint           `json:"id" gorm:"primaryKey"`
+	Title              string         `json:"title" gorm:"not null"`
+	Content            string         `json:"content" gorm:"type:text"`
+	Summary            string         `json:"summary"`
+	ThumbnailURL       string         `json:"thumbnail_url"`
+	CategoryID         uint           `json:"category_id" gorm:"not null"`
+	Category           Category       `json:"category" gorm:"foreignKey:CategoryID"`
+	Published          bool           `json:"published" gorm:"default:true"`
+	Views              int            `json:"views" gorm:"default:0"`
+	Images             []ProductImage `json:"images" gorm:"foreignKey:ProductID"`
+	// SEO Fields
+	MetaTitle       string    `json:"meta_title"`
+	MetaDescription string    `json:"meta_description"`
+	FocusKeywords   string    `json:"focus_keywords"`
+	OGImageURL      string    `json:"og_image_url"`
+	Slug            string    `json:"slug"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+type ProductImage struct {
+	ID           uint      `json:"id" gorm:"primaryKey"`
+	ProductID    uint      `json:"product_id" gorm:"not null"`
+	ImageURL     string    `json:"image_url" gorm:"not null"`
+	DisplayOrder int       `json:"display_order" gorm:"default:0"`
+	AltText      string    `json:"alt_text"`
+	IsPrimary    bool      `json:"is_primary" gorm:"default:false"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+type Consultation struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	Name      string    `json:"name" gorm:"not null"`
+	Phone     string    `json:"phone" gorm:"not null"`
+	Email     string    `json:"email"`
+	Details   string    `json:"details" gorm:"type:text"`
+	Status    string    `json:"status" gorm:"default:'pending'"` // pending, contacted, completed
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

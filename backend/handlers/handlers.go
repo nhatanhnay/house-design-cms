@@ -126,12 +126,20 @@ func GetCategories(c *gin.Context) {
 		categoryMap[category.ID] = &allCategories[len(allCategories)-1]
 	}
 
-	// Build the hierarchy - attach children to their parents
+	// Build the hierarchy - attach children to their parents and parent info to children
 	for i := range allCategories {
 		cat := &allCategories[i]
 		if cat.ParentID != nil {
 			// This is a child category, attach to parent
 			if parent, exists := categoryMap[*cat.ParentID]; exists {
+				// Attach parent info to the child FIRST
+				cat.Parent = &models.Category{
+					ID:   parent.ID,
+					Name: parent.Name,
+					Slug: parent.Slug,
+				}
+				fmt.Printf("DEBUG: Set parent for %s (id=%d), parent=%s (id=%d)\n", cat.Name, cat.ID, parent.Name, parent.ID)
+				// Then append to parent's children (this will copy the cat with Parent already set)
 				parent.Children = append(parent.Children, *cat)
 			}
 		}
@@ -453,6 +461,47 @@ func GetPost(c *gin.Context) {
 		FROM posts WHERE id = $1`, id).Scan(
 		&post.ID, &post.Title, &post.Content, &post.Summary, &post.ImageURL, &post.CategoryID,
 		&post.Published, &post.MetaTitle, &post.MetaDescription, &post.FocusKeywords, &post.OGImageURL, &post.Slug,
+		&post.CreatedAt, &post.UpdatedAt)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch post"})
+		return
+	}
+
+	// Get category information
+	var category models.Category
+	err = database.DB.QueryRow(`SELECT id, name, slug, description, created_at, updated_at
+		FROM categories WHERE id = $1`, post.CategoryID).Scan(
+		&category.ID, &category.Name, &category.Slug, &category.Description,
+		&category.CreatedAt, &category.UpdatedAt)
+
+	if err == nil {
+		category.ID = post.CategoryID
+		post.Category = category
+	}
+
+	c.JSON(http.StatusOK, post)
+}
+
+func GetPostBySlug(c *gin.Context) {
+	slug := c.Param("slug")
+	if slug == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post slug"})
+		return
+	}
+
+	var post models.Post
+	err := database.DB.QueryRow(`SELECT id, title, content, summary, image_url, category_id, published, views,
+		COALESCE(meta_title, '') as meta_title, COALESCE(meta_description, '') as meta_description,
+		COALESCE(focus_keywords, '') as focus_keywords, COALESCE(og_image_url, '') as og_image_url, COALESCE(slug, '') as slug,
+		created_at, updated_at
+		FROM posts WHERE slug = $1 AND published = true`, slug).Scan(
+		&post.ID, &post.Title, &post.Content, &post.Summary, &post.ImageURL, &post.CategoryID,
+		&post.Published, &post.Views, &post.MetaTitle, &post.MetaDescription, &post.FocusKeywords, &post.OGImageURL, &post.Slug,
 		&post.CreatedAt, &post.UpdatedAt)
 
 	if err != nil {
@@ -1529,4 +1578,599 @@ func UpdateGlobalSEOSettings(c *gin.Context) {
 
 	// Return the updated settings
 	GetGlobalSEOSettings(c)
+}
+
+// ============================================
+// PRODUCT MANAGEMENT HANDLERS
+// ============================================
+
+// GetProducts returns all products
+func GetProducts(c *gin.Context) {
+	rows, err := database.DB.Query(`
+		SELECT p.id, p.title, p.content, p.summary, COALESCE(p.thumbnail_url, '') as thumbnail_url,
+			p.category_id, p.published, p.views,
+			COALESCE(p.meta_title, '') as meta_title, COALESCE(p.meta_description, '') as meta_description,
+			COALESCE(p.focus_keywords, '') as focus_keywords, COALESCE(p.og_image_url, '') as og_image_url,
+			COALESCE(p.slug, '') as slug, p.created_at, p.updated_at,
+			c.id as cat_id, c.name as cat_name, c.slug as cat_slug
+		FROM products p
+		LEFT JOIN categories c ON p.category_id = c.id
+		ORDER BY p.created_at DESC
+	`)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch products"})
+		return
+	}
+	defer rows.Close()
+
+	var products []models.Product
+	for rows.Next() {
+		var product models.Product
+		var category models.Category
+		err := rows.Scan(
+			&product.ID, &product.Title, &product.Content, &product.Summary, &product.ThumbnailURL,
+			&product.CategoryID, &product.Published, &product.Views,
+			&product.MetaTitle, &product.MetaDescription, &product.FocusKeywords,
+			&product.OGImageURL, &product.Slug, &product.CreatedAt, &product.UpdatedAt,
+			&category.ID, &category.Name, &category.Slug,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse products"})
+			return
+		}
+		product.Category = category
+
+		// Load product images
+		imageRows, err := database.DB.Query(`
+			SELECT id, product_id, image_url, display_order, COALESCE(alt_text, '') as alt_text, is_primary, created_at
+			FROM product_images
+			WHERE product_id = $1
+			ORDER BY display_order ASC, created_at ASC
+		`, product.ID)
+		if err == nil {
+			var images []models.ProductImage
+			for imageRows.Next() {
+				var img models.ProductImage
+				imageRows.Scan(&img.ID, &img.ProductID, &img.ImageURL, &img.DisplayOrder, &img.AltText, &img.IsPrimary, &img.CreatedAt)
+				images = append(images, img)
+			}
+			product.Images = images
+			imageRows.Close()
+		}
+
+		products = append(products, product)
+	}
+
+	c.JSON(http.StatusOK, products)
+}
+
+// GetProduct returns a single product by ID
+func GetProduct(c *gin.Context) {
+	id := c.Param("id")
+
+	var product models.Product
+	var category models.Category
+	var parentID sql.NullInt64
+	var parentName sql.NullString
+	var parentSlug sql.NullString
+
+	err := database.DB.QueryRow(`
+		SELECT p.id, p.title, p.content, p.summary, COALESCE(p.thumbnail_url, '') as thumbnail_url,
+			p.category_id, p.published, p.views,
+			COALESCE(p.meta_title, '') as meta_title, COALESCE(p.meta_description, '') as meta_description,
+			COALESCE(p.focus_keywords, '') as focus_keywords, COALESCE(p.og_image_url, '') as og_image_url,
+			COALESCE(p.slug, '') as slug, p.created_at, p.updated_at,
+			c.id as cat_id, c.name as cat_name, c.slug as cat_slug, c.parent_id,
+			pc.id as parent_id, pc.name as parent_name, pc.slug as parent_slug
+		FROM products p
+		LEFT JOIN categories c ON p.category_id = c.id
+		LEFT JOIN categories pc ON c.parent_id = pc.id
+		WHERE p.id = $1
+	`, id).Scan(
+		&product.ID, &product.Title, &product.Content, &product.Summary, &product.ThumbnailURL,
+		&product.CategoryID, &product.Published, &product.Views,
+		&product.MetaTitle, &product.MetaDescription, &product.FocusKeywords,
+		&product.OGImageURL, &product.Slug, &product.CreatedAt, &product.UpdatedAt,
+		&category.ID, &category.Name, &category.Slug, &category.ParentID,
+		&parentID, &parentName, &parentSlug,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch product"})
+		return
+	}
+
+	// If category has parent, attach parent info
+	if parentID.Valid && parentName.Valid && parentSlug.Valid {
+		parentCat := &models.Category{
+			ID:   uint(parentID.Int64),
+			Name: parentName.String,
+			Slug: parentSlug.String,
+		}
+		category.Parent = parentCat
+	}
+
+	product.Category = category
+
+	// Load product images
+	imageRows, err := database.DB.Query(`
+		SELECT id, product_id, image_url, display_order, COALESCE(alt_text, '') as alt_text, is_primary, created_at
+		FROM product_images
+		WHERE product_id = $1
+		ORDER BY display_order ASC, created_at ASC
+	`, product.ID)
+	if err == nil {
+		var images []models.ProductImage
+		for imageRows.Next() {
+			var img models.ProductImage
+			imageRows.Scan(&img.ID, &img.ProductID, &img.ImageURL, &img.DisplayOrder, &img.AltText, &img.IsPrimary, &img.CreatedAt)
+			images = append(images, img)
+		}
+		product.Images = images
+		imageRows.Close()
+	}
+
+	c.JSON(http.StatusOK, product)
+}
+
+// GetProductBySlug returns a single product by slug
+func GetProductBySlug(c *gin.Context) {
+	slug := c.Param("slug")
+	if slug == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product slug"})
+		return
+	}
+
+	var product models.Product
+	var category models.Category
+	var parentID sql.NullInt64
+	var parentName sql.NullString
+	var parentSlug sql.NullString
+
+	err := database.DB.QueryRow(`
+		SELECT p.id, p.title, p.content, p.summary, COALESCE(p.thumbnail_url, '') as thumbnail_url,
+			p.category_id, p.published, p.views,
+			COALESCE(p.meta_title, '') as meta_title, COALESCE(p.meta_description, '') as meta_description,
+			COALESCE(p.focus_keywords, '') as focus_keywords, COALESCE(p.og_image_url, '') as og_image_url,
+			COALESCE(p.slug, '') as slug, p.created_at, p.updated_at,
+			c.id as cat_id, c.name as cat_name, c.slug as cat_slug, c.parent_id,
+			pc.id as parent_id, pc.name as parent_name, pc.slug as parent_slug
+		FROM products p
+		LEFT JOIN categories c ON p.category_id = c.id
+		LEFT JOIN categories pc ON c.parent_id = pc.id
+		WHERE p.slug = $1 AND p.published = true
+	`, slug).Scan(
+		&product.ID, &product.Title, &product.Content, &product.Summary, &product.ThumbnailURL,
+		&product.CategoryID, &product.Published, &product.Views,
+		&product.MetaTitle, &product.MetaDescription, &product.FocusKeywords,
+		&product.OGImageURL, &product.Slug, &product.CreatedAt, &product.UpdatedAt,
+		&category.ID, &category.Name, &category.Slug, &category.ParentID,
+		&parentID, &parentName, &parentSlug,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch product"})
+		return
+	}
+
+	// If category has parent, attach parent info
+	if parentID.Valid && parentName.Valid && parentSlug.Valid {
+		parentCat := &models.Category{
+			ID:   uint(parentID.Int64),
+			Name: parentName.String,
+			Slug: parentSlug.String,
+		}
+		category.Parent = parentCat
+	}
+
+	product.Category = category
+
+	// Load product images
+	imageRows, err := database.DB.Query(`
+		SELECT id, product_id, image_url, display_order, COALESCE(alt_text, '') as alt_text, is_primary, created_at
+		FROM product_images
+		WHERE product_id = $1
+		ORDER BY display_order ASC, created_at ASC
+	`, product.ID)
+	if err == nil {
+		var images []models.ProductImage
+		for imageRows.Next() {
+			var img models.ProductImage
+			imageRows.Scan(&img.ID, &img.ProductID, &img.ImageURL, &img.DisplayOrder, &img.AltText, &img.IsPrimary, &img.CreatedAt)
+			images = append(images, img)
+		}
+		product.Images = images
+		imageRows.Close()
+	}
+
+	c.JSON(http.StatusOK, product)
+}
+
+// CreateProduct creates a new product
+func CreateProduct(c *gin.Context) {
+	var product models.Product
+	if err := c.ShouldBindJSON(&product); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var productID uint
+	err := database.DB.QueryRow(`
+		INSERT INTO products (title, content, summary, thumbnail_url, category_id, published, meta_title, meta_description, focus_keywords, og_image_url, slug)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING id
+	`, product.Title, product.Content, product.Summary, product.ThumbnailURL, product.CategoryID, product.Published,
+		product.MetaTitle, product.MetaDescription, product.FocusKeywords, product.OGImageURL, product.Slug).Scan(&productID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create product"})
+		return
+	}
+
+	product.ID = productID
+
+	fmt.Printf("✅ PRODUCT CREATED:\n")
+	fmt.Printf("   ID: %d\n", productID)
+	fmt.Printf("   Title: %s\n", product.Title)
+	fmt.Printf("   Response: %+v\n", product)
+
+	c.JSON(http.StatusCreated, product)
+}
+
+// UpdateProduct updates an existing product
+func UpdateProduct(c *gin.Context) {
+	id := c.Param("id")
+	var product models.Product
+	if err := c.ShouldBindJSON(&product); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err := database.DB.Exec(`
+		UPDATE products SET title = $1, content = $2, summary = $3, thumbnail_url = $4, category_id = $5,
+			published = $6, meta_title = $7, meta_description = $8, focus_keywords = $9, og_image_url = $10, slug = $11
+		WHERE id = $12
+	`, product.Title, product.Content, product.Summary, product.ThumbnailURL, product.CategoryID, product.Published,
+		product.MetaTitle, product.MetaDescription, product.FocusKeywords, product.OGImageURL, product.Slug, id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update product"})
+		return
+	}
+
+	c.JSON(http.StatusOK, product)
+}
+
+// DeleteProduct deletes a product
+func DeleteProduct(c *gin.Context) {
+	id := c.Param("id")
+
+	_, err := database.DB.Exec("DELETE FROM products WHERE id = $1", id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete product"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Product deleted successfully"})
+}
+
+// AddProductImage adds an image to a product
+func AddProductImage(c *gin.Context) {
+	productID := c.Param("id")
+
+	fmt.Printf("📸 ADD PRODUCT IMAGE REQUEST:\n")
+	fmt.Printf("   Product ID: %s\n", productID)
+
+	var imageData struct {
+		ImageURL     string `json:"image_url" binding:"required"`
+		DisplayOrder int    `json:"display_order"`
+		AltText      string `json:"alt_text"`
+		IsPrimary    bool   `json:"is_primary"`
+	}
+
+	if err := c.ShouldBindJSON(&imageData); err != nil {
+		fmt.Printf("   ❌ Error binding JSON: %v\n", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	fmt.Printf("   Image URL: %s\n", imageData.ImageURL)
+	fmt.Printf("   Display Order: %d\n", imageData.DisplayOrder)
+	fmt.Printf("   Is Primary: %v\n", imageData.IsPrimary)
+
+	var imageID uint
+	err := database.DB.QueryRow(`
+		INSERT INTO product_images (product_id, image_url, display_order, alt_text, is_primary)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+	`, productID, imageData.ImageURL, imageData.DisplayOrder, imageData.AltText, imageData.IsPrimary).Scan(&imageID)
+
+	if err != nil {
+		fmt.Printf("   ❌ Database error: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add product image"})
+		return
+	}
+
+	fmt.Printf("   ✅ Image added successfully with ID: %d\n", imageID)
+	c.JSON(http.StatusCreated, gin.H{"id": imageID, "message": "Image added successfully"})
+}
+
+// DeleteProductImage deletes a product image
+func DeleteProductImage(c *gin.Context) {
+	imageID := c.Param("imageId")
+
+	_, err := database.DB.Exec("DELETE FROM product_images WHERE id = $1", imageID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete product image"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Image deleted successfully"})
+}
+
+// UpdateProductImageOrder updates the display order of product images
+func UpdateProductImageOrder(c *gin.Context) {
+	var orderData struct {
+		Images []struct {
+			ID           uint `json:"id" binding:"required"`
+			DisplayOrder int  `json:"display_order" binding:"required"`
+		} `json:"images" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&orderData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	for _, img := range orderData.Images {
+		_, err := database.DB.Exec("UPDATE product_images SET display_order = $1 WHERE id = $2", img.DisplayOrder, img.ID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update image order"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Image order updated successfully"})
+}
+
+// ============================================
+// CONSULTATION MANAGEMENT HANDLERS
+// ============================================
+
+// GetConsultations returns all consultation requests
+func GetConsultations(c *gin.Context) {
+	rows, err := database.DB.Query(`
+		SELECT id, name, phone, COALESCE(email, '') as email, COALESCE(details, '') as details,
+			COALESCE(status, 'pending') as status, created_at, updated_at
+		FROM consultations
+		ORDER BY created_at DESC
+	`)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch consultations"})
+		return
+	}
+	defer rows.Close()
+
+	var consultations []models.Consultation
+	for rows.Next() {
+		var consultation models.Consultation
+		err := rows.Scan(
+			&consultation.ID, &consultation.Name, &consultation.Phone, &consultation.Email,
+			&consultation.Details, &consultation.Status, &consultation.CreatedAt, &consultation.UpdatedAt,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse consultations"})
+			return
+		}
+		consultations = append(consultations, consultation)
+	}
+
+	c.JSON(http.StatusOK, consultations)
+}
+
+// CreateConsultation creates a new consultation request (public endpoint)
+func CreateConsultation(c *gin.Context) {
+	var consultation models.Consultation
+	if err := c.ShouldBindJSON(&consultation); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate required fields
+	if consultation.Name == "" || consultation.Phone == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Name and phone are required"})
+		return
+	}
+
+	var consultationID uint
+	err := database.DB.QueryRow(`
+		INSERT INTO consultations (name, phone, email, details, status)
+		VALUES ($1, $2, $3, $4, 'pending')
+		RETURNING id
+	`, consultation.Name, consultation.Phone, consultation.Email, consultation.Details).Scan(&consultationID)
+
+	if err != nil {
+		fmt.Printf("❌ Failed to create consultation: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create consultation"})
+		return
+	}
+
+	consultation.ID = consultationID
+	fmt.Printf("✅ CONSULTATION CREATED:\n")
+	fmt.Printf("   ID: %d\n", consultationID)
+	fmt.Printf("   Name: %s\n", consultation.Name)
+	fmt.Printf("   Phone: %s\n", consultation.Phone)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"id":      consultationID,
+		"message": "Consultation request submitted successfully",
+	})
+}
+
+// UpdateConsultationStatus updates the status of a consultation
+func UpdateConsultationStatus(c *gin.Context) {
+	id := c.Param("id")
+
+	var statusData struct {
+		Status string `json:"status" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&statusData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate status
+	validStatuses := map[string]bool{"pending": true, "contacted": true, "completed": true}
+	if !validStatuses[statusData.Status] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status. Must be pending, contacted, or completed"})
+		return
+	}
+
+	_, err := database.DB.Exec(`
+		UPDATE consultations SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2
+	`, statusData.Status, id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update consultation status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Consultation status updated successfully"})
+}
+
+// DeleteConsultation deletes a consultation request
+func DeleteConsultation(c *gin.Context) {
+	id := c.Param("id")
+
+	_, err := database.DB.Exec("DELETE FROM consultations WHERE id = $1", id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete consultation"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Consultation deleted successfully"})
+}
+
+// ============================================
+// VIEWS & VISITOR TRACKING HANDLERS
+// ============================================
+
+// IncrementPostView increments the view count for a post
+func IncrementPostView(c *gin.Context) {
+	id := c.Param("id")
+
+	_, err := database.DB.Exec("UPDATE posts SET views = views + 1 WHERE id = $1", id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to increment view count"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "View count updated"})
+}
+
+// IncrementProductView increments the view count for a product
+func IncrementProductView(c *gin.Context) {
+	id := c.Param("id")
+
+	_, err := database.DB.Exec("UPDATE products SET views = views + 1 WHERE id = $1", id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to increment view count"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "View count updated"})
+}
+
+// TrackVisitor tracks a website visitor
+func TrackVisitor(c *gin.Context) {
+	var visitorData struct {
+		PageURL  string `json:"page_url"`
+		Referrer string `json:"referrer"`
+	}
+
+	if err := c.ShouldBindJSON(&visitorData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get IP address
+	ipAddress := c.ClientIP()
+
+	// Get user agent
+	userAgent := c.GetHeader("User-Agent")
+
+	// Insert visitor record
+	_, err := database.DB.Exec(`
+		INSERT INTO visitors (ip_address, user_agent, page_url, referrer)
+		VALUES ($1, $2, $3, $4)
+	`, ipAddress, userAgent, visitorData.PageURL, visitorData.Referrer)
+
+	if err != nil {
+		fmt.Printf("❌ Failed to track visitor: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to track visitor"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Visitor tracked successfully"})
+}
+
+// GetVisitorStats returns visitor statistics
+func GetVisitorStats(c *gin.Context) {
+	var stats struct {
+		TotalUniqueVisitors int `json:"total_unique_visitors"`
+		TotalVisits         int `json:"total_visits"`
+		TotalDays           int `json:"total_days"`
+	}
+
+	err := database.DB.QueryRow(`
+		SELECT total_unique_visitors, total_visits, total_days
+		FROM visitor_stats
+	`).Scan(&stats.TotalUniqueVisitors, &stats.TotalVisits, &stats.TotalDays)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch visitor stats"})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
+}
+
+// GetDailyVisitors returns daily visitor statistics
+func GetDailyVisitors(c *gin.Context) {
+	rows, err := database.DB.Query(`
+		SELECT visit_date, unique_visitors, total_visits
+		FROM daily_unique_visitors
+		LIMIT 30
+	`)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch daily visitors"})
+		return
+	}
+	defer rows.Close()
+
+	var dailyStats []map[string]interface{}
+	for rows.Next() {
+		var visitDate string
+		var uniqueVisitors, totalVisits int
+		err := rows.Scan(&visitDate, &uniqueVisitors, &totalVisits)
+		if err != nil {
+			continue
+		}
+		dailyStats = append(dailyStats, map[string]interface{}{
+			"date":             visitDate,
+			"unique_visitors":  uniqueVisitors,
+			"total_visits":     totalVisits,
+		})
+	}
+
+	c.JSON(http.StatusOK, dailyStats)
 }

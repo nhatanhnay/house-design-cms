@@ -50,7 +50,7 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
           <mat-label>Danh mục</mat-label>
           <mat-select formControlName="category_id">
             <mat-option *ngFor="let category of categories$ | async" [value]="category.id">
-              {{ category.name }}
+              {{ getCategoryDisplayName(category) }}
             </mat-option>
           </mat-select>
           <mat-error *ngIf="postForm.get('category_id')?.hasError('required')">
@@ -553,8 +553,19 @@ export class PostDialogComponent implements OnInit {
       },
       error: (error) => {
         this.isUploadingImage = false;
-        this.imageUploadError = 'Lỗi khi tải lên hình ảnh. Vui lòng thử lại.';
-        this.snackBar.open('Lỗi khi tải lên hình ảnh!', 'Đóng', { duration: 3000 });
+        console.error('Upload error:', error);
+
+        let errorMessage = 'Lỗi khi tải lên hình ảnh';
+        if (error.status === 401) {
+          errorMessage = 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
+        } else if (error.status === 400) {
+          errorMessage = error.error?.error || 'File không hợp lệ';
+        } else if (error.status === 413) {
+          errorMessage = 'File quá lớn (tối đa 5MB)';
+        }
+
+        this.imageUploadError = errorMessage;
+        this.snackBar.open(errorMessage, 'Đóng', { duration: 5000 });
       }
     });
   }
@@ -564,6 +575,13 @@ export class PostDialogComponent implements OnInit {
     this.selectedImageUrl = null;
     this.postForm.patchValue({ image_url: '' });
     this.imageUploadError = null;
+  }
+
+  getCategoryDisplayName(category: any): string {
+    if (category.parent) {
+      return `${category.parent.name} > ${category.name}`;
+    }
+    return category.name;
   }
 
   // Convert absolute backend URLs to relative URLs for proxy support

@@ -63,10 +63,22 @@ func main() {
 		api.GET("/categories", handlers.GetCategories)
 		api.GET("/posts", handlers.GetPosts)
 		api.GET("/posts/:id", handlers.GetPost)
+		api.GET("/posts/slug/:slug", handlers.GetPostBySlug)
+		api.GET("/products", handlers.GetProducts)
+		api.GET("/products/:id", handlers.GetProduct)
+		api.GET("/products/slug/:slug", handlers.GetProductBySlug)
 		api.GET("/homepage/media", handlers.GetHomepageImages)
 		api.GET("/home-content", handlers.GetHomeContent)
 		api.GET("/footer-content", handlers.GetFooterContent)
 		api.GET("/seo-settings", handlers.GetGlobalSEOSettings)
+
+		// Public consultation submission
+		api.POST("/consultations", handlers.CreateConsultation)
+
+		// Public tracking endpoints
+		api.POST("/posts/:id/view", handlers.IncrementPostView)
+		api.POST("/products/:id/view", handlers.IncrementProductView)
+		api.POST("/track-visitor", handlers.TrackVisitor)
 
 		// Protected routes (require authentication)
 		protected := api.Group("/")
@@ -82,6 +94,14 @@ func main() {
 			protected.POST("/posts", handlers.CreatePost)
 			protected.PUT("/posts/:id", handlers.UpdatePost)
 			protected.DELETE("/posts/:id", handlers.DeletePost)
+
+			// Products management
+			protected.POST("/products", handlers.CreateProduct)
+			protected.PUT("/products/:id", handlers.UpdateProduct)
+			protected.DELETE("/products/:id", handlers.DeleteProduct)
+			protected.POST("/products/:id/images", handlers.AddProductImage)
+			protected.DELETE("/products/:id/images/:imageId", handlers.DeleteProductImage)
+			protected.PUT("/products/:id/images/order", handlers.UpdateProductImageOrder)
 
 			// Media uploads
 			protected.POST("/upload", handlers.UploadImage)
@@ -102,6 +122,15 @@ func main() {
 
 			// SEO settings management
 			protected.PUT("/seo-settings", handlers.UpdateGlobalSEOSettings)
+
+			// Consultations management
+			protected.GET("/consultations", handlers.GetConsultations)
+			protected.PUT("/consultations/:id/status", handlers.UpdateConsultationStatus)
+			protected.DELETE("/consultations/:id", handlers.DeleteConsultation)
+
+			// Visitor stats (admin only)
+			protected.GET("/visitor-stats", handlers.GetVisitorStats)
+			protected.GET("/daily-visitors", handlers.GetDailyVisitors)
 		}
 	}
 

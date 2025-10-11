@@ -123,7 +123,10 @@ export class HomeComponent implements OnInit {
       feature2_description: '',
       feature3_icon: '',
       feature3_title: '',
-      feature3_description: ''
+      feature3_description: '',
+      feature4_icon: '',
+      feature4_title: '',
+      feature4_description: ''
     };
 
     const dialogData = this.homeContent ? { ...defaultContent, ...this.homeContent } : defaultContent;
