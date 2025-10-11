@@ -430,12 +430,14 @@ import { Post, Admin, Category, Product } from '../../models/models';
     /* Post Cards */
     .post-card {
       cursor: pointer;
-      transition: all 0.3s ease;
       border-radius: 16px;
       overflow: hidden;
+      transition: all 0.3s ease;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
       background: white;
       border: none;
+      text-decoration: none;
+      color: inherit;
       width: 360px;
       height: 500px;
       display: flex;
@@ -516,10 +518,10 @@ import { Post, Admin, Category, Product } from '../../models/models';
     }
 
     .post-title {
+      color: #3A3A3A;
+      margin-bottom: 12px;
       font-size: 1.25rem;
       font-weight: 600;
-      color: var(--dark-blue, #2c3e50);
-      margin-bottom: 12px;
       line-height: 1.4;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -530,7 +532,7 @@ import { Post, Admin, Category, Product } from '../../models/models';
     .post-summary {
       color: #6c757d;
       line-height: 1.6;
-      margin-bottom: 15px;
+      margin-bottom: auto;
       flex: 1;
       display: -webkit-box;
       -webkit-line-clamp: 3;
@@ -542,25 +544,39 @@ import { Post, Admin, Category, Product } from '../../models/models';
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-top: auto;
       margin-bottom: 16px;
+      padding-top: 12px;
       padding-bottom: 16px;
       border-bottom: 1px solid #eee;
     }
 
     .post-date,
-    .post-status {
+    .post-status,
+    .post-views {
       display: flex;
       align-items: center;
       gap: 6px;
       font-size: 0.85rem;
       color: #6c757d;
+      line-height: 1;
     }
 
     .post-date mat-icon,
-    .post-status mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+    .post-status mat-icon,
+    .post-views mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      line-height: 1;
+      vertical-align: middle;
+    }
+
+    .post-date span,
+    .post-status span,
+    .post-views span {
+      line-height: 1;
+      vertical-align: middle;
     }
 
     .post-status.published {
@@ -578,6 +594,7 @@ import { Post, Admin, Category, Product } from '../../models/models';
       color: var(--primary-blue, #3498db);
       font-weight: 500;
       font-size: 0.9rem;
+      margin-top: auto;
     }
 
     .read-more mat-icon {

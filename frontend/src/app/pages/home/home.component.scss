@@ -670,25 +670,25 @@
   border-radius: 16px;
   overflow: hidden;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   background: white;
   border: none;
   text-decoration: none;
   color: inherit;
   width: 360px;
-  height: 350px;
+  height: 500px;
   display: flex;
   flex-direction: column;
 }
 
 .post-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
 }
 
 .post-image {
   position: relative;
-  height: 200px;
+  height: 220px;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -745,7 +745,7 @@
 }
 
 .post-content {
-  padding: 24px !important;
+  padding: 20px !important;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -764,9 +764,10 @@
 }
 
 .post-summary {
-  color: var(--text-light-gray);
+  color: #6c757d;
   line-height: 1.6;
-  margin-bottom: 20px;
+  margin-bottom: auto;
+  flex: 1;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -777,7 +778,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: auto;
   margin-bottom: 16px;
+  padding-top: 12px;
   padding-bottom: 16px;
   border-bottom: 1px solid #eee;
 }
@@ -787,13 +790,21 @@
   align-items: center;
   gap: 6px;
   font-size: 0.85rem;
-  color: var(--text-light-gray);
+  color: #6c757d;
+  line-height: 1;
 }
 
 .meta-item mat-icon {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.meta-item span {
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .meta-item.status.published {
@@ -804,6 +815,20 @@
   color: #ffc107;
 }
 
+.post-views {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.post-views mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
 .read-more {
   display: flex;
   align-items: center;
@@ -811,6 +836,7 @@
   color: var(--accent-copper);
   font-weight: 500;
   font-size: 0.9rem;
+  margin-top: auto;
 }
 
 .read-more mat-icon {
