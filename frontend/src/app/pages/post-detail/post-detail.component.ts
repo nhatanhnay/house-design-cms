@@ -759,6 +759,7 @@ export class PostDetailComponent implements OnInit, AfterViewChecked {
 
         postObservable.subscribe({
           next: (post) => {
+            console.log('🔍 Post loaded:', post.id, post.title, 'Initial views:', post.views);
             this.isLoading = false;
             this.post = post;
             this.hasError = false;
@@ -770,11 +771,32 @@ export class PostDetailComponent implements OnInit, AfterViewChecked {
             }
 
             // Increment view count (only if not logged in as admin)
-            if (!this.authService.getToken()) {
+            const hasToken = this.authService.getToken();
+            console.log('🔐 Auth check - Has token:', !!hasToken);
+
+            if (!hasToken) {
+              console.log('🚀 Calling incrementPostView for post ID:', post.id);
               this.dataService.incrementPostView(post.id).subscribe({
-                next: () => console.log('View count incremented'),
-                error: (error) => console.error('Error incrementing views:', error)
+                next: (response) => {
+                  console.log('✅ Post view count incremented for post ID:', post.id, 'Response:', response);
+                  // Increment the local view count for immediate UI update
+                  if (this.post) {
+                    this.post.views = (this.post.views || 0) + 1;
+                    console.log('📊 Updated post views to:', this.post.views);
+                  }
+                },
+                error: (error) => {
+                  console.error('❌ Error incrementing post views:', error);
+                  console.error('Error details:', {
+                    message: error.message,
+                    status: error.status,
+                    statusText: error.statusText,
+                    url: error.url
+                  });
+                }
               });
+            } else {
+              console.log('⏭️ Skipping view increment - User is logged in as admin');
             }
           },
           error: (error) => {

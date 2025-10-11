@@ -181,7 +181,8 @@ export class DataService {
 
   // Posts
   getPosts(categoryId?: number): Observable<Post[]> {
-    let params = new HttpParams();
+    const cacheBuster = new Date().getTime();
+    let params = new HttpParams().set('_t', cacheBuster.toString());
     if (categoryId) {
       params = params.set('category', categoryId.toString());
     }

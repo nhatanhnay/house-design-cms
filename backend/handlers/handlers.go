@@ -399,12 +399,12 @@ func UpdateCategoryOrder(c *gin.Context) {
 func GetPosts(c *gin.Context) {
 	categoryID := c.Query("category")
 
-	query := `SELECT p.id, p.title, p.content, p.summary, p.image_url, p.category_id, 
-			  p.published, p.created_at, p.updated_at, 
+	query := `SELECT p.id, p.title, p.content, p.summary, p.image_url, p.category_id,
+			  p.published, p.created_at, p.updated_at, COALESCE(p.views, 0) as views,
 			  COALESCE(p.meta_title, '') as meta_title, COALESCE(p.meta_description, '') as meta_description,
 			  COALESCE(p.focus_keywords, '') as focus_keywords, COALESCE(p.og_image_url, '') as og_image_url, COALESCE(p.slug, '') as slug,
 			  c.name, c.slug, c.description
-			  FROM posts p 
+			  FROM posts p
 			  JOIN categories c ON p.category_id = c.id`
 
 	var rows *sql.Rows
@@ -430,7 +430,7 @@ func GetPosts(c *gin.Context) {
 		var category models.Category
 
 		err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.Summary, &post.ImageURL,
-			&post.CategoryID, &post.Published, &post.CreatedAt, &post.UpdatedAt,
+			&post.CategoryID, &post.Published, &post.CreatedAt, &post.UpdatedAt, &post.Views,
 			&post.MetaTitle, &post.MetaDescription, &post.FocusKeywords, &post.OGImageURL, &post.Slug,
 			&category.Name, &category.Slug, &category.Description)
 		if err != nil {
@@ -454,13 +454,14 @@ func GetPost(c *gin.Context) {
 	}
 
 	var post models.Post
-	err = database.DB.QueryRow(`SELECT id, title, content, summary, image_url, category_id, published, 
+	err = database.DB.QueryRow(`SELECT id, title, content, summary, image_url, category_id, published,
+		COALESCE(views, 0) as views,
 		COALESCE(meta_title, '') as meta_title, COALESCE(meta_description, '') as meta_description,
 		COALESCE(focus_keywords, '') as focus_keywords, COALESCE(og_image_url, '') as og_image_url, COALESCE(slug, '') as slug,
 		created_at, updated_at
 		FROM posts WHERE id = $1`, id).Scan(
 		&post.ID, &post.Title, &post.Content, &post.Summary, &post.ImageURL, &post.CategoryID,
-		&post.Published, &post.MetaTitle, &post.MetaDescription, &post.FocusKeywords, &post.OGImageURL, &post.Slug,
+		&post.Published, &post.Views, &post.MetaTitle, &post.MetaDescription, &post.FocusKeywords, &post.OGImageURL, &post.Slug,
 		&post.CreatedAt, &post.UpdatedAt)
 
 	if err != nil {
