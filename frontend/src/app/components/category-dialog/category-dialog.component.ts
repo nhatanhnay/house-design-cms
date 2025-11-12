@@ -460,6 +460,8 @@ export class CategoryDialogComponent implements OnInit {
       if (formValue.thumbnail_url) {
         categoryData.thumbnail_url = formValue.thumbnail_url;
       }
+      
+      console.log('Saving category with thumbnail_url:', categoryData.thumbnail_url);
 
       console.log('📦 Category Update Request:', {
         id: this.data.category?.id,

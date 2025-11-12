@@ -199,10 +199,11 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     </mat-dialog-content>
 
     <mat-dialog-actions align="end">
-      <button mat-button (click)="onCancel()" [disabled]="isLoading">Hủy</button>
-      <button mat-raised-button color="primary" (click)="onSave()" [disabled]="!productForm.valid || isLoading">
-        <span *ngIf="!isLoading">{{ data.product ? 'Cập nhật' : 'Thêm' }}</span>
-        <span *ngIf="isLoading">Đang lưu...</span>
+      <button mat-button (click)="onCancel()" [disabled]="isLoading || isUploadingImage">Hủy</button>
+      <button mat-raised-button color="primary" (click)="onSave()" [disabled]="!productForm.valid || isLoading || isUploadingImage">
+        <span *ngIf="!isLoading && !isUploadingImage">{{ data.product ? 'Cập nhật' : 'Thêm' }}</span>
+        <span *ngIf="isUploadingImage">Đang upload...</span>
+        <span *ngIf="isLoading && !isUploadingImage">Đang lưu...</span>
       </button>
     </mat-dialog-actions>
   `,
@@ -438,7 +439,7 @@ export class ProductDialogComponent implements OnInit {
 
   // Upload progress tracking
   featuredImageUploadProgress = 0;
-  galleryImageUploadProgress: { [key: number]: number } = {}; // Track progress for each gallery image
+  galleryImageUploadProgress: { [key: number]: number } = {};
 
   constructor(
     private fb: FormBuilder,
@@ -513,9 +514,16 @@ export class ProductDialogComponent implements OnInit {
   onSave(): void {
     if (this.productForm.valid) {
       this.isLoading = true;
+      
+      // Ensure thumbnail_url is updated from selectedImageUrl if it exists
+      if (this.selectedImageUrl && !this.productForm.get('thumbnail_url')?.value) {
+        this.productForm.patchValue({ thumbnail_url: this.selectedImageUrl }, { emitEvent: false });
+      }
+      
       const productData = { ...this.productForm.value };
 
       console.log('Saving product with gallery images:', this.galleryImages.length);
+      console.log('Product thumbnail_url:', productData.thumbnail_url);
 
       const operation = this.data.product
         ? this.dataService.updateProduct(this.data.product.id, productData)

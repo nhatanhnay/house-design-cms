@@ -178,8 +178,8 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
       <button mat-raised-button
               color="primary"
               (click)="onSave()"
-              [disabled]="postForm.invalid || isLoading">
-        {{ isLoading ? 'Đang lưu...' : (data.post ? 'Cập nhật' : 'Thêm mới') }}
+              [disabled]="postForm.invalid || isLoading || isUploadingImage">
+        {{ isLoading ? 'Đang lưu...' : (isUploadingImage ? 'Đang upload...' : (data.post ? 'Cập nhật' : 'Thêm mới')) }}
       </button>
     </mat-dialog-actions>
   `,
@@ -505,7 +505,15 @@ export class PostDialogComponent implements OnInit {
   onSave(): void {
     if (this.postForm.valid) {
       this.isLoading = true;
+      
+      // Ensure image_url is updated from selectedImageUrl if it exists
+      if (this.selectedImageUrl && !this.postForm.get('image_url')?.value) {
+        this.postForm.patchValue({ image_url: this.selectedImageUrl }, { emitEvent: false });
+      }
+      
       const postData = { ...this.postForm.value };
+      
+      console.log('Saving post with image_url:', postData.image_url);
 
       const operation = this.data.post
         ? this.dataService.updatePost(this.data.post.id, postData)
