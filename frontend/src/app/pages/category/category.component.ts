@@ -210,15 +210,17 @@ import { Post, Admin, Category, Product } from '../../models/models';
     .breadcrumb {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
       margin-bottom: 16px;
       flex-wrap: wrap;
+      line-height: 1.2;
     }
 
     .breadcrumb span {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
+      line-height: 1.2;
     }
 
     .breadcrumb a {
@@ -226,6 +228,8 @@ import { Post, Admin, Category, Product } from '../../models/models';
       text-decoration: none;
       font-size: 0.9rem;
       transition: color 0.3s;
+      line-height: 1.2;
+      display: inline-block;
     }
 
     .breadcrumb a:hover {
@@ -233,10 +237,13 @@ import { Post, Admin, Category, Product } from '../../models/models';
     }
 
     .breadcrumb mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      font-size: 16px !important;
+      width: 16px !important;
+      height: 16px !important;
       color: rgba(255, 255, 255, 0.5); /* Icon trắng mờ */
+      display: inline-block !important;
+      vertical-align: middle;
+      margin: 0 2px;
     }
 
     /* Category Header */
@@ -623,29 +630,32 @@ import { Post, Admin, Category, Product } from '../../models/models';
     .post-date,
     .post-status,
     .post-views {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       font-size: 0.85rem;
       color: #6c757d;
-      line-height: 1;
+      line-height: 1.3;
     }
 
     .post-date mat-icon,
     .post-status mat-icon,
     .post-views mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      line-height: 1;
+      font-size: 16px !important;
+      width: 16px !important;
+      height: 16px !important;
+      line-height: 1 !important;
       vertical-align: middle;
+      display: inline-block !important;
+      margin-right: 2px;
     }
 
     .post-date span,
     .post-status span,
     .post-views span {
-      line-height: 1;
+      line-height: 1.3;
       vertical-align: middle;
+      display: inline-block;
     }
 
     .post-status.published {
@@ -657,20 +667,24 @@ import { Post, Admin, Category, Product } from '../../models/models';
     }
 
     .read-more {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: space-between;
       color: var(--primary-blue, #3498db);
       font-weight: 500;
       font-size: 0.9rem;
       margin-top: auto;
+      line-height: 1.3;
+      width: 100%;
     }
 
     .read-more mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      font-size: 18px !important;
+      width: 18px !important;
+      height: 18px !important;
       transition: transform 0.3s ease;
+      display: inline-block !important;
+      vertical-align: middle;
     }
 
     .post-card:hover .read-more mat-icon {
@@ -770,43 +784,407 @@ import { Post, Admin, Category, Product } from '../../models/models';
     }
 
     /* Responsive */
-    @media (max-width: 768px) {
-      .category-page {
-        padding: 20px 0;
+    @media (max-width: 1024px) {
+      .subcategories-grid,
+      .posts-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
       }
 
-      .container {
-        padding: 0 15px;
+      .subcategory-card,
+      .post-card {
+        width: 100%;
+      }
+
+      .title-bar {
+        padding: 25px 40px;
+        max-width: 75%;
       }
 
       .category-title {
-        font-size: 2rem;
+        font-size: 48px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .category-page {
+        padding-top: 0;
+      }
+
+      .container {
+        padding: 40px 16px;
+      }
+
+      .category-header {
+        height: 50vh;
+        min-height: 350px;
+        margin-bottom: 30px;
+      }
+
+      .header-overlay {
+        top: 50px;
+      }
+
+      .title-bar {
+        padding: 20px 30px;
+        max-width: 85%;
+        margin-bottom: 15px;
+      }
+
+      .category-title {
+        font-size: 1.75rem;
+        letter-spacing: 1px;
+        line-height: 1.3;
+      }
+
+      .description-bar {
+        padding: 16px 30px;
+        max-width: 85%;
+      }
+
+      .description-bar p {
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+
+      .section-title {
+        font-size: 1.5rem;
+        margin: 25px 0 18px 0;
+      }
+
+      .breadcrumb {
+        margin-bottom: 14px;
+        gap: 3px;
+      }
+
+      .breadcrumb span {
+        gap: 3px;
+      }
+
+      .breadcrumb a {
+        font-size: 0.85rem;
+        line-height: 1.2;
+      }
+
+      .breadcrumb mat-icon {
+        font-size: 14px !important;
+        width: 14px !important;
+        height: 14px !important;
       }
 
       /* Tabs Mobile Styles */
       .subcategory-tabs {
-        margin-top: 20px;
-        margin-bottom: 30px;
-        gap: 8px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding-bottom: 0;
+        margin: 18px 0 25px 0;
+        gap: 6px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        
+        &::-webkit-scrollbar {
+          display: none;
+        }
       }
 
       .subcategory-tab {
-        padding: 12px 20px;
-        font-size: 0.85rem;
-        letter-spacing: 0.3px;
+        padding: 10px 18px;
+        font-size: 0.8rem;
+        letter-spacing: 0.2px;
+        white-space: nowrap;
       }
 
+      .subcategories-grid,
       .posts-grid {
         grid-template-columns: 1fr;
-        gap: 20px;
+        gap: 16px;
+        margin-top: 18px;
+      }
+
+      .subcategory-card,
+      .post-card {
+        border-radius: 12px;
+        height: auto;
+        min-height: 360px;
+      }
+
+      .subcategory-thumbnail,
+      .post-image {
+        height: 200px;
+      }
+
+      .subcategory-content,
+      .post-content {
+        padding: 14px;
+      }
+
+      .subcategory-title,
+      .post-title {
+        font-size: 1.05rem;
+        margin-bottom: 8px;
+      }
+
+      .subcategory-description,
+      .post-summary {
+        font-size: 0.85rem;
+        line-height: 1.5;
       }
 
       .post-meta {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-wrap: wrap;
         gap: 8px;
+        padding-bottom: 12px;
+      }
+
+      .post-date,
+      .post-status,
+      .post-views {
+        font-size: 0.8rem;
+      }
+
+      .read-more {
+        font-size: 0.85rem;
+      }
+
+      .pagination {
+        gap: 12px;
+        margin-top: 30px;
+        padding: 15px;
+      }
+
+      .pagination button[mat-icon-button] {
+        width: 36px;
+        height: 36px;
+      }
+
+      .page-numbers button {
+        min-width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+      }
+
+      .no-posts {
+        padding: 60px 16px;
+      }
+
+      .no-posts-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+      }
+
+      .no-posts h3 {
+        font-size: 1.3rem;
+      }
+
+      .no-posts p {
+        font-size: 0.9rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 30px 12px;
+      }
+
+      .category-header {
+        height: 40vh;
+        min-height: 300px;
+        margin-bottom: 25px;
+      }
+
+      .header-overlay {
+        top: 30px;
+      }
+
+      .title-bar {
+        padding: 16px 20px;
+        max-width: 90%;
+        margin-bottom: 12px;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .category-title {
+        font-size: 1.4rem;
+        letter-spacing: 0.5px;
+        line-height: 1.25;
+      }
+
+      .description-bar {
+        padding: 12px 20px;
+        max-width: 90%;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .description-bar p {
+        font-size: 0.85rem;
+        line-height: 1.4;
+      }
+
+      .section-title {
+        font-size: 1.35rem;
+        margin: 20px 0 16px 0;
+      }
+
+      .breadcrumb a {
+        font-size: 0.8rem;
+        line-height: 1.2;
+      }
+
+      .breadcrumb mat-icon {
+        font-size: 12px !important;
+        width: 12px !important;
+        height: 12px !important;
+      }
+
+      .subcategory-tabs {
+        margin: 16px 0 20px 0;
+        gap: 5px;
+      }
+
+      .subcategory-tab {
+        padding: 8px 14px;
+        font-size: 0.75rem;
+      }
+
+      .subcategories-grid,
+      .posts-grid {
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .subcategory-card,
+      .post-card {
+        min-height: 340px;
+        border-radius: 10px;
+      }
+
+      .subcategory-thumbnail,
+      .post-image {
+        height: 180px;
+      }
+
+      .subcategory-content,
+      .post-content {
+        padding: 12px;
+      }
+
+      .subcategory-title,
+      .post-title {
+        font-size: 0.95rem;
+        margin-bottom: 6px;
+      }
+
+      .subcategory-description,
+      .post-summary {
+        font-size: 0.8rem;
+        line-height: 1.4;
+      }
+
+      .post-meta {
+        gap: 6px;
+      }
+
+      .post-date,
+      .post-status,
+      .post-views {
+        font-size: 0.75rem;
+      }
+
+      .post-date mat-icon,
+      .post-status mat-icon,
+      .post-views mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+
+      .read-more {
+        font-size: 0.8rem;
+      }
+
+      .read-more mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+
+      .pagination {
+        gap: 10px;
+        margin-top: 25px;
+        padding: 12px;
+      }
+
+      .pagination button[mat-icon-button] {
+        width: 32px;
+        height: 32px;
+      }
+
+      .page-numbers {
+        gap: 6px;
+      }
+
+      .page-numbers button {
+        min-width: 32px;
+        height: 32px;
+        font-size: 0.85rem;
+      }
+
+      .no-posts {
+        padding: 50px 12px;
+      }
+
+      .no-posts-icon {
+        font-size: 40px;
+        width: 40px;
+        height: 40px;
+      }
+
+      .no-posts h3 {
+        font-size: 1.2rem;
+      }
+
+      .no-posts p {
+        font-size: 0.85rem;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .title-bar {
+        padding: 14px 18px;
+      }
+
+      .category-title {
+        font-size: 1.25rem;
+      }
+
+      .description-bar {
+        padding: 10px 18px;
+      }
+
+      .description-bar p {
+        font-size: 0.8rem;
+      }
+
+      .section-title {
+        font-size: 1.2rem;
+      }
+
+      .subcategory-card,
+      .post-card {
+        min-height: 320px;
+      }
+
+      .subcategory-content,
+      .post-content {
+        padding: 10px;
+      }
+
+      .subcategory-title,
+      .post-title {
+        font-size: 0.9rem;
+      }
+
+      .subcategory-description,
+      .post-summary {
+        font-size: 0.75rem;
       }
     }
   `]
