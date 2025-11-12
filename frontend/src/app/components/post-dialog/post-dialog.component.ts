@@ -8,7 +8,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { HttpEventType } from '@angular/common/http';
 import { CKEditorModule } from '@ckeditor/ckeditor5-angular';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { Observable } from 'rxjs';
@@ -30,6 +32,7 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
     MatSelectModule,
     MatCheckboxModule,
     MatIconModule,
+    MatProgressBarModule,
     CKEditorModule
   ],
   template: `
@@ -85,7 +88,8 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
 
               <div class="upload-loading" *ngIf="isUploadingImage">
                 <div class="loading-spinner"></div>
-                <p>Đang tải lên...</p>
+                <p>Đang tải lên... {{imageUploadProgress}}%</p>
+                <mat-progress-bar mode="determinate" [value]="imageUploadProgress"></mat-progress-bar>
               </div>
 
               <div class="image-preview" *ngIf="selectedImageUrl && !isUploadingImage">
@@ -385,6 +389,7 @@ export class PostDialogComponent implements OnInit {
   selectedImageUrl: string | null = null;
   isUploadingImage = false;
   imageUploadError: string | null = null;
+  imageUploadProgress = 0; // Add progress tracking
 
   public Editor: any = ClassicEditor;
   public editorConfig: any;
@@ -543,16 +548,25 @@ export class PostDialogComponent implements OnInit {
 
     this.imageUploadError = null;
     this.isUploadingImage = true;
+    this.imageUploadProgress = 0;
 
-    this.dataService.uploadImage(file).subscribe({
-      next: (response) => {
-        this.isUploadingImage = false;
-        this.selectedImageUrl = response.url;
-        this.postForm.patchValue({ image_url: response.url });
-        this.snackBar.open('Tải lên hình ảnh thành công!', 'Đóng', { duration: 3000 });
+    this.dataService.uploadImageWithProgress(file).subscribe({
+      next: (event: any) => {
+        if (event.type === HttpEventType.UploadProgress) {
+          if (event.total) {
+            this.imageUploadProgress = Math.round((100 * event.loaded) / event.total);
+          }
+        } else if (event.type === HttpEventType.Response) {
+          this.isUploadingImage = false;
+          this.imageUploadProgress = 100;
+          this.selectedImageUrl = event.body.url;
+          this.postForm.patchValue({ image_url: event.body.url });
+          this.snackBar.open('Tải lên hình ảnh thành công!', 'Đóng', { duration: 3000 });
+        }
       },
       error: (error) => {
         this.isUploadingImage = false;
+        this.imageUploadProgress = 0;
         console.error('Upload error:', error);
 
         let errorMessage = 'Lỗi khi tải lên hình ảnh';

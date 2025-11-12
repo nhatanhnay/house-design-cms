@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams, HttpEvent } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -341,11 +341,45 @@ export class DataService {
     return this.http.post<{ url: string }>(`${this.apiUrl}/upload`, formData, { headers });
   }
 
+  // Upload with progress tracking
+  uploadImageWithProgress(file: File): Observable<HttpEvent<{ url: string }>> {
+    const formData = new FormData();
+    formData.append('upload', file);
+
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found. Please log in again.');
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    console.log('Uploading file with progress:', file.name, 'Size:', file.size, 'Type:', file.type);
+
+    return this.http.post<{ url: string }>(`${this.apiUrl}/upload`, formData, {
+      headers,
+      reportProgress: true,
+      observe: 'events'
+    });
+  }
+
   // Keep the FormData version for backward compatibility
   uploadImageFormData(formData: FormData): Observable<any> {
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ 'Authorization': `Bearer ${token}` }) : undefined;
     return this.http.post(`${this.apiUrl}/upload`, formData, { headers });
+  }
+
+  // Upload FormData with progress tracking
+  uploadImageFormDataWithProgress(formData: FormData): Observable<HttpEvent<any>> {
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders({ 'Authorization': `Bearer ${token}` }) : undefined;
+    return this.http.post(`${this.apiUrl}/upload`, formData, {
+      headers,
+      reportProgress: true,
+      observe: 'events'
+    });
   }
 
   uploadVideo(file: File): Observable<{ url: string }> {

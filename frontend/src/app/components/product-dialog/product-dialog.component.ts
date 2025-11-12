@@ -13,10 +13,12 @@ import { CKEditorModule } from '@ckeditor/ckeditor5-angular';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Observable } from 'rxjs';
+import { HttpEventType } from '@angular/common/http';
 import { DataService } from '../../services/data.service';
 import { AuthService } from '../../services/auth.service';
 import { Category, Product, ProductImage } from '../../models/models';
 import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 @Component({
   selector: 'app-product-dialog',
@@ -31,6 +33,7 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
     MatSelectModule,
     MatCheckboxModule,
     MatIconModule,
+    MatProgressBarModule,
     CKEditorModule,
     DragDropModule
   ],
@@ -91,7 +94,8 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
 
               <div class="upload-loading" *ngIf="isUploadingImage">
                 <div class="loading-spinner"></div>
-                <p>Đang tải lên...</p>
+                <p>Đang tải lên... {{featuredImageUploadProgress}}%</p>
+                <mat-progress-bar mode="determinate" [value]="featuredImageUploadProgress"></mat-progress-bar>
               </div>
 
               <div class="image-preview" *ngIf="selectedImageUrl && !isUploadingImage">
@@ -432,6 +436,10 @@ export class ProductDialogComponent implements OnInit {
   originalImageIds: number[] = []; // Track original image IDs to detect deletions
   showSEO = false;
 
+  // Upload progress tracking
+  featuredImageUploadProgress = 0;
+  galleryImageUploadProgress: { [key: number]: number } = {}; // Track progress for each gallery image
+
   constructor(
     private fb: FormBuilder,
     private dataService: DataService,
@@ -551,16 +559,25 @@ export class ProductDialogComponent implements OnInit {
     }
 
     this.isUploadingImage = true;
+    this.featuredImageUploadProgress = 0;
 
-    this.dataService.uploadImage(file).subscribe({
-      next: (response) => {
-        this.isUploadingImage = false;
-        this.selectedImageUrl = response.url;
-        this.productForm.patchValue({ thumbnail_url: response.url });
-        this.snackBar.open('Tải lên hình ảnh thành công!', 'Đóng', { duration: 3000 });
+    this.dataService.uploadImageWithProgress(file).subscribe({
+      next: (event: any) => {
+        if (event.type === HttpEventType.UploadProgress) {
+          if (event.total) {
+            this.featuredImageUploadProgress = Math.round((100 * event.loaded) / event.total);
+          }
+        } else if (event.type === HttpEventType.Response) {
+          this.isUploadingImage = false;
+          this.featuredImageUploadProgress = 100;
+          this.selectedImageUrl = event.body.url;
+          this.productForm.patchValue({ thumbnail_url: event.body.url });
+          this.snackBar.open('Tải lên hình ảnh thành công!', 'Đóng', { duration: 3000 });
+        }
       },
       error: (error) => {
         this.isUploadingImage = false;
+        this.featuredImageUploadProgress = 0;
         console.error('Upload error:', error);
 
         let errorMessage = 'Lỗi khi tải lên hình ảnh';
@@ -683,26 +700,36 @@ export class ProductDialogComponent implements OnInit {
 
     imagesToUpload.forEach((img, index) => {
       if (img.file) {
-        this.dataService.uploadImage(img.file).subscribe({
-          next: (response) => {
-            this.dataService.addProductImage(productId, {
-              image_url: response.url,
-              display_order: this.galleryImages.indexOf(img),
-              alt_text: '',
-              is_primary: index === 0 && this.galleryImages.length === imagesToUpload.length
-            }).subscribe({
-              next: () => {
-                uploadedCount++;
-                if (uploadedCount === imagesToUpload.length) {
-                  this.finishSave();
-                }
-              },
-              error: (error) => {
-                console.error('Error adding product image:', error);
-                this.isLoading = false;
-                this.snackBar.open('Lỗi khi lưu ảnh gallery vào database', 'Đóng', { duration: 5000 });
+        this.galleryImageUploadProgress[index] = 0;
+        
+        this.dataService.uploadImageWithProgress(img.file).subscribe({
+          next: (event: any) => {
+            if (event.type === HttpEventType.UploadProgress) {
+              if (event.total) {
+                this.galleryImageUploadProgress[index] = Math.round((100 * event.loaded) / event.total);
               }
-            });
+            } else if (event.type === HttpEventType.Response) {
+              this.galleryImageUploadProgress[index] = 100;
+              
+              this.dataService.addProductImage(productId, {
+                image_url: event.body.url,
+                display_order: this.galleryImages.indexOf(img),
+                alt_text: '',
+                is_primary: index === 0 && this.galleryImages.length === imagesToUpload.length
+              }).subscribe({
+                next: () => {
+                  uploadedCount++;
+                  if (uploadedCount === imagesToUpload.length) {
+                    this.finishSave();
+                  }
+                },
+                error: (error) => {
+                  console.error('Error adding product image:', error);
+                  this.isLoading = false;
+                  this.snackBar.open('Lỗi khi lưu ảnh gallery vào database', 'Đóng', { duration: 5000 });
+                }
+              });
+            }
           },
           error: (error) => {
             console.error('Error uploading gallery image:', error);
@@ -741,28 +768,38 @@ export class ProductDialogComponent implements OnInit {
 
     imagesToUpload.forEach((img, index) => {
       if (img.file) {
-        this.dataService.uploadImage(img.file).subscribe({
-          next: (response) => {
-            this.dataService.addProductImage(productId, {
-              image_url: response.url,
-              display_order: this.galleryImages.indexOf(img),
-              alt_text: '',
-              is_primary: index === 0
-            }).subscribe({
-              next: () => {
-                uploadedCount++;
-                if (uploadedCount === imagesToUpload.length) {
-                  this.isLoading = false;
-                  this.snackBar.open('Sản phẩm và ảnh đã được lưu!', 'Đóng', { duration: 3000 });
-                  this.dialogRef.close(true);
-                }
-              },
-              error: (error) => {
-                console.error('Error adding product image:', error);
-                this.isLoading = false;
-                this.snackBar.open('Lỗi khi lưu ảnh gallery vào database', 'Đóng', { duration: 5000 });
+        this.galleryImageUploadProgress[index] = 0;
+        
+        this.dataService.uploadImageWithProgress(img.file).subscribe({
+          next: (event: any) => {
+            if (event.type === HttpEventType.UploadProgress) {
+              if (event.total) {
+                this.galleryImageUploadProgress[index] = Math.round((100 * event.loaded) / event.total);
               }
-            });
+            } else if (event.type === HttpEventType.Response) {
+              this.galleryImageUploadProgress[index] = 100;
+              
+              this.dataService.addProductImage(productId, {
+                image_url: event.body.url,
+                display_order: this.galleryImages.indexOf(img),
+                alt_text: '',
+                is_primary: index === 0
+              }).subscribe({
+                next: () => {
+                  uploadedCount++;
+                  if (uploadedCount === imagesToUpload.length) {
+                    this.isLoading = false;
+                    this.snackBar.open('Sản phẩm và ảnh đã được lưu!', 'Đóng', { duration: 3000 });
+                    this.dialogRef.close(true);
+                  }
+                },
+                error: (error) => {
+                  console.error('Error adding product image:', error);
+                  this.isLoading = false;
+                  this.snackBar.open('Lỗi khi lưu ảnh gallery vào database', 'Đóng', { duration: 5000 });
+                }
+              });
+            }
           },
           error: (error) => {
             console.error('Error uploading gallery image:', error);

@@ -11,6 +11,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { HttpEventType } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { DataService } from '../../services/data.service';
 import { Category } from '../../models/models';
@@ -552,13 +553,21 @@ export class CategoryDialogComponent implements OnInit {
     this.uploadProgress = 0;
     this.isLoading = true;
 
-    // Use the existing upload endpoint
-    this.dataService.uploadImageFormData(formData).subscribe({
-      next: (response: any) => {
-        this.uploadProgress = 100;
-        this.categoryForm.patchValue({ thumbnail_url: response.url });
-        this.isLoading = false;
-        this.snackBar.open('Tải lên hình đại diện thành công!', 'Đóng', { duration: 3000 });
+    // Use the progress-enabled upload
+    this.dataService.uploadImageFormDataWithProgress(formData).subscribe({
+      next: (event: any) => {
+        if (event.type === HttpEventType.UploadProgress) {
+          // Calculate and update progress
+          if (event.total) {
+            this.uploadProgress = Math.round((100 * event.loaded) / event.total);
+          }
+        } else if (event.type === HttpEventType.Response) {
+          // Upload completed
+          this.uploadProgress = 100;
+          this.categoryForm.patchValue({ thumbnail_url: event.body.url });
+          this.isLoading = false;
+          this.snackBar.open('Tải lên hình đại diện thành công!', 'Đóng', { duration: 3000 });
+        }
       },
       error: (error) => {
         this.uploadProgress = 0;
