@@ -12,7 +12,7 @@ import { RouterModule } from '@angular/router';
 import { Title, Meta } from '@angular/platform-browser';
 import { Observable, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Admin, Category, HomeContent, Post } from '../../models/models';
+import { Admin, Category, HomeContent, Post, Product, ProcessTab } from '../../models/models';
 import { AuthService } from '../../services/auth.service';
 import { DataService } from '../../services/data.service';
 import { StructuredDataService } from '../../services/structured-data.service';
@@ -47,11 +47,21 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // Store posts for category filtering
   allPosts: Post[] = [];
+  
+  // Store products for category filtering
+  allProducts: Product[] = [];
+
+  // Active tab tracking for each category
+  activeSubCategoryTabs: { [categoryId: number]: number | null } = {};
 
   // Homepage carousel properties
   homepageImages: string[] = [];
   currentSlideIndex: number = 0;
   private carouselInterval: any;
+
+  // Process tabs properties
+  processTabs: ProcessTab[] = [];
+  activeProcessTabIndex: number = 0;
 
   constructor(
     private dataService: DataService,
@@ -116,9 +126,22 @@ export class HomeComponent implements OnInit, OnDestroy {
       next: (posts) => {
         this.isLoadingPosts = false;
         this.allPosts = posts;
+        console.log('📦 All posts loaded:', this.allPosts.length, this.allPosts);
       },
       error: (error) => {
         this.isLoadingPosts = false;
+        console.error('❌ Error loading posts:', error);
+      }
+    });
+
+    // Load all products
+    this.dataService.getProducts().subscribe({
+      next: (products) => {
+        this.allProducts = products;
+        console.log('🛍️ All products loaded:', this.allProducts.length, this.allProducts);
+      },
+      error: (error) => {
+        console.error('❌ Error loading products:', error);
       }
     });
 
@@ -126,9 +149,21 @@ export class HomeComponent implements OnInit, OnDestroy {
       next: (categories) => {
         this.isLoadingCategories = false;
         this.mainCategories = categories; // Store in component property
+        console.log('📂 Categories loaded:', categories);
+        
+        // Initialize all category tabs to "Tất cả" (null)
+        categories.forEach(category => {
+          if ((category.category_type === 'parent' || category.category_type === 'product') && 
+              category.children && category.children.length > 0) {
+            this.activeSubCategoryTabs[category.id] = null;
+            console.log(`🏷️ Initialized tab for category ${category.id} (${category.name}) to null`);
+          }
+        });
+        console.log('🎯 Active tabs:', this.activeSubCategoryTabs);
       },
       error: (error) => {
         this.isLoadingCategories = false;
+        console.error('❌ Error loading categories:', error);
       }
     });
 
@@ -136,12 +171,15 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.dataService.getHomeContent().subscribe({
       next: (content) => {
         this.homeContent = content;
+        // Parse process tabs from JSON string
+        this.parseProcessTabs();
         // Update meta tags with dynamic content
         this.updateDynamicMetadata();
       },
       error: (error) => {
         // Use default values if API fails
         this.homeContent = null;
+        this.processTabs = [];
       }
     });
   }
@@ -397,6 +435,150 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Check if the value is a Material Icon (not a URL or SVG content)
     if (!value) return false;
     return !value.includes('/') && !value.includes('http') && !value.startsWith('<svg');
+  }
+
+  parseProcessTabs(): void {
+    if (this.homeContent?.process_tabs) {
+      try {
+        this.processTabs = JSON.parse(this.homeContent.process_tabs);
+        // Convert image URLs for all step icons
+        this.processTabs.forEach(tab => {
+          tab.steps.forEach(step => {
+            if (step.icon_url) {
+              step.icon_url = this.convertImageUrl(step.icon_url);
+            }
+          });
+        });
+      } catch (error) {
+        console.error('Error parsing process tabs:', error);
+        this.processTabs = [];
+      }
+    } else {
+      this.processTabs = [];
+    }
+  }
+
+  setActiveProcessTab(index: number): void {
+    this.activeProcessTabIndex = index;
+  }
+
+  // Set active sub-category tab (null means "Tất cả")
+  setActiveSubCategoryTab(categoryId: number, subCategoryId: number | null): void {
+    this.activeSubCategoryTabs[categoryId] = subCategoryId;
+  }
+
+  // Get active sub-category ID for a category
+  getActiveSubCategoryTab(categoryId: number): number | null {
+    return this.activeSubCategoryTabs[categoryId] !== undefined 
+      ? this.activeSubCategoryTabs[categoryId] 
+      : null; // Default to "Tất cả"
+  }
+
+  // Get posts for a category or subcategory
+  getFilteredCategoryPosts(categoryId: number, subCategoryId: number | null = null): Post[] {
+    console.log('🔍 getFilteredCategoryPosts called:', { 
+      categoryId, 
+      subCategoryId, 
+      totalPosts: this.allPosts.length,
+      allPosts: this.allPosts.map(p => ({ id: p.id, title: p.title, category_id: p.category_id }))
+    });
+    
+    if (subCategoryId === null) {
+      // "Tất cả" - show all posts from main category and its subcategories
+      const category = this.mainCategories.find(c => c.id === categoryId);
+      console.log('📁 Category found:', category);
+      
+      if (!category) return [];
+      
+      const subcategoryIds = (category.children || []).map(c => c.id);
+      console.log('👶 Subcategory IDs:', subcategoryIds);
+      
+      const filteredPosts = this.allPosts.filter(post => 
+        post.category_id === categoryId || subcategoryIds.includes(post.category_id)
+      ).sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
+      
+      console.log('✅ Filtered posts (Tất cả):', filteredPosts.length, filteredPosts);
+      return filteredPosts;
+    } else {
+      // Specific subcategory
+      const filteredPosts = this.allPosts
+        .filter(post => post.category_id === subCategoryId)
+        .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
+      
+      console.log('✅ Filtered posts (subcategory):', filteredPosts.length, filteredPosts);
+      return filteredPosts;
+    }
+  }
+
+  // Get products for a category or subcategory
+  getFilteredCategoryProducts(categoryId: number, subCategoryId: number | null = null): Product[] {
+    console.log('🔍 getFilteredCategoryProducts called:', { 
+      categoryId, 
+      subCategoryId, 
+      totalProducts: this.allProducts.length,
+      allProducts: this.allProducts.map(p => ({ id: p.id, title: p.title, category_id: p.category_id }))
+    });
+    
+    if (subCategoryId === null) {
+      // "Tất cả" - show all products from main category and its subcategories
+      const category = this.mainCategories.find(c => c.id === categoryId);
+      console.log('📁 Category found:', category);
+      
+      if (!category) return [];
+      
+      const subcategoryIds = (category.children || []).map(c => c.id);
+      console.log('👶 Subcategory IDs:', subcategoryIds);
+      
+      const filteredProducts = this.allProducts.filter(product => 
+        product.category_id === categoryId || subcategoryIds.includes(product.category_id)
+      ).sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
+      
+      console.log('✅ Filtered products (Tất cả):', filteredProducts.length, filteredProducts);
+      return filteredProducts;
+    } else {
+      // Specific subcategory
+      const filteredProducts = this.allProducts
+        .filter(product => product.category_id === subCategoryId)
+        .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
+      
+      console.log('✅ Filtered products (subcategory):', filteredProducts.length, filteredProducts);
+      return filteredProducts;
+    }
+  }
+
+  // Get combined items (posts + products) for a category or subcategory
+  getFilteredCategoryItems(categoryId: number, subCategoryId: number | null = null): (Post | Product)[] {
+    const posts = this.getFilteredCategoryPosts(categoryId, subCategoryId);
+    const products = this.getFilteredCategoryProducts(categoryId, subCategoryId);
+    
+    // Combine and sort by created_at
+    const combined = [...posts, ...products].sort((a, b) => 
+      new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+    );
+    
+    console.log('🎯 Combined items:', combined.length, combined);
+    return combined;
+  }
+
+  // Helper to check if item is a Product
+  isProduct(item: Post | Product): item is Product {
+    return 'thumbnail_url' in item;
+  }
+
+  // Get route link for item
+  getItemRoute(item: Post | Product): string {
+    if (this.isProduct(item)) {
+      return '/product/' + (item.slug || item.id);
+    }
+    return '/post/' + (item.slug || item.id);
+  }
+
+  // Get image URL for item
+  getItemImageUrl(item: Post | Product): string | undefined {
+    if (this.isProduct(item)) {
+      return item.thumbnail_url;
+    }
+    return item.image_url;
   }
 }
 

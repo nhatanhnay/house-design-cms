@@ -94,6 +94,18 @@ export interface CategoryTreeItem extends Category {
   hasChildren?: boolean;
 }
 
+export interface ProcessStep {
+  icon_url: string;
+  title: string;
+  description: string;
+}
+
+export interface ProcessTab {
+  tab_id: string;
+  tab_name: string;
+  steps: ProcessStep[];
+}
+
 export interface HomeContent {
   id: number;
   hero_title: string;
@@ -102,6 +114,10 @@ export interface HomeContent {
   hero_stat1_label: string;
   hero_stat2_number: string;
   hero_stat2_label: string;
+  hero_stat3_number: string;
+  hero_stat3_label: string;
+  hero_stat4_number: string;
+  hero_stat4_label: string;
   features_title: string;
   features_description: string;
   features_logo_url: string;
@@ -117,6 +133,8 @@ export interface HomeContent {
   feature4_icon: string;
   feature4_title: string;
   feature4_description: string;
+  process_section_title: string;
+  process_tabs: string; // JSON string, will be parsed to ProcessTab[]
   // SEO Fields
   meta_title?: string;
   meta_description?: string;

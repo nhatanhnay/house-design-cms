@@ -112,6 +112,10 @@ export class HomeComponent implements OnInit {
       hero_stat1_label: 'Tỉnh Thành Phủ Sóng',
       hero_stat2_number: '500+',
       hero_stat2_label: 'Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp',
+      hero_stat3_number: '+152',
+      hero_stat3_label: 'Công Trình Thi Công',
+      hero_stat4_number: '+1679',
+      hero_stat4_label: 'Lên Phương Án Miễn Phí',
       features_title: '',
       features_description: '',
       features_logo_url: '',
@@ -126,7 +130,9 @@ export class HomeComponent implements OnInit {
       feature3_description: '',
       feature4_icon: '',
       feature4_title: '',
-      feature4_description: ''
+      feature4_description: '',
+      process_section_title: 'Quy Trình Làm Việc',
+      process_tabs: '[]'
     };
 
     const dialogData = this.homeContent ? { ...defaultContent, ...this.homeContent } : defaultContent;

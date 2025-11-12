@@ -1,62 +1,103 @@
 <main class="home-page">
-  <!-- Hero Carousel Section -->
-  <section class="hero-carousel" aria-label="Featured architectural projects">
-    <div class="carousel-container">
-      <div class="carousel-slide" *ngFor="let image of homepageImages; let i = index"
-        [class.active]="i === currentSlideIndex">
-        <img [src]="image" [alt]="'Homepage image ' + (i + 1)" (error)="onImageError($event, image)"
-          (load)="onImageLoad($event, image)" style="width: 100%; height: 100%; object-fit: cover;">
+  <!-- Hero Section with Carousel and Overlay Content -->
+  <section class="hero-section" aria-label="Featured architectural projects">
+    <!-- Hero Carousel Background -->
+    <div class="hero-carousel">
+      <div class="carousel-container">
+        <div class="carousel-slide" *ngFor="let image of homepageImages; let i = index"
+          [class.active]="i === currentSlideIndex">
+          <img [src]="image" [alt]="'Homepage image ' + (i + 1)" (error)="onImageError($event, image)"
+            (load)="onImageLoad($event, image)" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+
+        <!-- Dark Overlay -->
+        <div class="carousel-overlay"></div>
+
+        <!-- Carousel Indicators -->
+        <div class="carousel-indicators" *ngIf="homepageImages.length > 1">
+          <button *ngFor="let image of homepageImages; let i = index" class="indicator"
+            [class.active]="i === currentSlideIndex" (click)="goToSlide(i)">
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero Content Overlay -->
+    <div class="hero-content-overlay">
+      <div class="container">
+        <header class="hero-content">
+          <h1>{{ homeContent?.hero_title || 'CÔNG TY THIẾT KẾ VÀ THI CÔNG NHÀ ĐẸP AZAR' }}</h1>
+          <p class="hero-tagline">Với 6 Năm Kinh Nghiệm</p>
+          <p class="hero-subtitle">{{ homeContent?.hero_description || 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện
+            đại với phong cách kiến trúc độc đáo' }}</p>
+        </header>
       </div>
 
-      <!-- Carousel Navigation -->
-      <div class="carousel-nav" *ngIf="homepageImages.length > 1">
-        <button class="carousel-prev" (click)="previousSlide()" [disabled]="homepageImages.length <= 1">
-          <mat-icon>chevron_left</mat-icon>
-        </button>
-        <button class="carousel-next" (click)="nextSlide()" [disabled]="homepageImages.length <= 1">
-          <mat-icon>chevron_right</mat-icon>
-        </button>
-      </div>
-
-      <!-- Carousel Indicators -->
-      <div class="carousel-indicators" *ngIf="homepageImages.length > 1">
-        <button *ngFor="let image of homepageImages; let i = index" class="indicator"
-          [class.active]="i === currentSlideIndex" (click)="goToSlide(i)">
-        </button>
+      <!-- Stats Boxes -->
+      <div class="hero-stats-boxes">
+        <div class="stats-container">
+          <div class="stat-box">
+            <div class="stat-number">{{ homeContent?.hero_stat1_number || '+2579' }}</div>
+            <div class="stat-label">{{ homeContent?.hero_stat1_label || 'Khách Hàng Được Tư Vấn' }}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">{{ homeContent?.hero_stat2_number || '+686' }}</div>
+            <div class="stat_label">{{ homeContent?.hero_stat2_label || 'Công Trình Thiết Kế' }}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">{{ homeContent?.hero_stat3_number || '+152' }}</div>
+            <div class="stat-label">{{ homeContent?.hero_stat3_label || 'Công Trình Thi Công' }}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">{{ homeContent?.hero_stat4_number || '+1679' }}</div>
+            <div class="stat-label">{{ homeContent?.hero_stat4_label || 'Lên Phương Án Miễn Phí' }}</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Hero Content Section - Separate section between carousel and main-categories -->
-  <section class="hero-content-section" aria-label="Company introduction">
+  <!-- Process Steps Section -->
+  <section class="process-section" aria-label="Work process" *ngIf="processTabs && processTabs.length > 0">
     <div class="container">
-      <header class="hero-content">
-        <h1>{{ homeContent?.hero_title || 'MMA Architectural Design' }}</h1>
-        <p>{{ homeContent?.hero_description || 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến
-          trúc độc đáo' }}</p>
-        <div class="hero-stats">
-          <div class="stat-item">
-            <div class="stat-number">{{ homeContent?.hero_stat1_number || '37' }}</div>
-            <div class="stat-label">{{ homeContent?.hero_stat1_label || 'Tỉnh Thành Phủ Sóng' }}</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number">{{ homeContent?.hero_stat2_number || '500+' }}</div>
-            <div class="stat-label">{{ homeContent?.hero_stat2_label || 'Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp' }}</div>
+      <h2 class="section-title text-center">{{ homeContent?.process_section_title || 'Quy Trình Làm Việc' }}</h2>
+
+      <!-- Tab Navigation -->
+      <div class="process-tabs-nav" *ngIf="processTabs.length > 1">
+        <button *ngFor="let tab of processTabs; let i = index" class="tab-button"
+          [class.active]="activeProcessTabIndex === i" (click)="setActiveProcessTab(i)">
+          {{ tab.tab_name }}
+        </button>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="process-tabs-content">
+        <div *ngFor="let tab of processTabs; let tabIndex = index" class="tab-pane"
+          [class.active]="activeProcessTabIndex === tabIndex">
+          <div class="process-steps-grid">
+            <ng-container *ngFor="let step of tab.steps; let stepIndex = index; let isLast = last">
+              <div class="process-step-item">
+                <div class="step-icon">
+                  <img [src]="step.icon_url" [alt]="step.title" (error)="onImageError($event)">
+                </div>
+                <div class="step-content">
+                  <h3 class="step-title">{{ step.title }}</h3>
+                  <p class="step-description">{{ step.description }}</p>
+                </div>
+              </div>
+              <!-- Arrow between steps (except after last step) -->
+              <div class="step-arrow" *ngIf="!isLast">
+                <mat-icon>arrow_forward</mat-icon>
+              </div>
+            </ng-container>
           </div>
         </div>
-        <div class="hero-buttons">
-          <button mat-raised-button class="btn-primary">
-            Khám Phá Dự Án
-          </button>
-          <button mat-stroked-button class="btn-outline">
-            Liên Hệ Tư Vấn
-          </button>
-        </div>
-      </header>
+      </div>
     </div>
   </section>
 
-  <!-- Main Categories Section -->
+  <!-- Main Categories Section - HIDDEN -->
+  <!--
   <section class="main-categories" aria-label="Service categories">
     <div class="container">
       <h2 class="section-title text-center">Danh Mục Chính</h2>
@@ -73,12 +114,10 @@
           </div>
         </div>
       </div>
-      <!-- Loading state for main categories -->
       <div class="loading-state" *ngIf="isLoadingCategories">
         <div class="loading-spinner"></div>
         <p>Đang tải danh mục...</p>
       </div>
-      <!-- Empty state if no main categories -->
       <div class="no-categories" *ngIf="!(mainCategories$ | async)?.length && !isLoadingCategories">
         <mat-icon class="no-categories-icon">category</mat-icon>
         <h3>Chưa có danh mục nào</h3>
@@ -86,6 +125,7 @@
       </div>
     </div>
   </section>
+  -->
 
   <!-- Features Section -->
   <section class="features-section" aria-label="Company advantages">
@@ -95,12 +135,15 @@
         <div class="feature-strip left-aligned">
           <div class="feature-content">
             <div class="feature-icon-container">
-              <mat-icon *ngIf="isMatIcon(homeContent?.feature1_icon || 'architecture')" class="feature-icon">{{ homeContent?.feature1_icon || 'architecture' }}</mat-icon>
-              <img *ngIf="!isMatIcon(homeContent?.feature1_icon || 'architecture')" [src]="homeContent?.feature1_icon || 'architecture'" class="feature-icon custom-svg" alt="Feature icon">
+              <mat-icon *ngIf="isMatIcon(homeContent?.feature1_icon || 'architecture')" class="feature-icon">{{
+                homeContent?.feature1_icon || 'architecture' }}</mat-icon>
+              <img *ngIf="!isMatIcon(homeContent?.feature1_icon || 'architecture')"
+                [src]="homeContent?.feature1_icon || 'architecture'" class="feature-icon custom-svg" alt="Feature icon">
             </div>
             <div class="feature-text">
               <h3>{{ homeContent?.feature1_title || 'Thiết Kế Kiến Trúc Độc Đáo' }}</h3>
-              <p>{{ homeContent?.feature1_description || 'Chuyên gia kiến trúc sư với hơn 10 năm kinh nghiệm, tạo ra những công trình biệt thự và nhà ở đẳng cấp.' }}
+              <p>{{ homeContent?.feature1_description || 'Chuyên gia kiến trúc sư với hơn 10 năm kinh nghiệm, tạo ra
+                những công trình biệt thự và nhà ở đẳng cấp.' }}
               </p>
             </div>
           </div>
@@ -109,23 +152,29 @@
           <div class="feature-content">
             <div class="feature-text">
               <h3>{{ homeContent?.feature2_title || 'Thi Công Chất Lượng Cao' }}</h3>
-              <p>{{ homeContent?.feature2_description || 'Đội ngũ kỹ sư và công nhân tay nghề cao, sử dụng công nghệ hiện đại trong thi công.' }}</p>
+              <p>{{ homeContent?.feature2_description || 'Đội ngũ kỹ sư và công nhân tay nghề cao, sử dụng công nghệ
+                hiện đại trong thi công.' }}</p>
             </div>
             <div class="feature-icon-container">
-              <mat-icon *ngIf="isMatIcon(homeContent?.feature2_icon || 'engineering')" class="feature-icon">{{ homeContent?.feature2_icon || 'engineering' }}</mat-icon>
-              <img *ngIf="!isMatIcon(homeContent?.feature2_icon || 'engineering')" [src]="homeContent?.feature2_icon || 'engineering'" class="feature-icon custom-svg" alt="Feature icon">
+              <mat-icon *ngIf="isMatIcon(homeContent?.feature2_icon || 'engineering')" class="feature-icon">{{
+                homeContent?.feature2_icon || 'engineering' }}</mat-icon>
+              <img *ngIf="!isMatIcon(homeContent?.feature2_icon || 'engineering')"
+                [src]="homeContent?.feature2_icon || 'engineering'" class="feature-icon custom-svg" alt="Feature icon">
             </div>
           </div>
         </div>
         <div class="feature-strip left-aligned">
           <div class="feature-content">
             <div class="feature-icon-container">
-              <mat-icon *ngIf="isMatIcon(homeContent?.feature3_icon || 'business')" class="feature-icon">{{ homeContent?.feature3_icon || 'business' }}</mat-icon>
-              <img *ngIf="!isMatIcon(homeContent?.feature3_icon || 'business')" [src]="homeContent?.feature3_icon || 'business'" class="feature-icon custom-svg" alt="Feature icon">
+              <mat-icon *ngIf="isMatIcon(homeContent?.feature3_icon || 'business')" class="feature-icon">{{
+                homeContent?.feature3_icon || 'business' }}</mat-icon>
+              <img *ngIf="!isMatIcon(homeContent?.feature3_icon || 'business')"
+                [src]="homeContent?.feature3_icon || 'business'" class="feature-icon custom-svg" alt="Feature icon">
             </div>
             <div class="feature-text">
               <h3>{{ homeContent?.feature3_title || 'Dịch Vụ Toàn Diện' }}</h3>
-              <p>{{ homeContent?.feature3_description || 'Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn giao hoàn thiện.' }}</p>
+              <p>{{ homeContent?.feature3_description || 'Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn
+                giao hoàn thiện.' }}</p>
             </div>
           </div>
         </div>
@@ -133,11 +182,14 @@
           <div class="feature-content">
             <div class="feature-text">
               <h3>{{ homeContent?.feature4_title || 'Uy Tín 37 Tỉnh Thành' }}</h3>
-              <p>{{ homeContent?.feature4_description || 'Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng.' }}</p>
+              <p>{{ homeContent?.feature4_description || 'Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc,
+                được khách hàng tin tưởng.' }}</p>
             </div>
             <div class="feature-icon-container">
-              <mat-icon *ngIf="isMatIcon(homeContent?.feature4_icon || 'verified')" class="feature-icon">{{ homeContent?.feature4_icon || 'verified' }}</mat-icon>
-              <img *ngIf="!isMatIcon(homeContent?.feature4_icon || 'verified')" [src]="homeContent?.feature4_icon || 'verified'" class="feature-icon custom-svg" alt="Feature icon">
+              <mat-icon *ngIf="isMatIcon(homeContent?.feature4_icon || 'verified')" class="feature-icon">{{
+                homeContent?.feature4_icon || 'verified' }}</mat-icon>
+              <img *ngIf="!isMatIcon(homeContent?.feature4_icon || 'verified')"
+                [src]="homeContent?.feature4_icon || 'verified'" class="feature-icon custom-svg" alt="Feature icon">
             </div>
           </div>
         </div>
@@ -151,22 +203,55 @@
       <div class="category-group" *ngFor="let category of mainCategories">
         <h2 class="section-title text-center">{{ category.name }}</h2>
 
-        <!-- Debug info -->
-        <div style="display:none;">DEBUG: {{ category.category_type }} | Children: {{ category.children?.length || 0 }}</div>
+        <!-- Sub-category tabs (horizontal) -->
+        <div class="subcategory-tabs"
+          *ngIf="(category.category_type === 'parent' || category.category_type === 'product') && category.children && category.children.length > 0">
 
-        <!-- For parent categories: show subcategories -->
-        <div class="subcategories-grid" *ngIf="(category.category_type === 'parent' || category.category_type === 'product') && category.children && category.children.length > 0">
-          <mat-card class="subcategory-card" *ngFor="let subcategory of category.children.slice(0, 3)"
-            [routerLink]="'/category/' + subcategory.slug">
-            <div class="subcategory-image">
-              <div class="subcategory-image-placeholder" *ngIf="!subcategory.thumbnail_url"></div>
-              <img *ngIf="subcategory.thumbnail_url" [src]="subcategory.thumbnail_url" [alt]="subcategory.name"
+          <!-- "Tất cả" tab -->
+          <button class="subcategory-tab" [class.active]="getActiveSubCategoryTab(category.id) === null"
+            (click)="setActiveSubCategoryTab(category.id, null)">
+            <span>TẤT CẢ</span>
+          </button>
+
+          <!-- Individual subcategory tabs -->
+          <button class="subcategory-tab" *ngFor="let subcategory of category.children"
+            [class.active]="getActiveSubCategoryTab(category.id) === subcategory.id"
+            (click)="setActiveSubCategoryTab(category.id, subcategory.id)">
+            <span>{{ subcategory.name | uppercase }}</span>
+          </button>
+        </div>
+
+        <!-- Posts grid based on selected tab -->
+        <div class="category-posts-grid"
+          *ngIf="(category.category_type === 'parent' || category.category_type === 'product') && category.children && category.children.length > 0">
+          <mat-card class="post-card"
+            *ngFor="let item of getFilteredCategoryItems(category.id, getActiveSubCategoryTab(category.id)).slice(0, 6)"
+            [routerLink]="getItemRoute(item)">
+            <div class="post-image">
+              <div class="post-image-placeholder" *ngIf="!getItemImageUrl(item)"></div>
+              <img *ngIf="getItemImageUrl(item)" [src]="getItemImageUrl(item)" [alt]="item.title"
                 (error)="onImageError($event)">
+              <div class="post-overlay">
+                <div class="post-category">{{ category.name }}</div>
+              </div>
             </div>
-            <mat-card-content class="subcategory-content">
-              <h3 class="subcategory-title">{{ subcategory.name }}</h3>
-              <p class="subcategory-description">{{ subcategory.description || 'Khám phá các thiết kế trong danh mục
-                này' }}</p>
+            <mat-card-content class="post-content">
+              <h3 class="post-title">{{ item.title }}</h3>
+              <p class="post-summary">{{ item.summary || 'Không có mô tả' }}</p>
+              <div class="post-meta">
+                <div class="meta-item">
+                  <mat-icon>event</mat-icon>
+                  <span class="post-date">{{ item.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+                <div class="meta-item" *ngIf="!(currentUser$ | async)">
+                  <mat-icon>visibility</mat-icon>
+                  <span>{{ item.views || 0 }} lượt xem</span>
+                </div>
+              </div>
+              <div class="read-more">
+                <span>Xem chi tiết</span>
+                <mat-icon>arrow_forward</mat-icon>
+              </div>
             </mat-card-content>
           </mat-card>
         </div>
@@ -204,7 +289,8 @@
         </div>
 
         <!-- View all button -->
-        <div class="text-center mt-4" *ngIf="(category.children && category.children.length > 0) || getCategoryPosts(category.id).length > 0">
+        <div class="text-center mt-4"
+          *ngIf="(category.children && category.children.length > 0) || getCategoryPosts(category.id).length > 0">
           <button mat-raised-button [routerLink]="'/category/' + category.slug" class="btn-primary view-all-btn">
             <mat-icon>view_list</mat-icon>
             Xem Tất Cả {{ category.name }}

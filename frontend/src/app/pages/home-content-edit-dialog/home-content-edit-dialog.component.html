@@ -112,6 +112,150 @@
       <textarea matInput [(ngModel)]="data.feature3_description" rows="2" placeholder="Mô tả tính năng 3"></textarea>
     </mat-form-field>
 
+    <!-- Process Section -->
+    <h3 style="margin: 24px 0 8px 0; color: #ff9800; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px;">
+      🔄 Phần Quy Trình Làm Việc
+    </h3>
+
+    <mat-form-field>
+      <mat-label>Tiêu đề phần quy trình</mat-label>
+      <input matInput [(ngModel)]="data.process_section_title" placeholder="Quy Trình Làm Việc">
+    </mat-form-field>
+
+    <!-- Process Tabs Editor -->
+    <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; background: #f5f5f5;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h4 style="margin: 0;">Quản lý Tabs & Bước</h4>
+        <button mat-raised-button color="primary" (click)="addProcessTab()">
+          <mat-icon>add</mat-icon> Thêm Tab
+        </button>
+      </div>
+
+      <mat-accordion>
+        <mat-expansion-panel *ngFor="let tab of processTabs; let tabIndex = index" [expanded]="tabIndex === 0">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>tab</mat-icon> {{ tab.tab_name }}
+            </mat-panel-title>
+            <mat-panel-description>
+              {{ tab.steps.length }} bước
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <div style="padding: 16px 0;">
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 16px;">
+              <mat-form-field>
+                <mat-label>Tab ID</mat-label>
+                <input matInput [(ngModel)]="tab.tab_id" (ngModelChange)="updateProcessTabsModel()">
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Tên Tab</mat-label>
+                <input matInput [(ngModel)]="tab.tab_name" (ngModelChange)="updateProcessTabsModel()">
+              </mat-form-field>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 16px 0 12px 0;">
+              <h5 style="margin: 0; color: #666;">Các bước trong tab</h5>
+              <button mat-raised-button color="accent" (click)="addStep(tabIndex)">
+                <mat-icon>add_circle</mat-icon> Thêm bước
+              </button>
+            </div>
+
+            <div *ngFor="let step of tab.steps; let stepIndex = index"
+              style="border: 1px solid #ddd; border-radius: 4px; padding: 12px; margin-bottom: 12px; background: white;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <strong>Bước {{ stepIndex + 1 }}</strong>
+                <button mat-icon-button color="warn" (click)="removeStep(tabIndex, stepIndex)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+
+              <!-- Icon Selection -->
+              <div style="margin-bottom: 16px;">
+                <label
+                  style="display: block; font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.6); margin-bottom: 8px;">
+                  Icon cho bước
+                </label>
+
+                <div style="display: flex; gap: 12px; align-items: start;">
+                  <!-- Icon Preview -->
+                  <div
+                    style="width: 80px; height: 80px; border: 2px solid #e0e0e0; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fafafa;">
+                    <img *ngIf="step.icon_url" [src]="step.icon_url"
+                      style="max-width: 70px; max-height: 70px; object-fit: contain;"
+                      (error)="onIconError($event, tabIndex, stepIndex)" [alt]="step.title">
+                    <mat-icon *ngIf="!step.icon_url" style="font-size: 48px; width: 48px; height: 48px; color: #ccc;">
+                      image
+                    </mat-icon>
+                  </div>
+
+                  <!-- Icon Actions -->
+                  <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                    <button mat-raised-button color="primary" type="button"
+                      (click)="uploadStepIcon(tabIndex, stepIndex)">
+                      <mat-icon>upload</mat-icon>
+                      Upload Icon
+                    </button>
+
+                    <button mat-stroked-button type="button" (click)="selectExistingIcon(tabIndex, stepIndex)">
+                      <mat-icon>photo_library</mat-icon>
+                      Chọn từ thư viện
+                    </button>
+
+                    <mat-form-field style="width: 100%;" appearance="outline">
+                      <mat-label>Hoặc nhập URL</mat-label>
+                      <input matInput [(ngModel)]="step.icon_url" (ngModelChange)="updateProcessTabsModel()"
+                        placeholder="/uploads/svg-icons/icon.png">
+                      <button mat-icon-button matSuffix *ngIf="step.icon_url"
+                        (click)="step.icon_url = ''; updateProcessTabsModel()" type="button">
+                        <mat-icon>clear</mat-icon>
+                      </button>
+                    </mat-form-field>
+                  </div>
+                </div>
+              </div>
+
+              <mat-form-field style="width: 100%;">
+                <mat-label>Tiêu đề bước</mat-label>
+                <input matInput [(ngModel)]="step.title" (ngModelChange)="updateProcessTabsModel()">
+              </mat-form-field>
+
+              <mat-form-field style="width: 100%;">
+                <mat-label>Mô tả bước</mat-label>
+                <textarea matInput [(ngModel)]="step.description" (ngModelChange)="updateProcessTabsModel()"
+                  rows="2"></textarea>
+              </mat-form-field>
+            </div>
+
+            <button mat-stroked-button color="warn" (click)="removeProcessTab(tabIndex)" style="margin-top: 12px;">
+              <mat-icon>delete_outline</mat-icon> Xóa tab này
+            </button>
+          </div>
+        </mat-expansion-panel>
+      </mat-accordion>
+
+      <!-- JSON Editor (Advanced) -->
+      <mat-expansion-panel style="margin-top: 16px;">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon>code</mat-icon> Chỉnh sửa JSON (Nâng cao)
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div style="padding: 16px 0;">
+          <mat-form-field style="width: 100%;">
+            <mat-label>Process Tabs JSON</mat-label>
+            <textarea matInput [(ngModel)]="processTabsJson" rows="15"
+              style="font-family: monospace; font-size: 12px;"></textarea>
+            <mat-hint>Chỉnh sửa JSON trực tiếp. Nhấn "Áp dụng JSON" sau khi chỉnh sửa.</mat-hint>
+          </mat-form-field>
+          <button mat-raised-button color="primary" (click)="updateProcessTabsFromJson()" style="margin-top: 8px;">
+            <mat-icon>sync</mat-icon> Áp dụng JSON
+          </button>
+        </div>
+      </mat-expansion-panel>
+    </div>
+
     <!-- SEO Settings Section -->
     <h3 style="margin: 24px 0 8px 0; color: #4caf50; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px;">
       🔍 Cài Đặt SEO
@@ -126,14 +270,13 @@
     <mat-form-field>
       <mat-label>Meta Description</mat-label>
       <textarea matInput [(ngModel)]="data.meta_description" rows="3"
-                placeholder="Mô tả SEO cho trang chủ (sẽ xuất hiện trong kết quả tìm kiếm)"></textarea>
+        placeholder="Mô tả SEO cho trang chủ (sẽ xuất hiện trong kết quả tìm kiếm)"></textarea>
       <mat-hint>{{ getMetaDescriptionLength() }}/160 characters (optimal: 120-160)</mat-hint>
     </mat-form-field>
 
     <mat-form-field>
       <mat-label>Meta Keywords</mat-label>
-      <input matInput [(ngModel)]="data.meta_keywords"
-             placeholder="Từ khóa SEO, phân cách bằng dấu phẩy">
+      <input matInput [(ngModel)]="data.meta_keywords" placeholder="Từ khóa SEO, phân cách bằng dấu phẩy">
       <mat-hint>Example: thiết kế biệt thự, kiến trúc hiện đại, xây dựng nhà ở</mat-hint>
     </mat-form-field>
 
@@ -142,20 +285,18 @@
 
     <mat-form-field>
       <mat-label>OG Title</mat-label>
-      <input matInput [(ngModel)]="data.og_title"
-             placeholder="Tiêu đề khi chia sẻ trên Facebook/social media">
+      <input matInput [(ngModel)]="data.og_title" placeholder="Tiêu đề khi chia sẻ trên Facebook/social media">
     </mat-form-field>
 
     <mat-form-field>
       <mat-label>OG Description</mat-label>
       <textarea matInput [(ngModel)]="data.og_description" rows="2"
-                placeholder="Mô tả khi chia sẻ trên mạng xã hội"></textarea>
+        placeholder="Mô tả khi chia sẻ trên mạng xã hội"></textarea>
     </mat-form-field>
 
     <mat-form-field>
       <mat-label>OG Image URL</mat-label>
-      <input matInput [(ngModel)]="data.og_image_url"
-             placeholder="URL hình ảnh khi chia sẻ (1200x630px)">
+      <input matInput [(ngModel)]="data.og_image_url" placeholder="URL hình ảnh khi chia sẻ (1200x630px)">
     </mat-form-field>
 
     <!-- Twitter Card Fields -->
@@ -163,14 +304,13 @@
 
     <mat-form-field>
       <mat-label>Twitter Title</mat-label>
-      <input matInput [(ngModel)]="data.twitter_title"
-             placeholder="Tiêu đề khi chia sẻ trên Twitter">
+      <input matInput [(ngModel)]="data.twitter_title" placeholder="Tiêu đề khi chia sẻ trên Twitter">
     </mat-form-field>
 
     <mat-form-field>
       <mat-label>Twitter Description</mat-label>
       <textarea matInput [(ngModel)]="data.twitter_description" rows="2"
-                placeholder="Mô tả khi chia sẻ trên Twitter"></textarea>
+        placeholder="Mô tả khi chia sẻ trên Twitter"></textarea>
     </mat-form-field>
 
   </div>

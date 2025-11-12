@@ -1,7 +1,7 @@
 .product-detail-page {
   padding: 20px 0;
   min-height: 100vh;
-  background: #f5f5f5;
+  background: #2a2a2a; /* Nền xám đen */
 }
 
 .container {
@@ -20,20 +20,20 @@
 }
 
 .breadcrumb a {
-  color: #666;
+  color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
   transition: color 0.3s;
 }
 
 .breadcrumb a:hover {
-  color: #3498db;
+  color: var(--accent-copper, #e09543);
 }
 
 .breadcrumb mat-icon {
   font-size: 16px;
   width: 16px;
   height: 16px;
-  color: #999;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* Two Column Layout */
@@ -87,7 +87,7 @@
 .product-title {
   font-size: 1.8rem;
   font-weight: 700;
-  color: #333;
+  color: white;
   line-height: 1.3;
   margin-bottom: 15px;
 }
@@ -104,7 +104,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.9rem;
-  color: #6c757d;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .meta-item mat-icon {
@@ -114,25 +114,25 @@
 }
 
 .meta-item.published {
-  color: #28a745;
+  color: #4ade80;
 }
 
 .meta-item.draft {
-  color: #ffc107;
+  color: #fbbf24;
 }
 
 .product-summary {
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.05);
   padding: 20px;
   border-radius: 12px;
-  border-left: 4px solid var(--primary-blue, #3498db);
+  border-left: 4px solid var(--accent-copper, #e09543);
   margin-bottom: 0;
 }
 
 .product-summary p {
   font-size: 1.1rem;
   line-height: 1.6;
-  color: #6c757d;
+  color: rgba(255, 255, 255, 0.8);
   margin: 0;
   font-style: italic;
 }

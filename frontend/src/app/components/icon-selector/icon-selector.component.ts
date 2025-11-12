@@ -434,20 +434,11 @@ export class IconSelectorDialog implements OnInit {
     .icon-selector-container {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 12px;
       padding: 8px 12px;
       border: 1px solid #ddd;
       border-radius: 4px;
       background: white;
-    }
-
-    .current-icon-preview {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-      min-width: 0;
     }
 
     .icon-display {

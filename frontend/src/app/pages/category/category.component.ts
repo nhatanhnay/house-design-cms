@@ -87,6 +87,26 @@ import { Post, Admin, Category, Product } from '../../models/models';
         <div class="posts-section" *ngIf="allItems && allItems.length > 0; else noItems">
           <h2 class="section-title">{{ categoryName }}</h2>
 
+          <!-- Subcategory Tabs (if has subcategories) -->
+          <div class="subcategory-tabs" *ngIf="allSubcategories && allSubcategories.length > 0">
+            <!-- "Tất cả" tab -->
+            <button 
+              class="subcategory-tab" 
+              [class.active]="getActiveSubcategoryTab() === null"
+              (click)="setActiveSubcategoryTab(null)">
+              <span>TẤT CẢ</span>
+            </button>
+
+            <!-- Individual subcategory tabs -->
+            <button 
+              class="subcategory-tab" 
+              *ngFor="let subcategory of allSubcategories"
+              [class.active]="getActiveSubcategoryTab() === subcategory.id"
+              (click)="setActiveSubcategoryTab(subcategory.id)">
+              <span>{{ subcategory.name | uppercase }}</span>
+            </button>
+          </div>
+
           <div class="posts-grid">
             <!-- Post/Product Card -->
             <mat-card class="post-card" *ngFor="let item of getPaginatedItems()" [routerLink]="isProduct(item) ? '/product/' + (item.slug || item.id) : '/post/' + (item.slug || item.id)">
@@ -177,13 +197,13 @@ import { Post, Admin, Category, Product } from '../../models/models';
     .category-page {
       padding: 0px 0 40px 0;
       min-height: 100vh;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      background: #2a2a2a; /* Nền xám đen giống home */
     }
 
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 60px 20px; /* Tăng padding để thoáng hơn */
     }
 
     /* Breadcrumb */
@@ -202,21 +222,21 @@ import { Post, Admin, Category, Product } from '../../models/models';
     }
 
     .breadcrumb a {
-      color: #666;
+      color: rgba(255, 255, 255, 0.7); /* Chữ trắng mờ cho nền tối */
       text-decoration: none;
       font-size: 0.9rem;
       transition: color 0.3s;
     }
 
     .breadcrumb a:hover {
-      color: var(--primary-blue, #3498db);
+      color: var(--accent-copper, #e09543); /* Hover màu copper */
     }
 
     .breadcrumb mat-icon {
       font-size: 18px;
       width: 18px;
       height: 18px;
-      color: #999;
+      color: rgba(255, 255, 255, 0.5); /* Icon trắng mờ */
     }
 
     /* Category Header */
@@ -303,16 +323,17 @@ import { Post, Admin, Category, Product } from '../../models/models';
     .loading-state {
       text-align: center;
       padding: 60px 20px;
-      background: white;
+      background: rgba(255, 255, 255, 0.05);
       border-radius: 16px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      color: white;
     }
 
     .loading-spinner {
       width: 40px;
       height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid var(--primary-blue, #3498db);
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top: 4px solid var(--accent-copper, #e09543);
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin: 0 auto 20px;
@@ -327,10 +348,10 @@ import { Post, Admin, Category, Product } from '../../models/models';
     .section-title {
       font-size: 1.8rem;
       margin: 30px 0 20px 0;
-      color: #333;
+      color: white; /* Chữ trắng cho nền tối */
       font-weight: 600;
       padding-bottom: 10px;
-      border-bottom: 3px solid var(--primary-blue, #3498db);
+      border-bottom: 3px solid var(--accent-copper, #e09543);
     }
 
     /* Subcategories Section */
@@ -345,7 +366,7 @@ import { Post, Admin, Category, Product } from '../../models/models';
       gap: 30px;
       margin-top: 20px;
       margin-bottom: 20px;
-      justify-content: center;
+      justify-content: start; /* Căn trái như home */
     }
 
     .subcategory-card {
@@ -417,6 +438,54 @@ import { Post, Admin, Category, Product } from '../../models/models';
       padding: 20px 0;
     }
 
+    /* Subcategory Tabs */
+    .subcategory-tabs {
+      display: flex;
+      gap: 0;
+      margin-top: 30px;
+      margin-bottom: 40px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+      overflow-x: auto;
+      scroll-behavior: smooth;
+    }
+
+    .subcategory-tabs::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .subcategory-tabs::-webkit-scrollbar-thumb {
+      background: var(--accent-copper, #e09543);
+      border-radius: 3px;
+    }
+
+    .subcategory-tab {
+      padding: 16px 32px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 1rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      position: relative;
+      bottom: -2px;
+      letter-spacing: 0.5px;
+    }
+
+    .subcategory-tab:hover {
+      color: var(--accent-copper, #e09543);
+      background: rgba(224, 149, 67, 0.1);
+    }
+
+    .subcategory-tab.active {
+      color: var(--accent-copper, #e09543);
+      border-bottom-color: var(--accent-copper, #e09543);
+      font-weight: 700;
+    }
+
     /* Posts Grid - 3x2 = 6 items */
     .posts-grid {
       display: grid;
@@ -424,7 +493,7 @@ import { Post, Admin, Category, Product } from '../../models/models';
       gap: 30px;
       margin-top: 20px;
       margin-bottom: 20px;
-      justify-content: center;
+      justify-content: start; /* Căn trái như home */
     }
 
     /* Post Cards */
@@ -619,8 +688,9 @@ import { Post, Admin, Category, Product } from '../../models/models';
     }
 
     .pagination button[mat-icon-button] {
-      background: white;
-      border: 2px solid #e0e0e0;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      color: white;
       width: 40px;
       height: 40px;
       border-radius: 50%;
@@ -628,8 +698,8 @@ import { Post, Admin, Category, Product } from '../../models/models';
     }
 
     .pagination button[mat-icon-button]:hover:not([disabled]) {
-      background: var(--primary-blue, #3498db);
-      border-color: var(--primary-blue, #3498db);
+      background: var(--accent-copper, #e09543);
+      border-color: var(--accent-copper, #e09543);
       color: white;
     }
 
@@ -647,21 +717,21 @@ import { Post, Admin, Category, Product } from '../../models/models';
       min-width: 40px;
       height: 40px;
       border-radius: 8px;
-      border: 2px solid #e0e0e0;
-      background: white;
-      color: #333;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
       font-weight: 500;
       transition: all 0.3s;
     }
 
     .page-numbers button:hover {
-      background: #f5f5f5;
-      border-color: var(--primary-blue, #3498db);
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--accent-copper, #e09543);
     }
 
     .page-numbers button.active {
-      background: var(--primary-blue, #3498db);
-      border-color: var(--primary-blue, #3498db);
+      background: var(--accent-copper, #e09543);
+      border-color: var(--accent-copper, #e09543);
       color: white;
     }
 
@@ -669,26 +739,26 @@ import { Post, Admin, Category, Product } from '../../models/models';
     .no-posts {
       text-align: center;
       padding: 80px 20px;
-      background: white;
+      background: rgba(255, 255, 255, 0.05);
       border-radius: 16px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     }
 
     .no-posts-icon {
       font-size: 64px;
       width: 64px;
       height: 64px;
-      color: #ddd;
+      color: rgba(255, 255, 255, 0.3);
       margin-bottom: 20px;
     }
 
     .no-posts h3 {
-      color: var(--dark-blue, #2c3e50);
+      color: white;
       margin-bottom: 10px;
     }
 
     .no-posts p {
-      color: #6c757d;
+      color: rgba(255, 255, 255, 0.7);
       margin-bottom: 30px;
       line-height: 1.6;
     }
@@ -713,6 +783,21 @@ import { Post, Admin, Category, Product } from '../../models/models';
         font-size: 2rem;
       }
 
+      /* Tabs Mobile Styles */
+      .subcategory-tabs {
+        margin-top: 20px;
+        margin-bottom: 30px;
+        gap: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 0;
+      }
+
+      .subcategory-tab {
+        padding: 12px 20px;
+        font-size: 0.85rem;
+        letter-spacing: 0.3px;
+      }
+
       .posts-grid {
         grid-template-columns: 1fr;
         gap: 20px;
@@ -732,11 +817,16 @@ export class CategoryComponent implements OnInit {
   categoryName = '';
   categoryDescription = '';
   categoryThumbnail = '';
+  categoryId: number | null = null; // Track current category ID
   subcategories: Category[] = [];
   allSubcategories: Category[] = [];
   allItems: (Post | Product)[] = [];
+  allItemsUnfiltered: (Post | Product)[] = []; // Store all items before tab filtering
   breadcrumb: Array<{name: string, slug?: string}> = [];
   isLoading = true;
+
+  // Active subcategory tab (null = "Tất cả")
+  activeSubcategoryTab: number | null = null;
 
   // Pagination for subcategories
   subcategoryPage = 0;
@@ -765,6 +855,7 @@ export class CategoryComponent implements OnInit {
               this.categoryName = category.name;
               this.categoryDescription = category.description;
               this.categoryThumbnail = category.thumbnail_url || '';
+              this.categoryId = category.id; // Store category ID
 
               // Build breadcrumb
               this.breadcrumb = [{name: 'Trang chủ'}];
@@ -780,6 +871,12 @@ export class CategoryComponent implements OnInit {
               const categoryIds = [category.id];
               this.allSubcategories = categories.filter(cat => cat.parent_id === category.id);
               this.subcategories = this.getPaginatedSubcategories();
+              
+              // Initialize active tab to "Tất cả" if has subcategories
+              if (this.allSubcategories.length > 0) {
+                this.activeSubcategoryTab = null;
+              }
+              
               this.allSubcategories.forEach(sub => categoryIds.push(sub.id));
 
               // Get both posts and products from all these categories
@@ -835,12 +932,39 @@ export class CategoryComponent implements OnInit {
     this.items$.subscribe({
       next: (items) => {
         this.isLoading = false;
-        this.allItems = items;
+        this.allItemsUnfiltered = items; // Store all items
+        this.filterItemsByTab(); // Apply initial filter
       },
       error: (error) => {
         this.isLoading = false;
       }
     });
+  }
+
+  // Filter items by active tab
+  filterItemsByTab(): void {
+    if (this.activeSubcategoryTab === null) {
+      // "Tất cả" - show all items
+      this.allItems = this.allItemsUnfiltered;
+    } else {
+      // Filter by specific subcategory
+      this.allItems = this.allItemsUnfiltered.filter(item => 
+        item.category_id === this.activeSubcategoryTab
+      );
+    }
+    // Reset to first page when filter changes
+    this.itemPage = 0;
+  }
+
+  // Set active subcategory tab
+  setActiveSubcategoryTab(subcategoryId: number | null): void {
+    this.activeSubcategoryTab = subcategoryId;
+    this.filterItemsByTab();
+  }
+
+  // Get active subcategory tab
+  getActiveSubcategoryTab(): number | null {
+    return this.activeSubcategoryTab;
   }
 
   // Subcategory pagination

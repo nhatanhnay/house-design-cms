@@ -1126,6 +1126,10 @@ func GetHomeContent(c *gin.Context) {
 	err := database.DB.QueryRow(`
 		SELECT id, hero_title, hero_description, hero_stat1_number, hero_stat1_label,
 		       hero_stat2_number, hero_stat2_label,
+		       COALESCE(hero_stat3_number, '') as hero_stat3_number,
+		       COALESCE(hero_stat3_label, '') as hero_stat3_label,
+		       COALESCE(hero_stat4_number, '') as hero_stat4_number,
+		       COALESCE(hero_stat4_label, '') as hero_stat4_label,
 		       COALESCE(features_title, '') as features_title,
 		       COALESCE(features_description, '') as features_description,
 		       COALESCE(features_logo_url, '') as features_logo_url,
@@ -1141,6 +1145,8 @@ func GetHomeContent(c *gin.Context) {
 		       COALESCE(feature4_icon, '') as feature4_icon,
 		       COALESCE(feature4_title, '') as feature4_title,
 		       COALESCE(feature4_description, '') as feature4_description,
+		       COALESCE(process_section_title, '') as process_section_title,
+		       COALESCE(process_tabs, '') as process_tabs,
 		       created_at, updated_at
 		FROM home_content
 		ORDER BY id LIMIT 1
@@ -1152,6 +1158,10 @@ func GetHomeContent(c *gin.Context) {
 		&homeContent.HeroStat1Label,
 		&homeContent.HeroStat2Number,
 		&homeContent.HeroStat2Label,
+		&homeContent.HeroStat3Number,
+		&homeContent.HeroStat3Label,
+		&homeContent.HeroStat4Number,
+		&homeContent.HeroStat4Label,
 		&homeContent.FeaturesTitle,
 		&homeContent.FeaturesDescription,
 		&homeContent.FeaturesLogoURL,
@@ -1167,6 +1177,8 @@ func GetHomeContent(c *gin.Context) {
 		&homeContent.Feature4Icon,
 		&homeContent.Feature4Title,
 		&homeContent.Feature4Description,
+		&homeContent.ProcessSectionTitle,
+		&homeContent.ProcessTabs,
 		&homeContent.CreatedAt,
 		&homeContent.UpdatedAt,
 	)
@@ -1202,11 +1214,14 @@ func UpdateHomeContent(c *gin.Context) {
 		UPDATE home_content
 		SET hero_title = $1, hero_description = $2, hero_stat1_number = $3,
 		    hero_stat1_label = $4, hero_stat2_number = $5, hero_stat2_label = $6,
-		    features_title = $7, features_description = $8, features_logo_url = $9,
-		    feature1_icon = $10, feature1_title = $11, feature1_description = $12,
-		    feature2_icon = $13, feature2_title = $14, feature2_description = $15,
-		    feature3_icon = $16, feature3_title = $17, feature3_description = $18,
-		    feature4_icon = $19, feature4_title = $20, feature4_description = $21,
+		    hero_stat3_number = $7, hero_stat3_label = $8,
+		    hero_stat4_number = $9, hero_stat4_label = $10,
+		    features_title = $11, features_description = $12, features_logo_url = $13,
+		    feature1_icon = $14, feature1_title = $15, feature1_description = $16,
+		    feature2_icon = $17, feature2_title = $18, feature2_description = $19,
+		    feature3_icon = $20, feature3_title = $21, feature3_description = $22,
+		    feature4_icon = $23, feature4_title = $24, feature4_description = $25,
+		    process_section_title = $26, process_tabs = $27,
 		    updated_at = CURRENT_TIMESTAMP
 		WHERE id = (SELECT id FROM home_content ORDER BY id LIMIT 1)
 	`,
@@ -1216,6 +1231,10 @@ func UpdateHomeContent(c *gin.Context) {
 		updateData.HeroStat1Label,
 		updateData.HeroStat2Number,
 		updateData.HeroStat2Label,
+		updateData.HeroStat3Number,
+		updateData.HeroStat3Label,
+		updateData.HeroStat4Number,
+		updateData.HeroStat4Label,
 		updateData.FeaturesTitle,
 		updateData.FeaturesDescription,
 		updateData.FeaturesLogoURL,
@@ -1231,6 +1250,8 @@ func UpdateHomeContent(c *gin.Context) {
 		updateData.Feature4Icon,
 		updateData.Feature4Title,
 		updateData.Feature4Description,
+		updateData.ProcessSectionTitle,
+		updateData.ProcessTabs,
 	)
 
 	if err != nil {
@@ -1267,17 +1288,35 @@ func UploadSvgIcon(c *gin.Context) {
 
 	fmt.Printf("SVG File received: %s, Size: %d, Type: %s\n", header.Filename, header.Size, header.Header.Get("Content-Type"))
 
-	// Validate file type - only SVG allowed
+	// Validate file type - allow SVG and common image formats
 	contentType := header.Header.Get("Content-Type")
-	if contentType != "image/svg+xml" && !strings.HasSuffix(header.Filename, ".svg") {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only SVG files are allowed."})
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+
+	allowedTypes := map[string]bool{
+		"image/svg+xml": true,
+		"image/png":     true,
+		"image/jpeg":    true,
+		"image/jpg":     true,
+		"image/webp":    true,
+	}
+
+	allowedExts := map[string]bool{
+		".svg":  true,
+		".png":  true,
+		".jpg":  true,
+		".jpeg": true,
+		".webp": true,
+	}
+
+	if !allowedTypes[contentType] && !allowedExts[ext] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Allowed: SVG, PNG, JPG, WEBP."})
 		return
 	}
 
-	// Validate file size (1MB max for SVG)
-	const maxSize = 1 * 1024 * 1024 // 1MB
+	// Validate file size (5MB max)
+	const maxSize = 5 * 1024 * 1024 // 5MB
 	if header.Size > maxSize {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "File too large. Maximum size is 1MB."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File too large. Maximum size is 5MB."})
 		return
 	}
 
@@ -1288,8 +1327,7 @@ func UploadSvgIcon(c *gin.Context) {
 		return
 	}
 
-	// Generate unique filename
-	ext := filepath.Ext(header.Filename)
+	// Generate unique filename using the already-defined ext variable
 	filename := uuid.New().String() + ext
 	filePath := filepath.Join(uploadsDir, filename)
 
@@ -2167,9 +2205,9 @@ func GetDailyVisitors(c *gin.Context) {
 			continue
 		}
 		dailyStats = append(dailyStats, map[string]interface{}{
-			"date":             visitDate,
-			"unique_visitors":  uniqueVisitors,
-			"total_visits":     totalVisits,
+			"date":            visitDate,
+			"unique_visitors": uniqueVisitors,
+			"total_visits":    totalVisits,
 		})
 	}
 

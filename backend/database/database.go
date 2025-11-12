@@ -240,6 +240,14 @@ func migrateHomeContentTable() {
 		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature4_icon VARCHAR(500)",
 		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature4_title VARCHAR(500)",
 		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS feature4_description TEXT",
+		// Process section columns
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS process_section_title VARCHAR(500) DEFAULT 'Quy Trình Làm Việc'",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS process_tabs TEXT",
+		// Additional hero stats
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS hero_stat3_number VARCHAR(100)",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS hero_stat3_label VARCHAR(500)",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS hero_stat4_number VARCHAR(100)",
+		"ALTER TABLE home_content ADD COLUMN IF NOT EXISTS hero_stat4_label VARCHAR(500)",
 	}
 
 	for _, migration := range migrations {
@@ -248,7 +256,7 @@ func migrateHomeContentTable() {
 		}
 	}
 
-	// Update existing records with default feature4 values if they don't exist
+	// Update existing records with default values
 	_, err := DB.Exec(`
 		UPDATE home_content
 		SET feature4_icon = COALESCE(feature4_icon, 'verified'),
@@ -257,11 +265,99 @@ func migrateHomeContentTable() {
 		    features_title = COALESCE(features_title, 'Ưu Thế MMA Architectural Design'),
 		    feature1_icon = COALESCE(feature1_icon, 'architecture'),
 		    feature2_icon = COALESCE(feature2_icon, 'engineering'),
-		    feature3_icon = COALESCE(feature3_icon, 'business')
+		    feature3_icon = COALESCE(feature3_icon, 'business'),
+		    process_section_title = COALESCE(process_section_title, 'Quy Trình Làm Việc'),
+		    hero_stat3_number = COALESCE(NULLIF(hero_stat3_number, ''), '+152'),
+		    hero_stat3_label = COALESCE(NULLIF(hero_stat3_label, ''), 'Công Trình Thi Công'),
+		    hero_stat4_number = COALESCE(NULLIF(hero_stat4_number, ''), '+1679'),
+		    hero_stat4_label = COALESCE(NULLIF(hero_stat4_label, ''), 'Lên Phương Án Miễn Phí')
 		WHERE feature4_title IS NULL OR feature4_title = ''
 	`)
 	if err != nil {
-		log.Printf("Failed to update existing home content with feature4 defaults: %v", err)
+		log.Printf("Failed to update existing home content with defaults: %v", err)
+	}
+
+	// Update hero stats separately for all records where they are empty
+	_, err = DB.Exec(`
+		UPDATE home_content
+		SET hero_stat3_number = '+152',
+		    hero_stat3_label = 'Công Trình Thi Công',
+		    hero_stat4_number = '+1679',
+		    hero_stat4_label = 'Lên Phương Án Miễn Phí'
+		WHERE (hero_stat3_number IS NULL OR hero_stat3_number = '')
+		   OR (hero_stat4_number IS NULL OR hero_stat4_number = '')
+	`)
+	if err != nil {
+		log.Printf("Failed to update hero stats: %v", err)
+	} else {
+		log.Println("Updated existing home content with default hero stats")
+	}
+
+	// Update existing records with default process_tabs if they don't have it
+	defaultProcessTabs := `[
+  {
+    "tab_id": "design",
+    "tab_name": "Quy Trình Thiết Kế",
+    "steps": [
+      {
+        "icon_url": "/uploads/svg-icons/process-1.png",
+        "title": "TRAO ĐỔI TƯ VẤN",
+        "description": "Trao đổi yêu cầu, tư vấn định hướng ý tưởng, phong cách và mức đầu tư"
+      },
+      {
+        "icon_url": "/uploads/svg-icons/process-2.png",
+        "title": "BÁO GIÁ THIẾT KẾ",
+        "description": "Gửi khách hàng báo giá theo đúng gói thiết kế mà Khách Hàng đang đề cập, kèm quy trình làm việc cụ thể, chi tiết"
+      },
+      {
+        "icon_url": "/uploads/svg-icons/process-3.png",
+        "title": "KÝ HĐ THIẾT KẾ",
+        "description": "Thực hiện các thủ tục hành chính và bắt đầu triển khai các công việc theo tiến độ thống nhất"
+      },
+      {
+        "icon_url": "/uploads/svg-icons/process-4.png",
+        "title": "BÀN GIAO BẢN VẼ THIẾT KẾ",
+        "description": "Sau khi thống nhất hồ sơ báo cáo tiến độ, khách hàng thanh toán lần cuối giá trị HĐ còn lại trước khi nhận hồ sơ hoàn chỉnh."
+      }
+    ]
+  },
+  {
+    "tab_id": "construction",
+    "tab_name": "Quy Trình Thi Công",
+    "steps": [
+      {
+        "icon_url": "/uploads/svg-icons/process-1.png",
+        "title": "TRAO ĐỔI TƯ VẤN",
+        "description": "Trao đổi và tư vấn khách hàng về nhu cầu, mong muốn, và định hướng mức đầu tư."
+      },
+      {
+        "icon_url": "/uploads/svg-icons/process-2.png",
+        "title": "BÁO GIÁ THI CÔNG",
+        "description": "Gửi báo giá thi công, chủng loại vật tư và Quy trình thi công để khách hàng nắm được thông tin."
+      },
+      {
+        "icon_url": "/uploads/svg-icons/process-5.png",
+        "title": "KÝ HĐ THI CÔNG",
+        "description": "Hai bên gặp gỡ trao đổi thống nhất các vấn đề liên quan tiến độ, chất lượng, ngày khởi công và các điều khoản hợp đồng."
+      },
+      {
+        "icon_url": "/uploads/svg-icons/process-6.png",
+        "title": "BÀN GIAO & QUYẾT TOÁN",
+        "description": "Kiểm tra, nghiệm thu và thanh quyết toán hợp đồng. Tiến hành bảo hành bảo trì dài hạn theo cam kết hợp đồng."
+      }
+    ]
+  }
+]`
+
+	_, err = DB.Exec(`
+		UPDATE home_content
+		SET process_tabs = $1
+		WHERE process_tabs IS NULL OR process_tabs = ''
+	`, defaultProcessTabs)
+	if err != nil {
+		log.Printf("Failed to update existing home content with default process_tabs: %v", err)
+	} else {
+		log.Println("Updated existing home content with default process_tabs")
 	}
 
 	log.Println("Home content table migration completed")
@@ -391,27 +487,27 @@ func seedDefaultHomeContent() {
 
 	if count == 0 {
 		defaultHomeContent := models.HomeContent{
-			HeroTitle:             "MMA Architectural Design",
-			HeroDescription:       "Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo",
-			HeroStat1Number:       "37",
-			HeroStat1Label:        "Tỉnh Thành Phủ Sóng",
-			HeroStat2Number:       "500+",
-			HeroStat2Label:        "Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp",
-			FeaturesTitle:         "Ưu Thế MMA Architectural Design",
-			FeaturesDescription:   "",
-			FeaturesLogoURL:       "",
-			Feature1Icon:          "architecture",
-			Feature1Title:         "Thiết Kế Kiến Trúc Độc Đáo",
-			Feature1Description:   "Chuyên gia kiến trúc sư với hơn 10 năm kinh nghiệm, tạo ra những công trình biệt thự và nhà ở đẳng cấp.",
-			Feature2Icon:          "engineering",
-			Feature2Title:         "Thi Công Chất Lượng Cao",
-			Feature2Description:   "Đội ngũ kỹ sư và công nhân tay nghề cao, sử dụng công nghệ hiện đại trong thi công.",
-			Feature3Icon:          "business",
-			Feature3Title:         "Dịch Vụ Toàn Diện",
-			Feature3Description:   "Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn giao hoàn thiện.",
-			Feature4Icon:          "verified",
-			Feature4Title:         "Uy Tín 37 Tỉnh Thành",
-			Feature4Description:   "Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng.",
+			HeroTitle:           "MMA Architectural Design",
+			HeroDescription:     "Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo",
+			HeroStat1Number:     "37",
+			HeroStat1Label:      "Tỉnh Thành Phủ Sóng",
+			HeroStat2Number:     "500+",
+			HeroStat2Label:      "Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp",
+			FeaturesTitle:       "Ưu Thế MMA Architectural Design",
+			FeaturesDescription: "",
+			FeaturesLogoURL:     "",
+			Feature1Icon:        "architecture",
+			Feature1Title:       "Thiết Kế Kiến Trúc Độc Đáo",
+			Feature1Description: "Chuyên gia kiến trúc sư với hơn 10 năm kinh nghiệm, tạo ra những công trình biệt thự và nhà ở đẳng cấp.",
+			Feature2Icon:        "engineering",
+			Feature2Title:       "Thi Công Chất Lượng Cao",
+			Feature2Description: "Đội ngũ kỹ sư và công nhân tay nghề cao, sử dụng công nghệ hiện đại trong thi công.",
+			Feature3Icon:        "business",
+			Feature3Title:       "Dịch Vụ Toàn Diện",
+			Feature3Description: "Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn giao hoàn thiện.",
+			Feature4Icon:        "verified",
+			Feature4Title:       "Uy Tín 37 Tỉnh Thành",
+			Feature4Description: "Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng.",
 		}
 
 		_, err := DB.Exec(`

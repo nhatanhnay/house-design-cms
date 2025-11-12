@@ -1,11 +1,25 @@
 .consultation-form-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, rgba(224, 149, 67, 0.1) 0%, rgba(58, 58, 58, 0.3) 100%); /* Gradient nhẹ với copper */
   padding: 80px 20px;
   margin-top: 80px;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(224, 149, 67, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
 
   .container {
     max-width: 800px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
   }
 
   .section-header {
@@ -15,23 +29,25 @@
     .section-title {
       font-size: 2.5rem;
       font-weight: 700;
-      color: #ffffff;
+      color: #fbbf24; /* Màu vàng sáng */
       margin-bottom: 15px;
     }
 
     .section-subtitle {
       font-size: 1.1rem;
-      color: rgba(255, 255, 255, 0.9);
+      color: rgba(255, 255, 255, 0.85);
       max-width: 600px;
       margin: 0 auto;
     }
   }
 
   .consultation-form {
-    background: white;
+    background: rgba(255, 255, 255, 0.08); /* Nền sáng hơn */
     border-radius: 20px;
     padding: 50px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
 
     .form-row {
       display: grid;
@@ -46,12 +62,12 @@
       label {
         display: block;
         font-weight: 600;
-        color: #333;
+        color: rgba(255, 255, 255, 0.95); /* Chữ trắng sáng hơn */
         margin-bottom: 8px;
         font-size: 0.95rem;
 
         .required {
-          color: #e74c3c;
+          color: #fb923c; /* Orange sáng hơn */
           margin-left: 3px;
         }
       }
@@ -60,28 +76,31 @@
       textarea {
         width: 100%;
         padding: 14px 18px;
-        border: 2px solid #e0e0e0;
+        border: 2px solid rgba(255, 255, 255, 0.15); /* Border sáng hơn */
         border-radius: 10px;
         font-size: 1rem;
         transition: all 0.3s ease;
         font-family: inherit;
+        background: rgba(255, 255, 255, 0.08); /* Nền input sáng hơn */
+        color: white; /* Chữ trắng */
 
         &:focus {
           outline: none;
-          border-color: #667eea;
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+          border-color: var(--accent-copper, #e09543); /* Focus màu copper */
+          box-shadow: 0 0 0 3px rgba(224, 149, 67, 0.25);
+          background: rgba(255, 255, 255, 0.12); /* Sáng hơn khi focus */
         }
 
         &.error {
-          border-color: #e74c3c;
+          border-color: #fb923c;
 
           &:focus {
-            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+            box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.25);
           }
         }
 
         &::placeholder {
-          color: #999;
+          color: rgba(255, 255, 255, 0.5); /* Placeholder sáng hơn */
         }
       }
 
@@ -91,7 +110,7 @@
       }
 
       .error-message {
-        color: #e74c3c;
+        color: #fca5a5; /* Red sáng cho nền tối */
         font-size: 0.875rem;
         margin-top: 6px;
         display: block;
@@ -103,7 +122,7 @@
       text-align: center;
 
       .btn-submit {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #e09543 0%, #f0a654 100%); /* Gradient copper sáng */
         color: white;
         border: none;
         padding: 16px 50px;
@@ -112,11 +131,13 @@
         border-radius: 50px;
         cursor: pointer;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 20px rgba(224, 149, 67, 0.5);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 
         &:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+          box-shadow: 0 6px 30px rgba(224, 149, 67, 0.6);
+          background: linear-gradient(135deg, #f0a654 0%, #e09543 100%); /* Đảo gradient khi hover */
         }
 
         &:active:not(:disabled) {
@@ -124,7 +145,7 @@
         }
 
         &:disabled {
-          opacity: 0.6;
+          opacity: 0.5;
           cursor: not-allowed;
         }
       }
@@ -146,22 +167,22 @@
     }
 
     .success-message {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
+      background: rgba(34, 197, 94, 0.1); /* Green trong suốt */
+      color: #86efac; /* Green sáng */
+      border: 1px solid rgba(34, 197, 94, 0.3);
 
       svg {
-        color: #28a745;
+        color: #22c55e;
       }
     }
 
     .error-alert {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
+      background: rgba(239, 68, 68, 0.1); /* Red trong suốt */
+      color: #fca5a5; /* Red sáng */
+      border: 1px solid rgba(239, 68, 68, 0.3);
 
       svg {
-        color: #dc3545;
+        color: #ef4444;
       }
     }
   }

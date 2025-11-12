@@ -1042,6 +1042,36 @@
       min-width: 300px !important;
     }
 
+    .process-section-editor {
+      margin: 24px 0;
+      padding: 20px;
+      border: 2px dashed #e0e0e0;
+      border-radius: 8px;
+      background-color: #fafafa;
+      text-align: center;
+
+      .info-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        color: #666;
+        font-size: 14px;
+
+        mat-icon {
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+          color: #ff9800;
+        }
+      }
+
+      button {
+        min-width: 250px;
+      }
+    }
+
     .content-form {
       padding: 16px;
     }
@@ -1155,30 +1185,23 @@
     }
 
     .icon-name-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: 260px 1fr;
       gap: 16px;
-      align-items: flex-end;
+      align-items: start;
     }
 
     .icon-field {
       overflow: visible;
-      width: 220px;
-      min-width: 220px;
-      flex-shrink: 0;
-
-      .icon-selector-label {
-        display: block;
-        margin-bottom: 8px;
-        font-size: 14px;
-        color: #666;
-      }
+      width: 100%;
+      max-width: 260px;
     }
 
     .name-field,
     .url-field {
       display: flex;
       flex-direction: column;
-      flex: 1;
+      margin-bottom: 12px;
     }
 
     .name-field .field-label,
@@ -1258,102 +1281,5 @@
 
     .clickable-row:hover {
       background-color: #f5f5f5 !important;
-    }
-
-    // ============================================
-    // CONSULTATIONS SECTION STYLES
-    // ============================================
-
-    .consultations-table-card {
-      margin-top: 20px;
-      overflow-x: auto;
-
-      .consultations-table {
-        width: 100%;
-
-        // Action buttons in same row
-        .mat-column-actions {
-          white-space: nowrap;
-          width: 180px;
-          min-width: 180px;
-
-          button {
-            vertical-align: middle;
-            display: inline-block;
-          }
-        }
-
-        .details-cell {
-          max-width: 250px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .phone-link,
-        .email-link {
-          color: #1976d2;
-          text-decoration: none;
-
-          &:hover {
-            text-decoration: underline;
-          }
-        }
-
-        .no-data {
-          color: #999;
-        }
-
-        .status-chip {
-          border-radius: 16px;
-          font-size: 12px;
-          font-weight: 500;
-
-          &.status-pending {
-            background-color: #fff3cd;
-            color: #856404;
-          }
-
-          &.status-contacted {
-            background-color: #d1ecf1;
-            color: #0c5460;
-          }
-
-          &.status-completed {
-            background-color: #d4edda;
-            color: #155724;
-          }
-        }
-
-        .no-data-message {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 40px 20px;
-          color: #999;
-
-          mat-icon {
-            font-size: 64px;
-            width: 64px;
-            height: 64px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-          }
-
-          p {
-            margin: 0;
-            font-size: 16px;
-          }
-        }
-      }
-    }
-
-    .filter-actions {
-      display: flex;
-      gap: 16px;
-
-      .status-filter {
-        min-width: 200px;
-      }
     }
 

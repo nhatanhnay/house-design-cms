@@ -44,7 +44,7 @@ echo ""
 echo "📁 Step 2: Restoring full backup to VPS database..."
 
 # Restore the full backup (ignore role errors)
-psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" < "house_design_full_backup_20251011_100943.sql" 2>&1 | grep -v "role.*does not exist"
+psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" < "house_design_full_backup_20251112_192859.sql" 2>&1 | grep -v "role.*does not exist"
 
 if [ $? -eq 0 ]; then
     echo "✅ Full backup restored to VPS successfully!"
@@ -62,7 +62,7 @@ SQL
     # Restore uploaded files
     echo ""
     echo "📁 Step 3: Restoring uploaded files..."
-    UPLOADS_BACKUP="uploads_backup_20251011_100943.tar.gz"
+    UPLOADS_BACKUP="uploads_backup_20251112_192859.tar.gz"
 
     if [ -f "$UPLOADS_BACKUP" ]; then
         # Create backend/data directory if it doesn't exist

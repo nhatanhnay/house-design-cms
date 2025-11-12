@@ -16,17 +16,19 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule } from '@angular/material/sort';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Observable, of, Subject } from 'rxjs';
 import { map, catchError, switchMap, startWith } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { DataService } from '../../services/data.service';
 import { AuthService } from '../../services/auth.service';
-import { Category, Post, Admin, CategoryTreeItem, Product, Consultation } from '../../models/models';
+import { Category, Post, Admin, CategoryTreeItem, Product, Consultation, ProcessTab } from '../../models/models';
 import { CategoryDialogComponent } from '../../components/category-dialog/category-dialog.component';
 import { PostDialogComponent } from '../../components/post-dialog/post-dialog.component';
 import { ProductDialogComponent } from '../../components/product-dialog/product-dialog.component';
 import { ConsultationDetailDialogComponent, ConsultationDetailDialogResult } from '../../components/consultation-detail-dialog/consultation-detail-dialog.component';
+import { HomeContentEditDialog } from '../home-content-edit-dialog/home-content-edit-dialog.component';
 import { ADMIN_CONSTANTS } from '../../constants/admin.constants';
 import { OrderUpdate, HomepageMediaResponse } from '../../interfaces/admin.interfaces';
 import { HomeContent } from '../../models/models';
@@ -78,6 +80,7 @@ export interface FooterContent {
     MatSelectModule,
     MatSortModule,
     MatChipsModule,
+    MatExpansionModule,
     DragDropModule,
     IconSelectorComponent,
     GlobalSeoSettingsComponent
@@ -112,6 +115,10 @@ export class AdminComponent implements OnInit {
     hero_stat1_label: '',
     hero_stat2_number: '',
     hero_stat2_label: '',
+    hero_stat3_number: '',
+    hero_stat3_label: '',
+    hero_stat4_number: '',
+    hero_stat4_label: '',
     features_title: '',
     features_description: '',
     features_logo_url: '',
@@ -126,10 +133,15 @@ export class AdminComponent implements OnInit {
     feature3_description: '',
     feature4_icon: '',
     feature4_title: '',
-    feature4_description: ''
+    feature4_description: '',
+    process_section_title: 'Quy Trình Làm Việc',
+    process_tabs: '[]'
   };
   originalHomepageContent: HomeContent = {} as HomeContent;
   isContentModified: boolean = false;
+  processTabs: ProcessTab[] = [];
+  processTabsJson: string = '';
+  uploadingStepIcon: boolean = false;
 
   // Footer Management Properties
   footerContent: FooterContent = {
@@ -615,6 +627,9 @@ export class AdminComponent implements OnInit {
         this.homepageContent = { ...content };
         this.originalHomepageContent = { ...content };
         this.isContentModified = false;
+        
+        // Parse process tabs
+        this.parseProcessTabs();
       },
       error: (error) => {
         // Use default values if API fails
@@ -626,6 +641,10 @@ export class AdminComponent implements OnInit {
           hero_stat1_label: 'Tỉnh Thành Phủ Sóng',
           hero_stat2_number: '500+',
           hero_stat2_label: 'Dự Án Biệt Thự/Nhà Ở Chuyên Nghiệp',
+          hero_stat3_number: '+152',
+          hero_stat3_label: 'Công Trình Thi Công',
+          hero_stat4_number: '+1679',
+          hero_stat4_label: 'Lên Phương Án Miễn Phí',
           features_title: 'Ưu Thế MMA Architectural Design',
           features_description: '',
           features_logo_url: '',
@@ -640,7 +659,9 @@ export class AdminComponent implements OnInit {
           feature3_description: 'Từ thiết kế kiến trúc, nội thất đến giám sát thi công và bàn giao hoàn thiện.',
           feature4_icon: 'verified',
           feature4_title: 'Uy Tín 37 Tỉnh Thành',
-          feature4_description: 'Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng.'
+          feature4_description: 'Đã hoàn thành hơn 500 dự án biệt thự và nhà ở trên toàn quốc, được khách hàng tin tưởng.',
+          process_section_title: 'Quy Trình Làm Việc',
+          process_tabs: '[]'
         };
         this.originalHomepageContent = { ...this.homepageContent };
         this.isContentModified = false;
@@ -670,6 +691,22 @@ export class AdminComponent implements OnInit {
   onFeature4IconChange(iconValue: string): void {
     this.homepageContent.feature4_icon = iconValue;
     this.onContentChange();
+  }
+
+  openHomeContentDialog(): void {
+    const dialogRef = this.dialog.open(HomeContentEditDialog, {
+      width: '900px',
+      maxHeight: '90vh',
+      data: { ...this.homepageContent }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.homepageContent = { ...result };
+        this.onContentChange();
+        this.saveHomepageContent();
+      }
+    });
   }
 
   saveHomepageContent(): void {
@@ -1093,5 +1130,159 @@ export class AdminComponent implements OnInit {
         this.deleteConsultation(consultation.id);
       }
     });
+  }
+
+  // Process Tabs Methods
+  parseProcessTabs(): void {
+    if (this.homepageContent.process_tabs) {
+      try {
+        this.processTabs = JSON.parse(this.homepageContent.process_tabs);
+        this.processTabsJson = JSON.stringify(this.processTabs, null, 2);
+      } catch (error) {
+        console.error('Error parsing process tabs:', error);
+        this.processTabs = this.getDefaultProcessTabs();
+        this.processTabsJson = JSON.stringify(this.processTabs, null, 2);
+      }
+    } else {
+      this.processTabs = this.getDefaultProcessTabs();
+      this.processTabsJson = JSON.stringify(this.processTabs, null, 2);
+    }
+  }
+
+  getDefaultProcessTabs(): ProcessTab[] {
+    return [
+      {
+        tab_id: 'design',
+        tab_name: 'Quy Trình Thiết Kế',
+        steps: [
+          {
+            icon_url: '/uploads/svg-icons/process-1.png',
+            title: 'TRAO ĐỔI TƯ VẤN',
+            description: 'Trao đổi yêu cầu, tư vấn định hướng ý tưởng, phong cách và mức đầu tư'
+          },
+          {
+            icon_url: '/uploads/svg-icons/process-2.png',
+            title: 'BÁO GIÁ THIẾT KẾ',
+            description: 'Gửi khách hàng báo giá theo đúng gói thiết kế mà Khách Hàng đang đề cập, kèm quy trình làm việc cụ thể, chi tiết'
+          },
+          {
+            icon_url: '/uploads/svg-icons/process-3.png',
+            title: 'KÝ HĐ THIẾT KẾ',
+            description: 'Thực hiện các thủ tục hành chính và bắt đầu triển khai các công việc theo tiến độ thống nhất'
+          },
+          {
+            icon_url: '/uploads/svg-icons/process-4.png',
+            title: 'BÀN GIAO BẢN VẼ THIẾT KẾ',
+            description: 'Sau khi thống nhất hồ sơ báo cáo tiến độ, khách hàng thanh toán lần cuối giá trị HĐ còn lại trước khi nhận hồ sơ hoàn chỉnh.'
+          }
+        ]
+      },
+      {
+        tab_id: 'construction',
+        tab_name: 'Quy Trình Thi Công',
+        steps: [
+          {
+            icon_url: '/uploads/svg-icons/process-1.png',
+            title: 'TRAO ĐỔI TƯ VẤN',
+            description: 'Trao đổi và tư vấn khách hàng về nhu cầu, mong muốn, và định hướng mức đầu tư.'
+          },
+          {
+            icon_url: '/uploads/svg-icons/process-2.png',
+            title: 'BÁO GIÁ THI CÔNG',
+            description: 'Gửi báo giá thi công, chủng loại vật tư và Quy trình thi công để khách hàng nắm được thông tin.'
+          },
+          {
+            icon_url: '/uploads/svg-icons/process-5.png',
+            title: 'KÝ HĐ THI CÔNG',
+            description: 'Hai bên gặp gỡ trao đổi thống nhất các vấn đề liên quan tiến độ, chất lượng, ngày khởi công và các điều khoản hợp đồng.'
+          },
+          {
+            icon_url: '/uploads/svg-icons/process-6.png',
+            title: 'BÀN GIAO & QUYẾT TOÁN',
+            description: 'Kiểm tra, nghiệm thu và thanh quyết toán hợp đồng. Tiến hành bảo hành bảo trì dài hạn theo cam kết hợp đồng.'
+          }
+        ]
+      }
+    ];
+  }
+
+  updateProcessTabsFromJson(): void {
+    try {
+      this.processTabs = JSON.parse(this.processTabsJson);
+      this.homepageContent.process_tabs = this.processTabsJson;
+      this.onContentChange();
+    } catch (error) {
+      alert('JSON không hợp lệ. Vui lòng kiểm tra lại cú pháp.');
+    }
+  }
+
+  addProcessTab(): void {
+    this.processTabs.push({
+      tab_id: 'new-tab-' + Date.now(),
+      tab_name: 'Tab mới',
+      steps: []
+    });
+    this.updateProcessTabsModel();
+  }
+
+  removeProcessTab(index: number): void {
+    this.processTabs.splice(index, 1);
+    this.updateProcessTabsModel();
+  }
+
+  addStep(tabIndex: number): void {
+    this.processTabs[tabIndex].steps.push({
+      icon_url: '/uploads/svg-icons/default-icon.png',
+      title: 'Bước mới',
+      description: 'Mô tả bước'
+    });
+    this.updateProcessTabsModel();
+  }
+
+  removeStep(tabIndex: number, stepIndex: number): void {
+    this.processTabs[tabIndex].steps.splice(stepIndex, 1);
+    this.updateProcessTabsModel();
+  }
+
+  updateProcessTabsModel(): void {
+    this.processTabsJson = JSON.stringify(this.processTabs, null, 2);
+    this.homepageContent.process_tabs = this.processTabsJson;
+    this.onContentChange();
+  }
+
+  // Icon upload methods
+  uploadStepIcon(tabIndex: number, stepIndex: number): void {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,.svg';
+    input.onchange = (event: any) => {
+      const file = event.target.files[0];
+      if (file) {
+        this.uploadingStepIcon = true;
+        const formData = new FormData();
+        formData.append('svg', file);  // Backend expects 'svg' field name
+
+        this.dataService.uploadSvgIcon(formData).subscribe({
+          next: (response) => {
+            this.processTabs[tabIndex].steps[stepIndex].icon_url = response.url;
+            this.updateProcessTabsModel();
+            this.uploadingStepIcon = false;
+            this.showSuccessMessage('Icon đã được upload thành công');
+          },
+          error: (error) => {
+            console.error('Error uploading icon:', error);
+            this.showErrorMessage('Lỗi khi upload icon. Vui lòng thử lại.');
+            this.uploadingStepIcon = false;
+          }
+        });
+      }
+    };
+    input.click();
+  }
+
+  onIconError(event: any, tabIndex: number, stepIndex: number): void {
+    // Hide broken image and show placeholder
+    event.target.style.display = 'none';
+    console.warn(`Icon not found: ${this.processTabs[tabIndex].steps[stepIndex].icon_url}`);
   }
 }
