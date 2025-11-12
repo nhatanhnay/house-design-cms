@@ -506,14 +506,20 @@ export class PostDialogComponent implements OnInit {
     if (this.postForm.valid) {
       this.isLoading = true;
       
-      // Ensure image_url is updated from selectedImageUrl if it exists
-      if (this.selectedImageUrl && !this.postForm.get('image_url')?.value) {
-        this.postForm.patchValue({ image_url: this.selectedImageUrl }, { emitEvent: false });
+      // Always ensure selectedImageUrl is synced to form if it exists
+      if (this.selectedImageUrl) {
+        const currentFormValue = this.postForm.get('image_url')?.value;
+        // Only patch if selectedImageUrl is different from form value
+        if (currentFormValue !== this.selectedImageUrl) {
+          console.log('Syncing selectedImageUrl to form:', this.selectedImageUrl);
+          this.postForm.patchValue({ image_url: this.selectedImageUrl }, { emitEvent: false });
+        }
       }
       
       const postData = { ...this.postForm.value };
       
       console.log('Saving post with image_url:', postData.image_url);
+      console.log('selectedImageUrl:', this.selectedImageUrl);
 
       const operation = this.data.post
         ? this.dataService.updatePost(this.data.post.id, postData)
@@ -568,7 +574,14 @@ export class PostDialogComponent implements OnInit {
           this.isUploadingImage = false;
           this.imageUploadProgress = 100;
           this.selectedImageUrl = event.body.url;
+          
+          // Patch value and force update
           this.postForm.patchValue({ image_url: event.body.url });
+          this.postForm.get('image_url')?.updateValueAndValidity();
+          
+          console.log('Upload complete, URL set to:', event.body.url);
+          console.log('Form image_url value:', this.postForm.get('image_url')?.value);
+          
           this.snackBar.open('Tải lên hình ảnh thành công!', 'Đóng', { duration: 3000 });
         }
       },

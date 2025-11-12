@@ -515,15 +515,21 @@ export class ProductDialogComponent implements OnInit {
     if (this.productForm.valid) {
       this.isLoading = true;
       
-      // Ensure thumbnail_url is updated from selectedImageUrl if it exists
-      if (this.selectedImageUrl && !this.productForm.get('thumbnail_url')?.value) {
-        this.productForm.patchValue({ thumbnail_url: this.selectedImageUrl }, { emitEvent: false });
+      // Always ensure selectedImageUrl is synced to form if it exists
+      if (this.selectedImageUrl) {
+        const currentFormValue = this.productForm.get('thumbnail_url')?.value;
+        // Only patch if selectedImageUrl is different from form value
+        if (currentFormValue !== this.selectedImageUrl) {
+          console.log('Syncing selectedImageUrl to form:', this.selectedImageUrl);
+          this.productForm.patchValue({ thumbnail_url: this.selectedImageUrl }, { emitEvent: false });
+        }
       }
       
       const productData = { ...this.productForm.value };
 
       console.log('Saving product with gallery images:', this.galleryImages.length);
       console.log('Product thumbnail_url:', productData.thumbnail_url);
+      console.log('selectedImageUrl:', this.selectedImageUrl);
 
       const operation = this.data.product
         ? this.dataService.updateProduct(this.data.product.id, productData)
@@ -579,7 +585,14 @@ export class ProductDialogComponent implements OnInit {
           this.isUploadingImage = false;
           this.featuredImageUploadProgress = 100;
           this.selectedImageUrl = event.body.url;
+          
+          // Patch value and force update
           this.productForm.patchValue({ thumbnail_url: event.body.url });
+          this.productForm.get('thumbnail_url')?.updateValueAndValidity();
+          
+          console.log('Upload complete, URL set to:', event.body.url);
+          console.log('Form thumbnail_url value:', this.productForm.get('thumbnail_url')?.value);
+          
           this.snackBar.open('Tải lên hình ảnh thành công!', 'Đóng', { duration: 3000 });
         }
       },
