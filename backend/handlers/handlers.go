@@ -659,16 +659,15 @@ func UploadImage(c *gin.Context) {
 		return
 	}
 
-	// Return the URL in CKEditor format
-	baseURL := getBaseURL(c)
-	imageURL := fmt.Sprintf("%s/data/uploads/images/%s", baseURL, filename)
+	// Return relative URL (not full URL) so frontend proxy can handle it
+	// This works with both development (proxy) and production (same domain)
+	imageURL := fmt.Sprintf("/data/uploads/images/%s", filename)
 
 	// Debug logging tiếng Việt cho category thumbnails
 	fmt.Printf("✅ THUMBNAIL CATEGORY UPLOAD THÀNH CÔNG:\n")
 	fmt.Printf("   📁 Thư mục lưu: %s\n", uploadsDir)
 	fmt.Printf("   📄 Tên file: %s\n", filename)
-	fmt.Printf("   🌐 Base URL: %s\n", baseURL)
-	fmt.Printf("   🔗 URL trả về: %s\n", imageURL)
+	fmt.Printf("   🔗 URL trả về (relative): %s\n", imageURL)
 
 	c.JSON(http.StatusOK, gin.H{
 		"url": imageURL,
