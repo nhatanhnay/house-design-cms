@@ -138,7 +138,6 @@ func GetCategories(c *gin.Context) {
 					Name: parent.Name,
 					Slug: parent.Slug,
 				}
-				fmt.Printf("DEBUG: Set parent for %s (id=%d), parent=%s (id=%d)\n", cat.Name, cat.ID, parent.Name, parent.ID)
 				// Then append to parent's children (this will copy the cat with Parent already set)
 				parent.Children = append(parent.Children, *cat)
 			}
@@ -154,9 +153,6 @@ func CreateCategory(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	// Debug logging
-	fmt.Printf("Creating category - Name: %s, Slug: %s, ParentID: %v\n", category.Name, category.Slug, category.ParentID)
 
 	// Generate slug if not provided
 	if category.Slug == "" {
@@ -193,7 +189,6 @@ func CreateCategory(c *gin.Context) {
 
 	// If slug exists, generate a unique one by appending number
 	if existingCount > 0 {
-		fmt.Printf("Slug conflict detected for: %s, generating unique slug\n", category.Slug)
 		originalSlug := category.Slug
 		counter := 1
 		for {
@@ -208,9 +203,6 @@ func CreateCategory(c *gin.Context) {
 			}
 			counter++
 		}
-		fmt.Printf("Final unique slug: %s\n", category.Slug)
-	} else {
-		fmt.Printf("No slug conflict, using: %s\n", category.Slug)
 	}
 
 	// Set default values
@@ -247,11 +239,6 @@ func UpdateCategory(c *gin.Context) {
 		return
 	}
 
-	// Debug log to check received data
-	fmt.Printf("📦 Updating category ID: %s with data: %+v\n", id, category)
-	fmt.Printf("📝 SEO Fields Received: meta_title='%s', meta_description='%s', meta_keywords='%s', og_image_url='%s'\n",
-		category.MetaTitle, category.MetaDescription, category.MetaKeywords, category.OGImageURL)
-
 	// Get existing category to handle partial updates
 	var existingCategory models.Category
 	err := database.DB.QueryRow(`SELECT name, slug, description, COALESCE(thumbnail_url, '') as thumbnail_url,
@@ -283,7 +270,6 @@ func UpdateCategory(c *gin.Context) {
 	// Always update category_type - this is critical for the fix
 	if category.CategoryType != "" {
 		existingCategory.CategoryType = category.CategoryType
-		fmt.Printf("Updated CategoryType to: %s\n", category.CategoryType)
 	}
 
 	// Always update is_active as it can be false
@@ -307,44 +293,32 @@ func UpdateCategory(c *gin.Context) {
 		}
 		existingCategory.Level = parentLevel + 1
 		existingCategory.ParentID = category.ParentID
-		fmt.Printf("Setting parent_id to: %v, level: %d\n", *category.ParentID, existingCategory.Level)
 	}
 
 	// Force business rules: Regular categories cannot have parents
 	if existingCategory.CategoryType == "regular" {
 		existingCategory.Level = 0
 		existingCategory.ParentID = nil
-		fmt.Printf("Forcing regular category to have no parent\n")
 	}
 
 	// If no parent is set and it's a parent category, make it a main category
 	if existingCategory.ParentID == nil && existingCategory.CategoryType == "parent" {
 		existingCategory.Level = 0
-		fmt.Printf("Setting parent category as main category (level 0)\n")
 	}
 
-	fmt.Printf("Final category data before update: %+v\n", existingCategory)
-	fmt.Printf("SEO fields to update: meta_title='%s', meta_description='%s', meta_keywords='%s', og_image_url='%s'\n",
-		existingCategory.MetaTitle, existingCategory.MetaDescription, existingCategory.MetaKeywords, existingCategory.OGImageURL)
-
-	result, err := database.DB.Exec(`UPDATE categories SET name = $2, slug = $3, description = $4, thumbnail_url = $5, category_type = $6, parent_id = $7,
+	_, err = database.DB.Exec(`UPDATE categories SET name = $2, slug = $3, description = $4, thumbnail_url = $5, category_type = $6, parent_id = $7,
 		level = $8, order_index = $9, is_active = $10, meta_title = $11, meta_description = $12, meta_keywords = $13, og_image_url = $14, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
 		id, existingCategory.Name, existingCategory.Slug, existingCategory.Description, existingCategory.ThumbnailURL,
 		existingCategory.CategoryType, existingCategory.ParentID, existingCategory.Level, existingCategory.OrderIndex, existingCategory.IsActive,
 		existingCategory.MetaTitle, existingCategory.MetaDescription, existingCategory.MetaKeywords, existingCategory.OGImageURL)
 	if err != nil {
-		fmt.Printf("SQL UPDATE ERROR: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update category"})
 		return
 	}
 
-	rowsAffected, _ := result.RowsAffected()
-	fmt.Printf("UPDATE completed, rows affected: %d\n", rowsAffected)
-
 	categoryID, _ := strconv.ParseUint(id, 10, 32)
 	existingCategory.ID = uint(categoryID)
 
-	fmt.Printf("Returning updated category: %+v\n", existingCategory)
 	c.JSON(http.StatusOK, existingCategory)
 }
 
@@ -588,28 +562,20 @@ func DeletePost(c *gin.Context) {
 
 // UploadImage handles image upload for CKEditor
 func UploadImage(c *gin.Context) {
-	fmt.Println("Upload request received")
-
 	// Check authentication
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		fmt.Println("Unauthorized upload attempt - no user_id")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	fmt.Printf("Authenticated user ID: %d\n", userID)
-
 	// Parse the multipart form
 	file, header, err := c.Request.FormFile("upload")
 	if err != nil {
-		fmt.Printf("Error parsing form file: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
 		return
 	}
 	defer file.Close()
-
-	fmt.Printf("File received: %s, Size: %d, Type: %s\n", header.Filename, header.Size, header.Header.Get("Content-Type"))
 
 	// Validate file type
 	allowedTypes := map[string]bool{
@@ -662,12 +628,6 @@ func UploadImage(c *gin.Context) {
 	// Return relative URL (not full URL) so frontend proxy can handle it
 	// This works with both development (proxy) and production (same domain)
 	imageURL := fmt.Sprintf("/data/uploads/images/%s", filename)
-
-	// Debug logging tiếng Việt cho category thumbnails
-	fmt.Printf("✅ THUMBNAIL CATEGORY UPLOAD THÀNH CÔNG:\n")
-	fmt.Printf("   📁 Thư mục lưu: %s\n", uploadsDir)
-	fmt.Printf("   📄 Tên file: %s\n", filename)
-	fmt.Printf("   🔗 URL trả về (relative): %s\n", imageURL)
 
 	c.JSON(http.StatusOK, gin.H{
 		"url": imageURL,
@@ -1264,17 +1224,12 @@ func UpdateHomeContent(c *gin.Context) {
 
 // UploadSvgIcon handles SVG icon uploads for the icon selector
 func UploadSvgIcon(c *gin.Context) {
-	fmt.Println("SVG icon upload request received")
-
 	// Check authentication
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		fmt.Println("Unauthorized upload attempt - no user_id")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-
-	fmt.Printf("Authenticated user ID: %d\n", userID)
 
 	// Parse the multipart form
 	file, header, err := c.Request.FormFile("svg")

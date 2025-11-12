@@ -360,14 +360,6 @@ export class CategoryDialogComponent implements OnInit {
     if (this.data.category) {
       const category = this.data.category as any;
 
-      console.log('🔍 Category data received:', category);
-      console.log('📋 SEO fields:', {
-        meta_title: category.meta_title,
-        meta_description: category.meta_description,
-        meta_keywords: category.meta_keywords,
-        og_image_url: category.og_image_url
-      });
-
       this.categoryForm.patchValue({
         name: category.name,
         slug: category.slug,
@@ -382,8 +374,6 @@ export class CategoryDialogComponent implements OnInit {
         meta_keywords: category.meta_keywords || '',
         og_image_url: category.og_image_url || ''
       });
-
-      console.log('✅ Form values after patch:', this.categoryForm.value);
     }
 
     // Set parent_id if provided
@@ -460,18 +450,6 @@ export class CategoryDialogComponent implements OnInit {
       if (formValue.thumbnail_url) {
         categoryData.thumbnail_url = formValue.thumbnail_url;
       }
-      
-      console.log('Saving category with thumbnail_url:', categoryData.thumbnail_url);
-
-      console.log('📦 Category Update Request:', {
-        id: this.data.category?.id,
-        seo: {
-          meta_title: categoryData.meta_title,
-          meta_description: categoryData.meta_description,
-          meta_keywords: categoryData.meta_keywords,
-          og_image_url: categoryData.og_image_url
-        }
-      });
 
       const operation = this.data.category
         ? this.dataService.updateCategory(this.data.category.id, categoryData)
@@ -480,15 +458,6 @@ export class CategoryDialogComponent implements OnInit {
       operation.subscribe({
         next: (result) => {
           this.isLoading = false;
-          console.log('✅ Category Response:', {
-            id: result?.id,
-            seo: {
-              meta_title: result?.meta_title,
-              meta_description: result?.meta_description,
-              meta_keywords: result?.meta_keywords,
-              og_image_url: result?.og_image_url
-            }
-          });
           this.snackBar.open(
             this.data.category ? 'Cập nhật danh mục thành công!' : 'Thêm danh mục thành công!',
             'Đóng',

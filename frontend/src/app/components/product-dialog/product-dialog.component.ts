@@ -520,16 +520,11 @@ export class ProductDialogComponent implements OnInit {
         const currentFormValue = this.productForm.get('thumbnail_url')?.value;
         // Only patch if selectedImageUrl is different from form value
         if (currentFormValue !== this.selectedImageUrl) {
-          console.log('Syncing selectedImageUrl to form:', this.selectedImageUrl);
           this.productForm.patchValue({ thumbnail_url: this.selectedImageUrl }, { emitEvent: false });
         }
       }
       
       const productData = { ...this.productForm.value };
-
-      console.log('Saving product with gallery images:', this.galleryImages.length);
-      console.log('Product thumbnail_url:', productData.thumbnail_url);
-      console.log('selectedImageUrl:', this.selectedImageUrl);
 
       const operation = this.data.product
         ? this.dataService.updateProduct(this.data.product.id, productData)
@@ -537,7 +532,6 @@ export class ProductDialogComponent implements OnInit {
 
       operation.subscribe({
         next: (result) => {
-          console.log('Product saved, result:', result);
           const productId = result.id || this.data.product?.id;
 
           if (!productId) {
@@ -590,9 +584,6 @@ export class ProductDialogComponent implements OnInit {
           this.productForm.patchValue({ thumbnail_url: event.body.url });
           this.productForm.get('thumbnail_url')?.updateValueAndValidity();
           
-          console.log('Upload complete, URL set to:', event.body.url);
-          console.log('Form thumbnail_url value:', this.productForm.get('thumbnail_url')?.value);
-          
           this.snackBar.open('Tải lên hình ảnh thành công!', 'Đóng', { duration: 3000 });
         }
       },
@@ -625,8 +616,6 @@ export class ProductDialogComponent implements OnInit {
     const files = Array.from(event.target.files) as File[];
     if (!files.length) return;
 
-    console.log('Selected gallery files:', files.length);
-
     files.forEach(file => {
       if (file.size > 5 * 1024 * 1024) {
         this.snackBar.open(`${file.name}: Kích thước tệp quá lớn`, 'Đóng', { duration: 3000 });
@@ -641,7 +630,6 @@ export class ProductDialogComponent implements OnInit {
       // Create preview URL
       const reader = new FileReader();
       reader.onload = (e: any) => {
-        console.log('Gallery image added:', file.name);
         this.galleryImages.push({ url: e.target.result, file });
       };
       reader.readAsDataURL(file);
@@ -673,9 +661,6 @@ export class ProductDialogComponent implements OnInit {
 
     // Step 2: Find new images to upload (images with file property)
     const imagesToUpload = this.galleryImages.filter(img => img.file);
-
-    console.log('Deleted images:', deletedImageIds);
-    console.log('New images to upload:', imagesToUpload.length);
 
     // If nothing to do, just close
     if (deletedImageIds.length === 0 && imagesToUpload.length === 0) {
@@ -774,9 +759,6 @@ export class ProductDialogComponent implements OnInit {
 
   private uploadGalleryImages(productId: number): void {
     const imagesToUpload = this.galleryImages.filter(img => img.file);
-
-    console.log('Gallery images to upload:', imagesToUpload.length, 'out of', this.galleryImages.length);
-    console.log('Gallery images detail:', this.galleryImages);
 
     if (imagesToUpload.length === 0) {
       this.isLoading = false;

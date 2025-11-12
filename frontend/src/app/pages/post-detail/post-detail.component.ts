@@ -236,7 +236,7 @@ import { Post, Admin } from '../../models/models';
 
     /* Post Article */
     .post-article {
-      background: white;
+      background: #f5f5f5; /* Nền xám nhạt thay vì trắng */
       border-radius: 16px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
       overflow: hidden;
@@ -246,13 +246,13 @@ import { Post, Admin } from '../../models/models';
     /* Post Header */
     .post-header {
       padding: 30px;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid #e0e0e0;
     }
 
     .post-title {
       font-size: 1.8rem;
       font-weight: 700;
-      color: white; /* Chữ trắng */
+      color: #1a1a1a; /* Chữ đen đậm */
       line-height: 1.3;
       margin-bottom: 15px;
     }
@@ -269,25 +269,26 @@ import { Post, Admin } from '../../models/models';
       align-items: center;
       gap: 6px;
       font-size: 0.9rem;
-      color: rgba(255, 255, 255, 0.7); /* Text màu trắng mờ */
+      color: #666; /* Text xám đậm để dễ đọc */
     }
 
     .meta-item mat-icon {
       font-size: 18px;
       width: 18px;
       height: 18px;
+      color: #888;
     }
 
     .meta-item.published {
-      color: #4ade80; /* Green sáng hơn cho nền tối */
+      color: #059669; /* Green đậm hơn */
     }
 
     .meta-item.draft {
-      color: #fbbf24; /* Yellow sáng hơn */
+      color: #d97706; /* Orange đậm hơn */
     }
 
     .post-summary {
-      background: rgba(255, 255, 255, 0.05); /* Nền trong suốt nhẹ */
+      background: #fff9e6; /* Nền vàng nhạt */
       padding: 20px;
       border-radius: 12px;
       border-left: 4px solid var(--accent-copper, #e09543);
@@ -297,7 +298,7 @@ import { Post, Admin } from '../../models/models';
     .post-summary p {
       font-size: 1.1rem;
       line-height: 1.6;
-      color: rgba(255, 255, 255, 0.8); /* Text trắng mờ */
+      color: #333; /* Text đen cho dễ đọc */
       margin: 0;
       font-style: italic;
     }
@@ -321,12 +322,13 @@ import { Post, Admin } from '../../models/models';
       padding: 40px;
       width: 100%;
       box-sizing: border-box;
+      background: white; /* Nền trắng cho content */
     }
 
     .content-html {
       font-size: 1.1rem;
       line-height: 1.8;
-      color: rgba(255, 255, 255, 0.9); /* Text trắng */
+      color: #333; /* Text xám đậm dễ đọc */
       width: 100%;
       box-sizing: border-box;
       overflow: hidden;
@@ -338,7 +340,7 @@ import { Post, Admin } from '../../models/models';
     .content-html h4,
     .content-html h5,
     .content-html h6 {
-      color: white; /* Headings trắng */
+      color: #1a1a1a; /* Headings đen đậm */
       margin-top: 2em;
       margin-bottom: 1em;
       font-weight: 600;
@@ -378,34 +380,40 @@ import { Post, Admin } from '../../models/models';
       padding-left: 20px;
       margin: 20px 0;
       font-style: italic;
-      color: #6c757d;
+      color: #555; /* Màu xám đậm hơn */
+      background: #f9f9f9;
+      padding: 15px 20px;
+      border-radius: 4px;
     }
 
     .content-html ul,
     .content-html ol {
       padding-left: 30px;
       margin-bottom: 1.5em;
+      color: #333;
     }
 
     .content-html li {
       margin-bottom: 0.5em;
+      color: #333;
     }
 
     .content-html a {
-      color: var(--primary-blue, #3498db);
+      color: #e09543; /* Copper color */
       text-decoration: none;
       border-bottom: 1px solid transparent;
       transition: border-color 0.3s ease;
+      font-weight: 500;
     }
 
     .content-html a:hover {
-      border-bottom-color: var(--primary-blue, #3498db);
+      border-bottom-color: #e09543;
     }
 
     /* Post Footer */
     .post-footer {
       padding: 40px;
-      border-top: 1px solid #eee;
+      border-top: 1px solid #e0e0e0;
       background: #f8f9fa;
     }
 
@@ -414,7 +422,7 @@ import { Post, Admin } from '../../models/models';
     }
 
     .share-buttons h4 {
-      color: var(--dark-blue, #2c3e50);
+      color: #1a1a1a; /* Đen đậm */
       margin-bottom: 15px;
       font-size: 1.1rem;
     }
