@@ -54,6 +54,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   // Active tab tracking for each category
   activeSubCategoryTabs: { [categoryId: number]: number | null } = {};
 
+  // Category carousel tracking
+  categoryCarouselIndexes: { [categoryId: number]: number } = {};
+
   // Homepage carousel properties
   homepageImages: string[] = [];
   currentSlideIndex: number = 0;
@@ -151,7 +154,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.mainCategories = categories; // Store in component property
         console.log('📂 Categories loaded:', categories);
         
-        // Initialize all category tabs to "Tất cả" (null)
+        // Initialize all category tabs to "Mới nhất" (null)
         categories.forEach(category => {
           if ((category.category_type === 'parent' || category.category_type === 'product') && 
               category.children && category.children.length > 0) {
@@ -462,16 +465,18 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.activeProcessTabIndex = index;
   }
 
-  // Set active sub-category tab (null means "Tất cả")
+  // Set active sub-category tab (null means "Mới nhất")
   setActiveSubCategoryTab(categoryId: number, subCategoryId: number | null): void {
     this.activeSubCategoryTabs[categoryId] = subCategoryId;
+    // Reset carousel position when changing tabs
+    this.categoryCarouselIndexes[categoryId] = 0;
   }
 
   // Get active sub-category ID for a category
   getActiveSubCategoryTab(categoryId: number): number | null {
     return this.activeSubCategoryTabs[categoryId] !== undefined 
       ? this.activeSubCategoryTabs[categoryId] 
-      : null; // Default to "Tất cả"
+      : null; // Default to "Mới nhất"
   }
 
   // Get posts for a category or subcategory
@@ -484,7 +489,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
     
     if (subCategoryId === null) {
-      // "Tất cả" - show all posts from main category and its subcategories
+      // "Mới nhất" - show all posts from main category and its subcategories
       const category = this.mainCategories.find(c => c.id === categoryId);
       console.log('📁 Category found:', category);
       
@@ -497,7 +502,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         post.category_id === categoryId || subcategoryIds.includes(post.category_id)
       ).sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
       
-      console.log('✅ Filtered posts (Tất cả):', filteredPosts.length, filteredPosts);
+      console.log('✅ Filtered posts (Mới nhất):', filteredPosts.length, filteredPosts);
       return filteredPosts;
     } else {
       // Specific subcategory
@@ -520,7 +525,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
     
     if (subCategoryId === null) {
-      // "Tất cả" - show all products from main category and its subcategories
+      // "Mới nhất" - show all products from main category and its subcategories
       const category = this.mainCategories.find(c => c.id === categoryId);
       console.log('📁 Category found:', category);
       
@@ -533,7 +538,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         product.category_id === categoryId || subcategoryIds.includes(product.category_id)
       ).sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
       
-      console.log('✅ Filtered products (Tất cả):', filteredProducts.length, filteredProducts);
+      console.log('✅ Filtered products (Mới nhất):', filteredProducts.length, filteredProducts);
       return filteredProducts;
     } else {
       // Specific subcategory
@@ -579,6 +584,45 @@ export class HomeComponent implements OnInit, OnDestroy {
       return item.thumbnail_url;
     }
     return item.image_url;
+  }
+
+  // Category carousel methods
+  getCategoryCarouselIndex(categoryId: number): number {
+    return this.categoryCarouselIndexes[categoryId] || 0;
+  }
+
+  // Get visible items count based on screen size
+  getVisibleItemsCount(): number {
+    if (typeof window === 'undefined') return 3;
+    const width = window.innerWidth;
+    if (width <= 768) return 1; // Mobile: 1 item
+    if (width <= 1024) return 2; // Tablet: 2 items
+    return 3; // Desktop: 3 items
+  }
+
+  // Get percentage for transform based on visible items
+  getCarouselTransformPercent(): number {
+    const visibleItems = this.getVisibleItemsCount();
+    return 100 / visibleItems; // 100% for 1 item, 50% for 2 items, 33.333% for 3 items
+  }
+
+  getMaxCarouselIndex(categoryId: number): number {
+    const items = this.getFilteredCategoryItems(categoryId, this.activeSubCategoryTabs[categoryId]);
+    const totalItems = Math.min(items.length, 6); // Max 6 items
+    const visibleItems = this.getVisibleItemsCount();
+    // Calculate max index: total items - visible items
+    return Math.max(0, totalItems - visibleItems);
+  }
+
+  scrollCategoryCarousel(categoryId: number, direction: 'prev' | 'next'): void {
+    const currentIndex = this.getCategoryCarouselIndex(categoryId);
+    const maxIndex = this.getMaxCarouselIndex(categoryId);
+    
+    if (direction === 'prev' && currentIndex > 0) {
+      this.categoryCarouselIndexes[categoryId] = currentIndex - 1;
+    } else if (direction === 'next' && currentIndex < maxIndex) {
+      this.categoryCarouselIndexes[categoryId] = currentIndex + 1;
+    }
   }
 }
 

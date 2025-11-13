@@ -207,10 +207,10 @@
         <div class="subcategory-tabs"
           *ngIf="(category.category_type === 'parent' || category.category_type === 'product') && category.children && category.children.length > 0">
 
-          <!-- "Tất cả" tab -->
+          <!-- "Mới nhất" tab -->
           <button class="subcategory-tab" [class.active]="getActiveSubCategoryTab(category.id) === null"
             (click)="setActiveSubCategoryTab(category.id, null)">
-            <span>TẤT CẢ</span>
+            <span>MỚI NHẤT</span>
           </button>
 
           <!-- Individual subcategory tabs -->
@@ -222,73 +222,109 @@
         </div>
 
         <!-- Posts grid based on selected tab -->
-        <div class="category-posts-grid"
+        <div class="category-posts-carousel-wrapper"
           *ngIf="(category.category_type === 'parent' || category.category_type === 'product') && category.children && category.children.length > 0">
-          <mat-card class="post-card"
-            *ngFor="let item of getFilteredCategoryItems(category.id, getActiveSubCategoryTab(category.id)).slice(0, 6)"
-            [routerLink]="getItemRoute(item)">
-            <div class="post-image">
-              <div class="post-image-placeholder" *ngIf="!getItemImageUrl(item)"></div>
-              <img *ngIf="getItemImageUrl(item)" [src]="getItemImageUrl(item)" [alt]="item.title"
-                (error)="onImageError($event)">
-              <div class="post-overlay">
-                <div class="post-category">{{ category.name }}</div>
-              </div>
+
+          <!-- Navigation buttons -->
+          <button class="carousel-nav carousel-prev" [disabled]="getCategoryCarouselIndex(category.id) === 0"
+            (click)="scrollCategoryCarousel(category.id, 'prev')" mat-icon-button>
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+
+          <div class="category-posts-carousel">
+            <div class="category-posts-grid"
+              [style.transform]="'translateX(-' + (getCategoryCarouselIndex(category.id) * getCarouselTransformPercent()) + '%)'">
+              <mat-card class="post-card"
+                *ngFor="let item of getFilteredCategoryItems(category.id, getActiveSubCategoryTab(category.id)).slice(0, 6)"
+                [routerLink]="getItemRoute(item)">
+                <div class="post-image">
+                  <div class="post-image-placeholder" *ngIf="!getItemImageUrl(item)"></div>
+                  <img *ngIf="getItemImageUrl(item)" [src]="getItemImageUrl(item)" [alt]="item.title"
+                    (error)="onImageError($event)">
+                  <div class="post-overlay">
+                    <div class="post-category">{{ category.name }}</div>
+                  </div>
+                </div>
+                <mat-card-content class="post-content">
+                  <h3 class="post-title">{{ item.title }}</h3>
+                  <p class="post-summary">{{ item.summary || 'Không có mô tả' }}</p>
+                  <div class="post-meta">
+                    <div class="meta-item">
+                      <mat-icon>event</mat-icon>
+                      <span class="post-date">{{ item.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                    </div>
+                    <div class="meta-item" *ngIf="!(currentUser$ | async)">
+                      <mat-icon>visibility</mat-icon>
+                      <span>{{ item.views || 0 }} lượt xem</span>
+                    </div>
+                  </div>
+                  <div class="read-more">
+                    <span>Xem chi tiết</span>
+                    <mat-icon>arrow_forward</mat-icon>
+                  </div>
+                </mat-card-content>
+              </mat-card>
             </div>
-            <mat-card-content class="post-content">
-              <h3 class="post-title">{{ item.title }}</h3>
-              <p class="post-summary">{{ item.summary || 'Không có mô tả' }}</p>
-              <div class="post-meta">
-                <div class="meta-item">
-                  <mat-icon>event</mat-icon>
-                  <span class="post-date">{{ item.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
-                </div>
-                <div class="meta-item" *ngIf="!(currentUser$ | async)">
-                  <mat-icon>visibility</mat-icon>
-                  <span>{{ item.views || 0 }} lượt xem</span>
-                </div>
-              </div>
-              <div class="read-more">
-                <span>Xem chi tiết</span>
-                <mat-icon>arrow_forward</mat-icon>
-              </div>
-            </mat-card-content>
-          </mat-card>
+          </div>
+
+          <button class="carousel-nav carousel-next"
+            [disabled]="getCategoryCarouselIndex(category.id) >= getMaxCarouselIndex(category.id)"
+            (click)="scrollCategoryCarousel(category.id, 'next')" mat-icon-button>
+            <mat-icon>chevron_right</mat-icon>
+          </button>
         </div>
 
         <!-- For regular categories: show recent posts -->
-        <div class="category-posts-grid" *ngIf="category.category_type === 'regular'">
-          <mat-card class="post-card" *ngFor="let post of getCategoryPosts(category.id).slice(0, 3)"
-            [routerLink]="'/post/' + (post.slug || post.id)">
-            <div class="post-image">
-              <div class="post-image-placeholder" *ngIf="!post.image_url"></div>
-              <img *ngIf="post.image_url" [src]="post.image_url" [alt]="post.title" (error)="onImageError($event)">
-              <div class="post-overlay">
-                <div class="post-category">{{ category.name }}</div>
-              </div>
+        <div class="category-posts-carousel-wrapper" *ngIf="category.category_type === 'regular'">
+
+          <!-- Navigation buttons -->
+          <button class="carousel-nav carousel-prev" [disabled]="getCategoryCarouselIndex(category.id) === 0"
+            (click)="scrollCategoryCarousel(category.id, 'prev')" mat-icon-button>
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+
+          <div class="category-posts-carousel">
+            <div class="category-posts-grid"
+              [style.transform]="'translateX(-' + (getCategoryCarouselIndex(category.id) * getCarouselTransformPercent()) + '%)'">
+              <mat-card class="post-card" *ngFor="let post of getCategoryPosts(category.id).slice(0, 6)"
+                [routerLink]="'/post/' + (post.slug || post.id)">
+                <div class="post-image">
+                  <div class="post-image-placeholder" *ngIf="!post.image_url"></div>
+                  <img *ngIf="post.image_url" [src]="post.image_url" [alt]="post.title" (error)="onImageError($event)">
+                  <div class="post-overlay">
+                    <div class="post-category">{{ category.name }}</div>
+                  </div>
+                </div>
+                <mat-card-content class="post-content">
+                  <h3 class="post-title">{{ post.title }}</h3>
+                  <p class="post-summary">{{ post.summary || 'Không có mô tả' }}</p>
+                  <div class="post-meta">
+                    <div class="meta-item">
+                      <mat-icon>event</mat-icon>
+                      <span class="post-date">{{ post.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                    </div>
+                    <div class="meta-item" *ngIf="!(currentUser$ | async)">
+                      <mat-icon>visibility</mat-icon>
+                      <span>{{ post.views || 0 }} lượt xem</span>
+                    </div>
+                  </div>
+                  <div class="read-more">
+                    <span>Xem chi tiết</span>
+                    <mat-icon>arrow_forward</mat-icon>
+                  </div>
+                </mat-card-content>
+              </mat-card>
             </div>
-            <mat-card-content class="post-content">
-              <h3 class="post-title">{{ post.title }}</h3>
-              <p class="post-summary">{{ post.summary || 'Không có mô tả' }}</p>
-              <div class="post-meta">
-                <div class="meta-item">
-                  <mat-icon>event</mat-icon>
-                  <span class="post-date">{{ post.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
-                </div>
-                <div class="meta-item" *ngIf="!(currentUser$ | async)">
-                  <mat-icon>visibility</mat-icon>
-                  <span>{{ post.views || 0 }} lượt xem</span>
-                </div>
-              </div>
-              <div class="read-more">
-                <span>Xem chi tiết</span>
-                <mat-icon>arrow_forward</mat-icon>
-              </div>
-            </mat-card-content>
-          </mat-card>
+          </div>
+
+          <button class="carousel-nav carousel-next"
+            [disabled]="getCategoryCarouselIndex(category.id) >= getMaxCarouselIndex(category.id)"
+            (click)="scrollCategoryCarousel(category.id, 'next')" mat-icon-button>
+            <mat-icon>chevron_right</mat-icon>
+          </button>
         </div>
 
-        <!-- View all button -->
+        <!-- View All Button --> <!-- View all button -->
         <div class="text-center mt-4"
           *ngIf="(category.children && category.children.length > 0) || getCategoryPosts(category.id).length > 0">
           <button mat-raised-button [routerLink]="'/category/' + category.slug" class="btn-primary view-all-btn">
@@ -299,8 +335,5 @@
       </div>
     </div>
   </section>
-
-  <!-- Consultation Form Section -->
-  <app-consultation-form></app-consultation-form>
 
 </main>

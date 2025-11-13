@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { ConsultationFormComponent } from './components/consultation-form/consultation-form.component';
 import { VisitorTrackingService } from './services/visitor-tracking.service';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
@@ -36,10 +37,24 @@ import { VisitorTrackingService } from './services/visitor-tracking.service';
 export class AppComponent implements OnInit {
   title = 'Modern House Design';
 
-  constructor(private visitorTrackingService: VisitorTrackingService) {}
+  constructor(
+    private visitorTrackingService: VisitorTrackingService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     // Initialize visitor tracking
     this.visitorTrackingService.initialize();
+
+    // Scroll to top on route change
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe(() => {
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: 'smooth'
+        });
+      });
   }
 }
