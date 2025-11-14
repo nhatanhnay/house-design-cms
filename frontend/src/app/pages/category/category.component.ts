@@ -89,12 +89,12 @@ import { Post, Admin, Category, Product } from '../../models/models';
 
           <!-- Subcategory Tabs (if has subcategories) -->
           <div class="subcategory-tabs" *ngIf="allSubcategories && allSubcategories.length > 0">
-            <!-- "Tất cả" tab -->
+            <!-- "Mới nhất" tab -->
             <button 
               class="subcategory-tab" 
               [class.active]="getActiveSubcategoryTab() === null"
               (click)="setActiveSubcategoryTab(null)">
-              <span>TẤT CẢ</span>
+              <span>MỚI NHẤT</span>
             </button>
 
             <!-- Individual subcategory tabs -->
