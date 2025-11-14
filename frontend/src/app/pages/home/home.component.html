@@ -232,10 +232,9 @@
           </button>
 
           <div class="category-posts-carousel">
-            <div class="category-posts-grid"
-              [style.transform]="'translateX(-' + (getCategoryCarouselIndex(category.id) * getCarouselTransformPercent()) + '%)'">
+            <div class="category-posts-grid">
               <mat-card class="post-card"
-                *ngFor="let item of getFilteredCategoryItems(category.id, getActiveSubCategoryTab(category.id)).slice(0, 24)"
+                *ngFor="let item of getCurrentPageItems(category.id, getActiveSubCategoryTab(category.id))"
                 [routerLink]="getItemRoute(item)">
                 <div class="post-image">
                   <div class="post-image-placeholder" *ngIf="!getItemImageUrl(item)"></div>
@@ -284,9 +283,8 @@
           </button>
 
           <div class="category-posts-carousel">
-            <div class="category-posts-grid"
-              [style.transform]="'translateX(-' + (getCategoryCarouselIndex(category.id) * getCarouselTransformPercent()) + '%)'">
-              <mat-card class="post-card" *ngFor="let post of getCategoryPosts(category.id).slice(0, 24)"
+            <div class="category-posts-grid">
+              <mat-card class="post-card" *ngFor="let post of getCurrentPagePosts(category.id)"
                 [routerLink]="'/post/' + (post.slug || post.id)">
                 <div class="post-image">
                   <div class="post-image-placeholder" *ngIf="!post.image_url"></div>

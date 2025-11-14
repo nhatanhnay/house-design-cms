@@ -623,6 +623,34 @@ export class HomeComponent implements OnInit, OnDestroy {
     return Math.max(0, totalPages - 1);
   }
 
+  // Get items for current carousel page
+  getCurrentPageItems(categoryId: number, subCategoryId: number | null = null): (Post | Product)[] {
+    const allItems = this.getFilteredCategoryItems(categoryId, subCategoryId);
+    const itemsPerPage = this.getVisibleItemsCount();
+    const currentIndex = this.getCategoryCarouselIndex(categoryId);
+    
+    // Calculate start and end index for current page
+    const startIndex = currentIndex * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    
+    // Return items for current page
+    return allItems.slice(startIndex, endIndex);
+  }
+
+  // Get items for current carousel page (for regular categories)
+  getCurrentPagePosts(categoryId: number): Post[] {
+    const allPosts = this.getCategoryPosts(categoryId);
+    const itemsPerPage = this.getVisibleItemsCount();
+    const currentIndex = this.getCategoryCarouselIndex(categoryId);
+    
+    // Calculate start and end index for current page
+    const startIndex = currentIndex * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    
+    // Return posts for current page
+    return allPosts.slice(startIndex, endIndex);
+  }
+
   scrollCategoryCarousel(categoryId: number, direction: 'prev' | 'next'): void {
     const currentIndex = this.getCategoryCarouselIndex(categoryId);
     const maxIndex = this.getMaxCarouselIndex(categoryId);
