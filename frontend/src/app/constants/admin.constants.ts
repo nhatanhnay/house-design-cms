@@ -58,6 +58,6 @@ export const ADMIN_CONSTANTS = {
   },
 
   // Table columns
-  POST_COLUMNS: ['id', 'title', 'category', 'published', 'views', 'created_at', 'actions'],
+  POST_COLUMNS: ['id', 'thumbnail', 'title', 'category', 'published', 'views', 'created_at', 'actions'],
   CONSULTATION_COLUMNS: ['id', 'name', 'phone', 'email', 'details', 'status', 'created_at', 'actions']
 } as const;

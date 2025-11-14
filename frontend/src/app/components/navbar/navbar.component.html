@@ -2,7 +2,8 @@
   <div class="container navbar-content">
     <div class="brand">
       <a routerLink="/" class="brand-link">
-        <mat-icon>home</mat-icon>
+        <img *ngIf="navbarLogoUrl" [src]="navbarLogoUrl" alt="Logo" class="brand-logo">
+        <mat-icon *ngIf="!navbarLogoUrl">home</mat-icon>
         <span class="brand-text">MMA Architectural Design</span>
       </a>
     </div>

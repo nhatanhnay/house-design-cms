@@ -227,6 +227,17 @@
                 <td mat-cell *matCellDef="let post">{{ post.id }}</td>
               </ng-container>
 
+              <ng-container matColumnDef="thumbnail">
+                <th mat-header-cell *matHeaderCellDef>Ảnh</th>
+                <td mat-cell *matCellDef="let post">
+                  <img *ngIf="post.image_url" [src]="post.image_url" alt="{{ post.title }}"
+                    style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                  <div *ngIf="!post.image_url" class="no-image-placeholder">
+                    <mat-icon>image</mat-icon>
+                  </div>
+                </td>
+              </ng-container>
+
               <ng-container matColumnDef="title">
                 <th mat-header-cell *matHeaderCellDef>Tiêu đề</th>
                 <td mat-cell *matCellDef="let post">{{ post.title }}</td>
@@ -359,12 +370,9 @@
                 <mat-icon>add_photo_alternate</mat-icon>
                 Thêm Hình Ảnh
               </button>
-              <button mat-stroked-button color="primary" (click)="uploadHomepageVideo()">
-                <mat-icon>videocam</mat-icon>
-                Thêm Video
-              </button>
             </div>
           </div>
+
 
           <!-- Images Section -->
           <mat-card class="homepage-media-card">
@@ -375,10 +383,16 @@
               </button>
             </div>
 
+            <!-- Upload Progress -->
+            <div class="upload-progress-container" *ngIf="uploadProgress > 0 && uploadProgress < 100">
+              <mat-progress-bar mode="determinate" [value]="uploadProgress"></mat-progress-bar>
+              <p class="upload-status">Đang tải lên... {{ uploadProgress }}%</p>
+            </div>
+
             <div class="media-grid" *ngIf="homepageImages.length > 0; else noImages">
               <div class="media-item" *ngFor="let image of homepageImages; let i = index">
                 <div class="media-preview">
-                  <img [src]="image" [alt]="'Homepage image ' + (i + 1)" loading="lazy">
+                  <img [src]="image" [alt]="'Homepage image ' + (i + 1)" loading="lazy" (error)="onImageError($event)">
                   <div class="media-overlay">
                     <button mat-icon-button class="overlay-btn replace-btn"
                       (click)="replaceHomepageMedia(image, 'images')" matTooltip="Thay thế">
@@ -404,45 +418,47 @@
             </ng-template>
           </mat-card>
 
-          <!-- Videos Section -->
-          <mat-card class="homepage-media-card">
+          <!-- Logo Navbar Management Section -->
+          <mat-card class="logo-management-card">
             <div class="media-section-header">
-              <h3>Video Trang Chủ</h3>
-              <button mat-icon-button (click)="refreshHomepageMedia()">
-                <mat-icon>refresh</mat-icon>
+              <h3>Logo Navbar</h3>
+              <button mat-raised-button color="primary" (click)="uploadNavbarLogo()">
+                <mat-icon>add_photo_alternate</mat-icon>
+                Tải Logo Lên
               </button>
             </div>
 
-            <div class="media-grid" *ngIf="homepageVideos.length > 0; else noVideos">
-              <div class="media-item" *ngFor="let video of homepageVideos; let i = index">
-                <div class="media-preview video-preview">
-                  <video [src]="video" preload="metadata" muted>
-                    Trình duyệt không hỗ trợ video
-                  </video>
-                  <div class="media-overlay">
-                    <button mat-icon-button class="overlay-btn play-btn" (click)="playVideo(video)" matTooltip="Phát">
-                      <mat-icon>play_arrow</mat-icon>
-                    </button>
-                    <button mat-icon-button class="overlay-btn replace-btn"
-                      (click)="replaceHomepageMedia(video, 'videos')" matTooltip="Thay thế">
-                      <mat-icon>swap_horiz</mat-icon>
-                    </button>
-                    <button mat-icon-button class="overlay-btn delete-btn"
-                      (click)="deleteHomepageMedia(video, 'videos')" matTooltip="Xóa">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </div>
+            <!-- Upload Progress for Logo -->
+            <div class="upload-progress-container" *ngIf="logoUploadProgress > 0 && logoUploadProgress < 100">
+              <mat-progress-bar mode="determinate" [value]="logoUploadProgress"></mat-progress-bar>
+              <p class="upload-status">Đang tải logo lên... {{ logoUploadProgress }}%</p>
+            </div>
+
+            <div class="logo-preview-container" *ngIf="navbarLogoUrl; else noLogo">
+              <div class="logo-preview">
+                <img [src]="navbarLogoUrl" alt="Navbar Logo" (error)="onImageError($event)">
+                <span class="brand-text">MMA Architectural Design</span>
+                <div class="logo-overlay">
+                  <button mat-icon-button class="overlay-btn replace-btn" (click)="uploadNavbarLogo()"
+                    matTooltip="Thay thế logo">
+                    <mat-icon>swap_horiz</mat-icon>
+                  </button>
+                  <button mat-icon-button class="overlay-btn delete-btn" (click)="deleteNavbarLogo()"
+                    matTooltip="Xóa logo">
+                    <mat-icon>delete</mat-icon>
+                  </button>
                 </div>
-                <div class="media-info">
-                  <span class="media-filename">{{ getFilename(video) }}</span>
-                </div>
+              </div>
+              <div class="logo-info">
+                <p><strong>URL:</strong> {{ navbarLogoUrl }}</p>
               </div>
             </div>
 
-            <ng-template #noVideos>
+            <ng-template #noLogo>
               <div class="empty-media-state">
-                <mat-icon>video_library</mat-icon>
-                <p>Chưa có video nào</p>
+                <mat-icon>image</mat-icon>
+                <p>Chưa có logo navbar</p>
+                <small>Kích thước khuyến nghị: 200x60px (PNG với nền trong suốt)</small>
               </div>
             </ng-template>
           </mat-card>

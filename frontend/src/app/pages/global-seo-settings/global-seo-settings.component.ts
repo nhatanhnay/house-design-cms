@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { DataService } from '../../services/data.service';
 import { GlobalSEOSettings } from '../../models/models';
@@ -26,7 +27,8 @@ import { GlobalSEOSettings } from '../../models/models';
     MatIconModule,
     MatSnackBarModule,
     MatTabsModule,
-    MatDividerModule
+    MatDividerModule,
+    MatTooltipModule
   ],
   template: `
     <div class="seo-settings-container">
@@ -75,8 +77,22 @@ import { GlobalSEOSettings } from '../../models/models';
                       <mat-label>Default Open Graph Image URL</mat-label>
                       <input matInput formControlName="default_og_image_url"
                              placeholder="Default image for social sharing">
+                      <button mat-icon-button matSuffix type="button" 
+                              (click)="uploadOgImage()" 
+                              matTooltip="Upload Image">
+                        <mat-icon>upload</mat-icon>
+                      </button>
                       <mat-hint>Recommended size: 1200x630px</mat-hint>
                     </mat-form-field>
+                  </div>
+
+                  <!-- OG Image Preview -->
+                  <div class="form-row" *ngIf="seoForm.get('default_og_image_url')?.value">
+                    <div class="og-image-preview">
+                      <img [src]="seoForm.get('default_og_image_url')?.value" 
+                           alt="OG Image Preview"
+                           (error)="onOgImageError($event)">
+                    </div>
                   </div>
                 </div>
               </mat-tab>
@@ -282,5 +298,51 @@ export class GlobalSeoSettingsComponent implements OnInit {
 
   getDescriptionLength(): number {
     return this.seoForm.get('default_meta_description')?.value?.length || 0;
+  }
+
+  uploadOgImage(): void {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png,image/jpeg,image/jpg,image/webp';
+    input.onchange = (event: any) => {
+      const file = event.target.files[0];
+      if (file) {
+        this.handleOgImageUpload(file);
+      }
+    };
+    input.click();
+  }
+
+  handleOgImageUpload(file: File): void {
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      this.snackBar.open('Image size must be less than 2MB', 'Close', { duration: 3000 });
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.match(/^image\/(png|jpeg|jpg|webp)$/)) {
+      this.snackBar.open('Only PNG, JPG, and WEBP images are allowed', 'Close', { duration: 3000 });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    this.dataService.uploadOGImage(formData).subscribe({
+      next: (response: any) => {
+        this.seoForm.patchValue({
+          default_og_image_url: response.url
+        });
+        this.snackBar.open('OG Image uploaded successfully!', 'Close', { duration: 3000 });
+      },
+      error: (_error: any) => {
+        this.snackBar.open('Error uploading OG image', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  onOgImageError(event: any): void {
+    event.target.style.display = 'none';
   }
 }

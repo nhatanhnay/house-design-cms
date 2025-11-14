@@ -1057,6 +1057,271 @@ func ReplaceHomepageMedia(c *gin.Context) {
 	})
 }
 
+// Navbar Logo handlers
+func GetNavbarLogo(c *gin.Context) {
+	// Get the current working directory and use absolute path
+	workDir, _ := os.Getwd()
+	logoDir := filepath.Join(workDir, "data", "uploads", "navbar")
+
+	// Check if directory exists
+	if _, err := os.Stat(logoDir); os.IsNotExist(err) {
+		c.JSON(http.StatusOK, gin.H{"logo_url": ""})
+		return
+	}
+
+	// List files in the directory
+	files, err := os.ReadDir(logoDir)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read logo directory"})
+		return
+	}
+
+	// Find the first logo file
+	for _, file := range files {
+		if !file.IsDir() {
+			filename := file.Name()
+			// Check if it's an image file
+			ext := strings.ToLower(filepath.Ext(filename))
+			if ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".svg" || ext == ".webp" {
+				baseURL := getBaseURL(c)
+				logoURL := fmt.Sprintf("%s/uploads/navbar/%s", baseURL, filename)
+				c.JSON(http.StatusOK, gin.H{"logo_url": logoURL})
+				return
+			}
+		}
+	}
+
+	// No logo found
+	c.JSON(http.StatusOK, gin.H{"logo_url": ""})
+}
+
+func UploadNavbarLogo(c *gin.Context) {
+	// Check authentication
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Parse the multipart form
+	file, header, err := c.Request.FormFile("logo")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
+		return
+	}
+	defer file.Close()
+
+	// Validate file type
+	allowedTypes := map[string]bool{
+		"image/jpeg":    true,
+		"image/jpg":     true,
+		"image/png":     true,
+		"image/svg+xml": true,
+		"image/webp":    true,
+	}
+
+	contentType := header.Header.Get("Content-Type")
+	if !allowedTypes[contentType] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only images are allowed."})
+		return
+	}
+
+	// Validate file size (2MB max for logo)
+	const maxSize = 2 * 1024 * 1024 // 2MB
+	if header.Size > maxSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File too large. Maximum size is 2MB."})
+		return
+	}
+
+	// Create navbar logo directory if it doesn't exist
+	workDir, _ := os.Getwd()
+	uploadsDir := filepath.Join(workDir, "data", "uploads", "navbar")
+	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+		return
+	}
+
+	// Delete existing logo files first
+	files, err := os.ReadDir(uploadsDir)
+	if err == nil {
+		for _, f := range files {
+			if !f.IsDir() {
+				os.Remove(filepath.Join(uploadsDir, f.Name()))
+			}
+		}
+	}
+
+	// Generate filename (keep original extension)
+	ext := filepath.Ext(header.Filename)
+	filename := "logo" + ext
+	filePath := filepath.Join(uploadsDir, filename)
+
+	// Create the file
+	dst, err := os.Create(filePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+	defer dst.Close()
+
+	// Copy the uploaded file to the destination
+	if _, err := io.Copy(dst, file); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+
+	// Return the URL
+	baseURL := getBaseURL(c)
+	logoURL := fmt.Sprintf("%s/uploads/navbar/%s", baseURL, filename)
+
+	fmt.Printf("✅ NAVBAR LOGO UPLOAD THÀNH CÔNG:\n")
+	fmt.Printf("   📁 Thư mục lưu: %s\n", uploadsDir)
+	fmt.Printf("   📄 Tên file: %s\n", filename)
+	fmt.Printf("   🔗 URL trả về: %s\n", logoURL)
+
+	c.JSON(http.StatusOK, gin.H{
+		"url":      logoURL,
+		"logo_url": logoURL,
+		"filename": filename,
+		"message":  "Logo uploaded successfully",
+	})
+}
+
+func DeleteNavbarLogo(c *gin.Context) {
+	// Check authentication
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Get the current working directory and use absolute path
+	workDir, _ := os.Getwd()
+	logoDir := filepath.Join(workDir, "data", "uploads", "navbar")
+
+	// Check if directory exists
+	if _, err := os.Stat(logoDir); os.IsNotExist(err) {
+		c.JSON(http.StatusOK, gin.H{"message": "No logo to delete"})
+		return
+	}
+
+	// Delete all files in the directory
+	files, err := os.ReadDir(logoDir)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read logo directory"})
+		return
+	}
+
+	deletedCount := 0
+	for _, file := range files {
+		if !file.IsDir() {
+			filePath := filepath.Join(logoDir, file.Name())
+			if err := os.Remove(filePath); err != nil {
+				fmt.Printf("⚠️ Warning: Failed to delete %s: %v\n", file.Name(), err)
+			} else {
+				deletedCount++
+				fmt.Printf("🗑️ Deleted navbar logo: %s\n", file.Name())
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":       "Logo deleted successfully",
+		"deleted_files": deletedCount,
+	})
+}
+
+// UploadOGImage handles uploading of default OG image for SEO settings
+func UploadOGImage(c *gin.Context) {
+	// Check authentication
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Parse the multipart form
+	file, header, err := c.Request.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
+		return
+	}
+	defer file.Close()
+
+	// Validate file type
+	allowedTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/jpg":  true,
+		"image/png":  true,
+		"image/webp": true,
+	}
+
+	contentType := header.Header.Get("Content-Type")
+	if !allowedTypes[contentType] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only PNG, JPG, and WEBP images are allowed."})
+		return
+	}
+
+	// Validate file size (2MB max)
+	const maxSize = 2 * 1024 * 1024 // 2MB
+	if header.Size > maxSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File too large. Maximum size is 2MB."})
+		return
+	}
+
+	// Create SEO uploads directory if it doesn't exist
+	workDir, _ := os.Getwd()
+	uploadsDir := filepath.Join(workDir, "data", "uploads", "seo")
+	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+		return
+	}
+
+	// Delete existing OG image files first
+	files, err := os.ReadDir(uploadsDir)
+	if err == nil {
+		for _, f := range files {
+			if !f.IsDir() && strings.HasPrefix(f.Name(), "og-image") {
+				os.Remove(filepath.Join(uploadsDir, f.Name()))
+			}
+		}
+	}
+
+	// Generate filename (keep original extension)
+	ext := filepath.Ext(header.Filename)
+	filename := "og-image" + ext
+	filePath := filepath.Join(uploadsDir, filename)
+
+	// Create the file
+	dst, err := os.Create(filePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+	defer dst.Close()
+
+	// Copy the uploaded file to the destination
+	if _, err := io.Copy(dst, file); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+
+	// Return the URL
+	baseURL := getBaseURL(c)
+	imageURL := fmt.Sprintf("%s/uploads/seo/%s", baseURL, filename)
+
+	fmt.Printf("✅ OG IMAGE UPLOAD THÀNH CÔNG:\n")
+	fmt.Printf("   📁 Thư mục lưu: %s\n", uploadsDir)
+	fmt.Printf("   📄 Tên file: %s\n", filename)
+	fmt.Printf("   🔗 URL trả về: %s\n", imageURL)
+
+	c.JSON(http.StatusOK, gin.H{
+		"url":      imageURL,
+		"filename": filename,
+		"message":  "OG image uploaded successfully",
+	})
+}
+
 // Helper function to generate slug from title
 func generateSlug(title string) string {
 	slug := strings.ToLower(title)

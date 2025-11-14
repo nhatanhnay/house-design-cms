@@ -319,6 +319,45 @@ export class DataService {
     return this.http.delete(`${this.apiUrl}/homepage/${type}/${filename}`, { headers });
   }
 
+  // Navbar Logo Management
+  getNavbarLogo(): Observable<any> {
+    return this.http.get<{logo_url: string}>(`${this.apiUrl}/navbar/logo`);
+  }
+
+  uploadNavbarLogo(formData: FormData): Observable<any> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.post(`${this.apiUrl}/navbar/upload-logo`, formData, { headers });
+  }
+
+  deleteNavbarLogo(): Observable<any> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.delete(`${this.apiUrl}/navbar/logo`, { headers });
+  }
+
+  // OG Image Upload for SEO Settings
+  uploadOGImage(formData: FormData): Observable<any> {
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.post(`${this.apiUrl}/seo/upload-og-image`, formData, { headers });
+  }
+
   // General image upload for category thumbnails and other purposes
   uploadImage(file: File): Observable<{ url: string }> {
     const formData = new FormData();

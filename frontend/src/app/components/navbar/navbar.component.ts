@@ -33,6 +33,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   // Add property to hold categories directly
   mainCategories: CategoryTreeItem[] = [];
   
+  // Logo navbar
+  navbarLogoUrl: string = '';
+  
   // Mobile menu state
   isMobileMenuOpen: boolean = false;
 
@@ -65,6 +68,21 @@ export class NavbarComponent implements OnInit, OnDestroy {
       error: (error) => {
         // Set empty array on error
         this.mainCategories = [];
+      }
+    });
+
+    // Load navbar logo
+    this.loadNavbarLogo();
+  }
+
+  loadNavbarLogo(): void {
+    this.dataService.getNavbarLogo().subscribe({
+      next: (response: any) => {
+        this.navbarLogoUrl = response.logo_url || '';
+      },
+      error: (error) => {
+        console.log('No navbar logo found or error loading:', error);
+        this.navbarLogoUrl = '';
       }
     });
   }

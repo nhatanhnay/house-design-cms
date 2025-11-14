@@ -17,6 +17,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule } from '@angular/material/sort';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Observable, of, Subject } from 'rxjs';
 import { map, catchError, switchMap, startWith } from 'rxjs/operators';
@@ -81,6 +82,7 @@ export interface FooterContent {
     MatSortModule,
     MatChipsModule,
     MatExpansionModule,
+    MatProgressBarModule,
     DragDropModule,
     IconSelectorComponent,
     GlobalSeoSettingsComponent
@@ -107,6 +109,9 @@ export class AdminComponent implements OnInit {
   // Homepage Management Properties
   homepageImages: string[] = [];
   homepageVideos: string[] = [];
+  uploadProgress: number = 0;
+  logoUploadProgress: number = 0;
+  navbarLogoUrl: string = '';
   homepageContent: HomeContent = {
     id: 0,
     hero_title: '',
@@ -192,6 +197,7 @@ export class AdminComponent implements OnInit {
     this.loadHomepageContent();
     this.loadHomepageMedia();
     this.loadFooterContent();
+    this.loadNavbarLogo();
   }
 
   setCurrentSection(section: string): void {
@@ -504,46 +510,32 @@ export class AdminComponent implements OnInit {
     const formData = new FormData();
     formData.append('upload', file);
 
+    this.uploadProgress = 0;
+    
     this.dataService.uploadHomepageImage(formData).subscribe({
       next: () => {
-        this.loadHomepageMedia();
-        this.showSuccessMessage('Hình ảnh đã được tải lên');
+        this.uploadProgress = 100;
+        setTimeout(() => {
+          this.uploadProgress = 0;
+          this.loadHomepageMedia();
+          this.showSuccessMessage('Hình ảnh đã được tải lên');
+        }, 500);
       },
       error: (error) => {
+        this.uploadProgress = 0;
         this.logger.error('Error uploading image', error, 'MediaManagement');
         this.showErrorMessage('Lỗi khi tải lên hình ảnh');
       }
     });
-  }
 
-  uploadHomepageVideo(): void {
-    this.createFileInput('video/*', true, (files) => {
-      Array.from(files).forEach(file => {
-        this.handleVideoUpload(file);
-      });
-    });
-  }
-
-  private handleVideoUpload(file: File): void {
-    const validation = FileValidator.validateVideo(file);
-    if (!validation.isValid) {
-      this.showErrorMessage(validation.error!);
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('upload', file);
-
-    this.dataService.uploadHomepageVideo(formData).subscribe({
-      next: () => {
-        this.loadHomepageMedia();
-        this.showSuccessMessage('Video đã được tải lên');
-      },
-      error: (error) => {
-        this.logger.error('Error uploading video', error, 'MediaManagement');
-        this.showErrorMessage('Lỗi khi tải lên video');
+    // Simulate progress (since we don't have real progress from backend)
+    const progressInterval = setInterval(() => {
+      if (this.uploadProgress < 90) {
+        this.uploadProgress += 10;
+      } else {
+        clearInterval(progressInterval);
       }
-    });
+    }, 200);
   }
 
   replaceHomepageMedia(mediaUrl: string, type: 'images' | 'videos'): void {
@@ -607,6 +599,89 @@ export class AdminComponent implements OnInit {
   playVideo(videoUrl: string): void {
     // Open video in a new tab or modal
     window.open(videoUrl, '_blank');
+  }
+
+  // Navbar Logo Management
+  uploadNavbarLogo(): void {
+    this.createFileInput('image/*', false, (files) => {
+      const file = files[0];
+      if (file) {
+        this.handleLogoUpload(file);
+      }
+    });
+  }
+
+  private handleLogoUpload(file: File): void {
+    const validation = FileValidator.validateImage(file);
+    if (!validation.isValid) {
+      this.showErrorMessage(validation.error!);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    this.logoUploadProgress = 0;
+
+    this.dataService.uploadNavbarLogo(formData).subscribe({
+      next: (response: any) => {
+        this.logoUploadProgress = 100;
+        setTimeout(() => {
+          this.logoUploadProgress = 0;
+          this.navbarLogoUrl = response.url || response.logo_url;
+          this.showSuccessMessage('Logo đã được tải lên. Trang sẽ tự động làm mới...');
+          // Reload page to refresh navbar logo
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        }, 500);
+      },
+      error: (error) => {
+        this.logoUploadProgress = 0;
+        this.logger.error('Error uploading logo', error, 'LogoManagement');
+        this.showErrorMessage('Lỗi khi tải lên logo');
+      }
+    });
+
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      if (this.logoUploadProgress < 90) {
+        this.logoUploadProgress += 10;
+      } else {
+        clearInterval(progressInterval);
+      }
+    }, 200);
+  }
+
+  deleteNavbarLogo(): void {
+    if (confirm('Bạn có chắc chắn muốn xóa logo navbar?')) {
+      this.dataService.deleteNavbarLogo().subscribe({
+        next: () => {
+          this.navbarLogoUrl = '';
+          this.showSuccessMessage('Logo đã được xóa. Trang sẽ tự động làm mới...');
+          // Reload page to refresh navbar
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        },
+        error: (error) => {
+          this.logger.error('Error deleting logo', error, 'LogoManagement');
+          this.showErrorMessage('Lỗi khi xóa logo');
+        }
+      });
+    }
+  }
+
+  loadNavbarLogo(): void {
+    this.dataService.getNavbarLogo().subscribe({
+      next: (response: any) => {
+        this.navbarLogoUrl = response.logo_url || '';
+      },
+      error: (error) => {
+        this.logger.debug('No navbar logo found or error loading', error, 'LogoManagement');
+        this.navbarLogoUrl = '';
+      }
+    });
   }
 
   getFilename(url: string): string {
@@ -1284,5 +1359,11 @@ export class AdminComponent implements OnInit {
     // Hide broken image and show placeholder
     event.target.style.display = 'none';
     console.warn(`Icon not found: ${this.processTabs[tabIndex].steps[stepIndex].icon_url}`);
+  }
+
+  onImageError(event: any): void {
+    const target = event.target as HTMLImageElement;
+    target.style.display = 'none';
+    console.warn(`Image failed to load: ${target.src}`);
   }
 }

@@ -768,6 +768,132 @@
       text-align: center;
       padding: 40px 20px;
       color: #666;
+
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        opacity: 0.5;
+      }
+
+      p {
+        margin-top: 16px;
+        font-size: 1rem;
+      }
+
+      small {
+        display: block;
+        margin-top: 8px;
+        font-size: 0.85rem;
+        color: #999;
+      }
+    }
+
+    // Upload Progress Styles
+    .upload-progress-container {
+      padding: 16px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      margin: 16px;
+
+      mat-progress-bar {
+        height: 8px;
+        border-radius: 4px;
+      }
+
+      .upload-status {
+        margin-top: 8px;
+        text-align: center;
+        font-size: 0.9rem;
+        color: #666;
+      }
+    }
+
+    // Logo Management Styles
+    .logo-management-card {
+      margin-bottom: 24px;
+    }
+
+    .logo-preview-container {
+      padding: 16px;
+    }
+
+    .logo-preview {
+      position: relative;
+      max-width: 100%;
+      margin: 0 auto;
+      border: 2px dashed #e0e0e0;
+      border-radius: 8px;
+      padding: 8px 20px;
+      background: #3A3A3A; // Same color as navbar (var(--main-dark-gray))
+      transition: all 0.3s ease;
+      min-height: 64px; // Same height as navbar
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 4px; // Reduced gap to bring logo closer to text
+
+      &:hover {
+        border-color: var(--accent-copper);
+
+        .logo-overlay {
+          opacity: 1;
+        }
+      }
+
+      img {
+        max-width: 240px; // Increased from 200px
+        max-height: 60px; // Increased from 50px
+        display: block;
+        object-fit: contain;
+      }
+
+      .brand-text {
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 500;
+        margin-left: 4px; // Reduced margin
+      }
+    }
+
+    .logo-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #3A3A3A; // Same color as navbar (var(--main-dark-gray))
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      border-radius: 8px;
+    }
+
+    .logo-info {
+      margin-top: 16px;
+      padding: 12px;
+      background: #f5f5f5;
+      border-radius: 4px;
+
+      p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #666;
+        word-break: break-all;
+      }
+
+      strong {
+        color: #333;
+      }
+    }
+
+    .empty-media-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
     }
 
     .empty-media-state mat-icon {
@@ -1271,6 +1397,23 @@
       font-size: 12px;
       color: #1976d2;
       font-weight: 500;
+    }
+
+    .no-image-placeholder {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f5f5f5;
+      border-radius: 4px;
+      color: #999;
+
+      mat-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
     }
 
     // Clickable rows for posts and products

@@ -72,6 +72,7 @@ func main() {
 		api.GET("/home-content", handlers.GetHomeContent)
 		api.GET("/footer-content", handlers.GetFooterContent)
 		api.GET("/seo-settings", handlers.GetGlobalSEOSettings)
+		api.GET("/navbar/logo", handlers.GetNavbarLogo)
 
 		// Public consultation submission
 		api.POST("/consultations", handlers.CreateConsultation)
@@ -115,6 +116,10 @@ func main() {
 			protected.DELETE("/homepage/:type/:filename", handlers.DeleteHomepageMedia)
 			protected.PUT("/homepage/:type/:filename", handlers.ReplaceHomepageMedia)
 
+			// Navbar logo management
+			protected.POST("/navbar/upload-logo", handlers.UploadNavbarLogo)
+			protected.DELETE("/navbar/logo", handlers.DeleteNavbarLogo)
+
 			// Home content management
 			protected.PUT("/home-content", handlers.UpdateHomeContent)
 
@@ -123,6 +128,7 @@ func main() {
 
 			// SEO settings management
 			protected.PUT("/seo-settings", handlers.UpdateGlobalSEOSettings)
+			protected.POST("/seo/upload-og-image", handlers.UploadOGImage)
 
 			// Consultations management
 			protected.GET("/consultations", handlers.GetConsultations)
@@ -139,6 +145,7 @@ func main() {
 	workDir, _ := os.Getwd()
 	r.Static("/data", filepath.Join(workDir, "data"))
 	r.Static("/homepage", filepath.Join(workDir, "homepage"))
+	r.Static("/uploads", filepath.Join(workDir, "data", "uploads"))
 
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {

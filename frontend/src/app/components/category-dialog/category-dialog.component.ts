@@ -158,8 +158,23 @@ import { Category } from '../../models/models';
             <mat-label>Open Graph Image URL</mat-label>
             <input matInput formControlName="og_image_url"
                    placeholder="Image URL for social media sharing">
+            <button mat-icon-button matSuffix type="button" 
+                    (click)="uploadOgImage()" 
+                    matTooltip="Upload OG Image">
+              <mat-icon>upload</mat-icon>
+            </button>
             <mat-hint>Recommended size: 1200x630px</mat-hint>
           </mat-form-field>
+
+          <!-- OG Image Preview -->
+          <div class="og-image-preview-wrapper" *ngIf="categoryForm.get('og_image_url')?.value">
+            <label class="preview-label">OG Image Preview:</label>
+            <div class="og-image-preview">
+              <img [src]="categoryForm.get('og_image_url')?.value" 
+                   alt="OG Image Preview"
+                   (error)="onOgImageError($event)">
+            </div>
+          </div>
         </div>
 
         <!-- Active Status Checkbox -->
@@ -311,6 +326,38 @@ import { Category } from '../../models/models';
       font-size: 18px;
       font-weight: 600;
       display: block !important;
+    }
+
+    .og-image-preview-wrapper {
+      margin-top: 16px;
+    }
+
+    .preview-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .og-image-preview {
+      width: 100%;
+      max-width: 600px;
+      padding: 16px;
+      background-color: #f5f5f5;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .og-image-preview img {
+      max-width: 100%;
+      max-height: 315px;
+      object-fit: contain;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
   `]
 })
@@ -562,5 +609,51 @@ export class CategoryDialogComponent implements OnInit {
   getMetaDescriptionLength(): number {
     const metaDescription = this.categoryForm.get('meta_description')?.value || '';
     return metaDescription.length;
+  }
+
+  uploadOgImage(): void {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png,image/jpeg,image/jpg,image/webp';
+    input.onchange = (event: any) => {
+      const file = event.target.files[0];
+      if (file) {
+        this.handleOgImageUpload(file);
+      }
+    };
+    input.click();
+  }
+
+  handleOgImageUpload(file: File): void {
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      this.snackBar.open('Image size must be less than 2MB', 'Close', { duration: 3000 });
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.match(/^image\/(png|jpeg|jpg|webp)$/)) {
+      this.snackBar.open('Only PNG, JPG, and WEBP images are allowed', 'Close', { duration: 3000 });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    this.dataService.uploadOGImage(formData).subscribe({
+      next: (response: any) => {
+        this.categoryForm.patchValue({
+          og_image_url: response.url
+        });
+        this.snackBar.open('OG Image uploaded successfully!', 'Close', { duration: 3000 });
+      },
+      error: (_error: any) => {
+        this.snackBar.open('Error uploading OG image', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  onOgImageError(event: any): void {
+    event.target.style.display = 'none';
   }
 }
