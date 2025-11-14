@@ -372,9 +372,12 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // Get posts for a specific category
   getCategoryPosts(categoryId: number): Post[] {
-    return this.allPosts
+    const posts = this.allPosts
       .filter(post => post.category_id === categoryId)
       .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
+    
+    // Limit to max 24 posts
+    return posts.slice(0, 24);
   }
 
   // Convert absolute backend URLs to relative URLs for proxy support
@@ -561,8 +564,11 @@ export class HomeComponent implements OnInit, OnDestroy {
       new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
     );
     
-    console.log('🎯 Combined items:', combined.length, combined);
-    return combined;
+    // Limit to max 24 items
+    const limited = combined.slice(0, 24);
+    
+    console.log('🎯 Combined items:', limited.length, limited);
+    return limited;
   }
 
   // Helper to check if item is a Product
@@ -593,25 +599,28 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // Get visible items count based on screen size
   getVisibleItemsCount(): number {
-    if (typeof window === 'undefined') return 3;
+    if (typeof window === 'undefined') return 6;
     const width = window.innerWidth;
-    if (width <= 768) return 1; // Mobile: 1 item
-    if (width <= 1024) return 2; // Tablet: 2 items
-    return 3; // Desktop: 3 items
+    if (width <= 768) return 2; // Mobile: 2 items (1 col x 2 rows)
+    if (width <= 1024) return 4; // Tablet: 4 items (2 cols x 2 rows)
+    return 6; // Desktop: 6 items (3 cols x 2 rows)
   }
 
   // Get percentage for transform based on visible items
   getCarouselTransformPercent(): number {
-    const visibleItems = this.getVisibleItemsCount();
-    return 100 / visibleItems; // 100% for 1 item, 50% for 2 items, 33.333% for 3 items
+    // Each page shows getVisibleItemsCount() items
+    // Transform moves by 100% to show the next page
+    return 100;
   }
 
   getMaxCarouselIndex(categoryId: number): number {
     const items = this.getFilteredCategoryItems(categoryId, this.activeSubCategoryTabs[categoryId]);
-    const totalItems = Math.min(items.length, 6); // Max 6 items
-    const visibleItems = this.getVisibleItemsCount();
-    // Calculate max index: total items - visible items
-    return Math.max(0, totalItems - visibleItems);
+    const totalItems = Math.min(items.length, 24); // Max 24 items
+    const itemsPerPage = this.getVisibleItemsCount(); // 6 items per page on desktop
+    // Calculate total pages needed
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    // Max index is total pages - 1 (since we start at 0)
+    return Math.max(0, totalPages - 1);
   }
 
   scrollCategoryCarousel(categoryId: number, direction: 'prev' | 'next'): void {

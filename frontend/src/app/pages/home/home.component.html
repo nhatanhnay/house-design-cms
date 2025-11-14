@@ -14,11 +14,11 @@
         <div class="carousel-overlay"></div>
 
         <!-- Carousel Indicators -->
-        <div class="carousel-indicators" *ngIf="homepageImages.length > 1">
+        <!-- <div class="carousel-indicators" *ngIf="homepageImages.length > 1">
           <button *ngFor="let image of homepageImages; let i = index" class="indicator"
             [class.active]="i === currentSlideIndex" (click)="goToSlide(i)">
           </button>
-        </div>
+        </div> -->
       </div>
     </div>
 
@@ -235,7 +235,7 @@
             <div class="category-posts-grid"
               [style.transform]="'translateX(-' + (getCategoryCarouselIndex(category.id) * getCarouselTransformPercent()) + '%)'">
               <mat-card class="post-card"
-                *ngFor="let item of getFilteredCategoryItems(category.id, getActiveSubCategoryTab(category.id)).slice(0, 6)"
+                *ngFor="let item of getFilteredCategoryItems(category.id, getActiveSubCategoryTab(category.id)).slice(0, 24)"
                 [routerLink]="getItemRoute(item)">
                 <div class="post-image">
                   <div class="post-image-placeholder" *ngIf="!getItemImageUrl(item)"></div>
@@ -286,7 +286,7 @@
           <div class="category-posts-carousel">
             <div class="category-posts-grid"
               [style.transform]="'translateX(-' + (getCategoryCarouselIndex(category.id) * getCarouselTransformPercent()) + '%)'">
-              <mat-card class="post-card" *ngFor="let post of getCategoryPosts(category.id).slice(0, 6)"
+              <mat-card class="post-card" *ngFor="let post of getCategoryPosts(category.id).slice(0, 24)"
                 [routerLink]="'/post/' + (post.slug || post.id)">
                 <div class="post-image">
                   <div class="post-image-placeholder" *ngIf="!post.image_url"></div>
@@ -328,7 +328,6 @@
         <div class="text-center mt-4"
           *ngIf="(category.children && category.children.length > 0) || getCategoryPosts(category.id).length > 0">
           <button mat-raised-button [routerLink]="'/category/' + category.slug" class="btn-primary view-all-btn">
-            <mat-icon>view_list</mat-icon>
             Xem Tất Cả {{ category.name }}
           </button>
         </div>

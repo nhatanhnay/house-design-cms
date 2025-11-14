@@ -370,6 +370,7 @@ import { Post, Admin, Category, Product } from '../../models/models';
     .subcategories-grid {
       display: grid;
       grid-template-columns: repeat(3, 360px);
+      grid-template-rows: repeat(1, 350px); /* Cố định 1 dòng cho subcategories */
       gap: 30px;
       margin-top: 20px;
       margin-bottom: 20px;
@@ -497,6 +498,7 @@ import { Post, Admin, Category, Product } from '../../models/models';
     .posts-grid {
       display: grid;
       grid-template-columns: repeat(3, 360px);
+      grid-template-rows: repeat(2, 500px); /* Luôn hiển thị 2 dòng */
       gap: 30px;
       margin-top: 20px;
       margin-bottom: 20px;
@@ -709,6 +711,16 @@ import { Post, Admin, Category, Product } from '../../models/models';
       height: 40px;
       border-radius: 50%;
       transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pagination button[mat-icon-button] mat-icon {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .pagination button[mat-icon-button]:hover:not([disabled]) {
@@ -789,6 +801,14 @@ import { Post, Admin, Category, Product } from '../../models/models';
       .posts-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 20px;
+      }
+
+      .subcategories-grid {
+        grid-template-rows: repeat(2, 350px); /* 2 dòng cho tablet - hiển thị 4 items */
+      }
+
+      .posts-grid {
+        grid-template-rows: repeat(3, 500px); /* 3 dòng cho tablet - hiển thị 6 items */
       }
 
       .subcategory-card,
@@ -896,6 +916,16 @@ import { Post, Admin, Category, Product } from '../../models/models';
         grid-template-columns: 1fr;
         gap: 16px;
         margin-top: 18px;
+      }
+
+      .subcategories-grid {
+        grid-template-rows: repeat(3, auto); /* 3 dòng cho mobile - hiển thị 3 items */
+        min-height: auto; /* Cho phép co dãn trên mobile */
+      }
+
+      .posts-grid {
+        grid-template-rows: repeat(6, auto); /* 6 dòng cho mobile - hiển thị 6 items */
+        min-height: auto; /* Cho phép co dãn trên mobile */
       }
 
       .subcategory-card,
@@ -1050,6 +1080,14 @@ import { Post, Admin, Category, Product } from '../../models/models';
         margin-top: 16px;
       }
 
+      .subcategories-grid {
+        grid-template-rows: repeat(3, auto); /* Giữ nguyên 3 dòng */
+      }
+
+      .posts-grid {
+        grid-template-rows: repeat(6, auto); /* Giữ nguyên 6 dòng */
+      }
+
       .subcategory-card,
       .post-card {
         min-height: 340px;
@@ -1170,6 +1208,14 @@ import { Post, Admin, Category, Product } from '../../models/models';
       .subcategory-card,
       .post-card {
         min-height: 320px;
+      }
+
+      .subcategories-grid {
+        grid-template-rows: repeat(3, auto); /* Giữ nguyên 3 dòng */
+      }
+
+      .posts-grid {
+        grid-template-rows: repeat(6, auto); /* Giữ nguyên 6 dòng */
       }
 
       .subcategory-content,
