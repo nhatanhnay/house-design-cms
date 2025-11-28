@@ -68,6 +68,7 @@ func main() {
 		api.GET("/products", handlers.GetProducts)
 		api.GET("/products/:id", handlers.GetProduct)
 		api.GET("/products/slug/:slug", handlers.GetProductBySlug)
+		api.GET("/search", handlers.SearchContent) // Public search endpoint
 		api.GET("/homepage/media", handlers.GetHomepageImages)
 		api.GET("/home-content", handlers.GetHomeContent)
 		api.GET("/footer-content", handlers.GetFooterContent)

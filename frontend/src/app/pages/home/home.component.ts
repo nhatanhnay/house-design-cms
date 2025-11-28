@@ -17,6 +17,7 @@ import { AuthService } from '../../services/auth.service';
 import { DataService } from '../../services/data.service';
 import { StructuredDataService } from '../../services/structured-data.service';
 import { ConsultationFormComponent } from '../../components/consultation-form/consultation-form.component';
+import { SearchComponent, SearchResponse } from '../../components/search/search.component';
 
 @Component({
   selector: 'app-home',
@@ -31,7 +32,8 @@ import { ConsultationFormComponent } from '../../components/consultation-form/co
     MatFormFieldModule,
     MatInputModule,
     FormsModule,
-    ConsultationFormComponent
+    ConsultationFormComponent,
+    SearchComponent
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
@@ -65,6 +67,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   // Process tabs properties
   processTabs: ProcessTab[] = [];
   activeProcessTabIndex: number = 0;
+
+  // Search properties
+  searchResults: SearchResponse | null = null;
+  showSearchResults = false;
 
   constructor(
     private dataService: DataService,
@@ -660,6 +666,12 @@ export class HomeComponent implements OnInit, OnDestroy {
     } else if (direction === 'next' && currentIndex < maxIndex) {
       this.categoryCarouselIndexes[categoryId] = currentIndex + 1;
     }
+  }
+
+  // Handle search results
+  onSearchResults(results: SearchResponse | null): void {
+    this.searchResults = results;
+    this.showSearchResults = results !== null && results.results.length > 0;
   }
 }
 

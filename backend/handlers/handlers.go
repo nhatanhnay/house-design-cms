@@ -2432,3 +2432,267 @@ func GetDailyVisitors(c *gin.Context) {
 
 	c.JSON(http.StatusOK, dailyStats)
 }
+
+// ============================================
+// SEARCH HANDLERS
+// ============================================
+
+// SearchContent searches through posts and products with filters and sorting
+func SearchContent(c *gin.Context) {
+	query := c.Query("query")
+	contentType := c.Query("type")     // "post", "product", or "all"
+	sortType := c.Query("sort")        // "newest" or "popular"
+	limitStr := c.Query("limit")
+	offsetStr := c.Query("offset")
+
+	// Default values
+	limit := 20
+	offset := 0
+
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+			limit = l
+		}
+	}
+
+	if offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+			offset = o
+		}
+	}
+
+	// Default sort type
+	if sortType == "" {
+		sortType = "newest"
+	}
+
+	// Build ORDER BY clause
+	orderBy := "created_at DESC"
+	if sortType == "popular" {
+		orderBy = "views DESC, created_at DESC"
+	}
+
+	var results []map[string]interface{}
+	totalCount := 0
+
+	// Search in posts
+	if contentType == "" || contentType == "all" || contentType == "post" {
+		var postsQuery string
+		var countQuery string
+		var args []interface{}
+
+		if query != "" {
+			postsQuery = fmt.Sprintf(`
+				SELECT p.id, p.title, p.summary, p.image_url as thumbnail_url, p.category_id, p.published, p.views, p.slug, p.created_at,
+					c.name as category_name, 'post' as content_type
+				FROM posts p
+				LEFT JOIN categories c ON p.category_id = c.id
+				WHERE (LOWER(p.title) LIKE LOWER($1) OR LOWER(p.summary) LIKE LOWER($1) OR LOWER(p.content) LIKE LOWER($1))
+					AND p.published = true
+				ORDER BY %s
+				LIMIT $2 OFFSET $3
+			`, orderBy)
+			countQuery = `
+				SELECT COUNT(*)
+				FROM posts p
+				WHERE (LOWER(p.title) LIKE LOWER($1) OR LOWER(p.summary) LIKE LOWER($1) OR LOWER(p.content) LIKE LOWER($1))
+					AND p.published = true
+			`
+			searchPattern := "%" + query + "%"
+			args = []interface{}{searchPattern, limit, offset}
+		} else {
+			postsQuery = fmt.Sprintf(`
+				SELECT p.id, p.title, p.summary, p.image_url as thumbnail_url, p.category_id, p.published, p.views, p.slug, p.created_at,
+					c.name as category_name, 'post' as content_type
+				FROM posts p
+				LEFT JOIN categories c ON p.category_id = c.id
+				WHERE p.published = true
+				ORDER BY %s
+				LIMIT $1 OFFSET $2
+			`, orderBy)
+			countQuery = `
+				SELECT COUNT(*)
+				FROM posts p
+				WHERE p.published = true
+			`
+			args = []interface{}{limit, offset}
+		}
+
+		// Get posts count
+		var postsCount int
+		if query != "" {
+			searchPattern := "%" + query + "%"
+			database.DB.QueryRow(countQuery, searchPattern).Scan(&postsCount)
+		} else {
+			database.DB.QueryRow(countQuery).Scan(&postsCount)
+		}
+		totalCount += postsCount
+
+		// Get posts
+		rows, err := database.DB.Query(postsQuery, args...)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var item map[string]interface{} = make(map[string]interface{})
+				var id uint
+				var title, summary, thumbnailURL, categoryName, contentType, slug string
+				var categoryID uint
+				var published bool
+				var views int
+				var createdAt time.Time
+
+				rows.Scan(&id, &title, &summary, &thumbnailURL, &categoryID, &published, &views, &slug, &createdAt, &categoryName, &contentType)
+
+				item["id"] = id
+				item["title"] = title
+				item["summary"] = summary
+				item["thumbnail_url"] = thumbnailURL
+				item["category_id"] = categoryID
+				item["category_name"] = categoryName
+				item["published"] = published
+				item["views"] = views
+				item["slug"] = slug
+				item["created_at"] = createdAt
+				item["content_type"] = contentType
+
+				results = append(results, item)
+			}
+		}
+	}
+
+	// Search in products
+	if contentType == "" || contentType == "all" || contentType == "product" {
+		var productsQuery string
+		var countQuery string
+		var args []interface{}
+
+		if query != "" {
+			productsQuery = fmt.Sprintf(`
+				SELECT p.id, p.title, p.summary, p.thumbnail_url, p.category_id, p.published, p.views, p.slug, p.created_at,
+					c.name as category_name, 'product' as content_type
+				FROM products p
+				LEFT JOIN categories c ON p.category_id = c.id
+				WHERE (LOWER(p.title) LIKE LOWER($1) OR LOWER(p.summary) LIKE LOWER($1) OR LOWER(p.content) LIKE LOWER($1))
+					AND p.published = true
+				ORDER BY %s
+				LIMIT $2 OFFSET $3
+			`, orderBy)
+			countQuery = `
+				SELECT COUNT(*)
+				FROM products p
+				WHERE (LOWER(p.title) LIKE LOWER($1) OR LOWER(p.summary) LIKE LOWER($1) OR LOWER(p.content) LIKE LOWER($1))
+					AND p.published = true
+			`
+			searchPattern := "%" + query + "%"
+			args = []interface{}{searchPattern, limit, offset}
+		} else {
+			productsQuery = fmt.Sprintf(`
+				SELECT p.id, p.title, p.summary, p.thumbnail_url, p.category_id, p.published, p.views, p.slug, p.created_at,
+					c.name as category_name, 'product' as content_type
+				FROM products p
+				LEFT JOIN categories c ON p.category_id = c.id
+				WHERE p.published = true
+				ORDER BY %s
+				LIMIT $1 OFFSET $2
+			`, orderBy)
+			countQuery = `
+				SELECT COUNT(*)
+				FROM products p
+				WHERE p.published = true
+			`
+			args = []interface{}{limit, offset}
+		}
+
+		// Get products count
+		var productsCount int
+		if query != "" {
+			searchPattern := "%" + query + "%"
+			database.DB.QueryRow(countQuery, searchPattern).Scan(&productsCount)
+		} else {
+			database.DB.QueryRow(countQuery).Scan(&productsCount)
+		}
+		totalCount += productsCount
+
+		// Get products
+		rows, err := database.DB.Query(productsQuery, args...)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var item map[string]interface{} = make(map[string]interface{})
+				var id uint
+				var title, summary, thumbnailURL, categoryName, contentType, slug string
+				var categoryID uint
+				var published bool
+				var views int
+				var createdAt time.Time
+
+				rows.Scan(&id, &title, &summary, &thumbnailURL, &categoryID, &published, &views, &slug, &createdAt, &categoryName, &contentType)
+
+				item["id"] = id
+				item["title"] = title
+				item["summary"] = summary
+				item["thumbnail_url"] = thumbnailURL
+				item["category_id"] = categoryID
+				item["category_name"] = categoryName
+				item["published"] = published
+				item["views"] = views
+				item["slug"] = slug
+				item["created_at"] = createdAt
+				item["content_type"] = contentType
+
+				results = append(results, item)
+			}
+		}
+	}
+
+	// Sort combined results if needed
+	if len(results) > 1 {
+		if sortType == "popular" {
+			// Sort by views descending, then by created_at descending
+			for i := 0; i < len(results)-1; i++ {
+				for j := i + 1; j < len(results); j++ {
+					views1 := results[i]["views"].(int)
+					views2 := results[j]["views"].(int)
+					if views2 > views1 {
+						// Swap
+						results[i], results[j] = results[j], results[i]
+					} else if views2 == views1 {
+						// If views are equal, sort by created_at descending
+						time1 := results[i]["created_at"].(time.Time)
+						time2 := results[j]["created_at"].(time.Time)
+						if time2.After(time1) {
+							results[i], results[j] = results[j], results[i]
+						}
+					}
+				}
+			}
+		} else {
+			// Sort by created_at descending (newest first)
+			for i := 0; i < len(results)-1; i++ {
+				for j := i + 1; j < len(results); j++ {
+					time1 := results[i]["created_at"].(time.Time)
+					time2 := results[j]["created_at"].(time.Time)
+					if time2.After(time1) {
+						// Swap
+						results[i], results[j] = results[j], results[i]
+					}
+				}
+			}
+		}
+	}
+
+	// Calculate pagination info
+	totalPages := (totalCount + limit - 1) / limit
+	currentPage := offset/limit + 1
+
+	c.JSON(http.StatusOK, gin.H{
+		"results":      results,
+		"total_count":  totalCount,
+		"total_pages":  totalPages,
+		"current_page": currentPage,
+		"limit":        limit,
+		"query":        query,
+		"type":         contentType,
+		"sort":         sortType,
+	})
+}

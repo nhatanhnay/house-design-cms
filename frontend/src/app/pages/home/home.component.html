@@ -198,7 +198,7 @@
   </section>
 
   <!-- Dynamic Categories Section -->
-  <section class="dynamic-categories-section" aria-label="Project categories">
+  <section class="dynamic-categories-section" aria-label="Project categories" *ngIf="!showSearchResults">
     <div class="container">
       <div class="category-group" *ngFor="let category of mainCategories">
         <h2 class="section-title text-center">{{ category.name }}</h2>
@@ -330,6 +330,14 @@
           </button>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- Search Section -->
+  <section class="search-section" aria-label="Search content">
+    <div class="container">
+      <h2 class="search-title">Tìm kiếm nội dung</h2>
+      <app-search (resultsChange)="onSearchResults($event)"></app-search>
     </div>
   </section>
 

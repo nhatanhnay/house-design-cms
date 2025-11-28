@@ -670,4 +670,33 @@ export class DataService {
 
     return this.http.get(`${this.apiUrl}/daily-visitors`, { headers });
   }
+
+  // Search content (public endpoint)
+  searchContent(params: {
+    query?: string;
+    type?: string;
+    sort?: string;
+    limit?: number;
+    offset?: number;
+  }): Observable<any> {
+    let httpParams = new HttpParams();
+    
+    if (params.query) {
+      httpParams = httpParams.set('query', params.query);
+    }
+    if (params.type) {
+      httpParams = httpParams.set('type', params.type);
+    }
+    if (params.sort) {
+      httpParams = httpParams.set('sort', params.sort);
+    }
+    if (params.limit) {
+      httpParams = httpParams.set('limit', params.limit.toString());
+    }
+    if (params.offset) {
+      httpParams = httpParams.set('offset', params.offset.toString());
+    }
+
+    return this.http.get(`${this.apiUrl}/search`, { params: httpParams });
+  }
 }

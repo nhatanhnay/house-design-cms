@@ -119,6 +119,40 @@
   line-height: 1.4;
 }
 
+/* Search Section */
+.search-section {
+  background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+  padding: 80px 0;
+  min-height: auto;
+}
+
+.search-section .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.search-title {
+  color: white;
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.search-title::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: var(--accent-copper, #e09543);
+  border-radius: 2px;
+}
+
 /* Hero Stats Boxes */
 .hero-stats-boxes {
   width: 100%;
