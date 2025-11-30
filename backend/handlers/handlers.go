@@ -2440,8 +2440,8 @@ func GetDailyVisitors(c *gin.Context) {
 // SearchContent searches through posts and products with filters and sorting
 func SearchContent(c *gin.Context) {
 	query := c.Query("query")
-	contentType := c.Query("type")     // "post", "product", or "all"
-	sortType := c.Query("sort")        // "newest" or "popular"
+	contentType := c.Query("type") // "post", "product", or "all"
+	sortType := c.Query("sort")    // "newest" or "popular"
 	limitStr := c.Query("limit")
 	offsetStr := c.Query("offset")
 

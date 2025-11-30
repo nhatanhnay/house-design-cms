@@ -6,7 +6,7 @@
       <div class="carousel-container">
         <div class="carousel-slide" *ngFor="let image of homepageImages; let i = index"
           [class.active]="i === currentSlideIndex">
-          <img [src]="image" [alt]="'Homepage image ' + (i + 1)" (error)="onImageError($event, image)"
+          <img appLazyImage [src]="image" [alt]="'Homepage image ' + (i + 1)" (error)="onImageError($event, image)"
             (load)="onImageLoad($event, image)" style="width: 100%; height: 100%; object-fit: cover;">
         </div>
 
@@ -74,7 +74,9 @@
       <div class="process-tabs-content">
         <div *ngFor="let tab of processTabs; let tabIndex = index" class="tab-pane"
           [class.active]="activeProcessTabIndex === tabIndex">
-          <div class="process-steps-grid">
+
+          <!-- Desktop/Tablet: Show all steps in grid -->
+          <div class="process-steps-grid desktop-only">
             <ng-container *ngFor="let step of tab.steps; let stepIndex = index; let isLast = last">
               <div class="process-step-item">
                 <div class="step-icon">
@@ -90,6 +92,47 @@
                 <mat-icon>arrow_forward</mat-icon>
               </div>
             </ng-container>
+          </div>
+
+          <!-- Mobile: Carousel -->
+          <div class="mobile-only">
+            <div class="process-carousel-container">
+              <!-- Previous Arrow -->
+              <button class="carousel-nav-btn prev" (click)="prevProcessStep()" [disabled]="!canGoToPrevStep()"
+                [class.disabled]="!canGoToPrevStep()">
+                <mat-icon>chevron_left</mat-icon>
+              </button>
+
+              <!-- Steps Display -->
+              <div class="process-steps-carousel">
+                <div class="process-steps-track"
+                  [style.transform]="'translateX(-' + (currentProcessStepIndex * 100) + '%)'">
+                  <div *ngFor="let step of tab.steps; let stepIndex = index" class="process-step-item"
+                    [class.active]="stepIndex === currentProcessStepIndex">
+                    <div class="step-icon">
+                      <img [src]="step.icon_url" [alt]="step.title" (error)="onImageError($event)">
+                    </div>
+                    <div class="step-content">
+                      <h3 class="step-title">{{ step.title }}</h3>
+                      <p class="step-description">{{ step.description }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Next Arrow -->
+              <button class="carousel-nav-btn next" (click)="nextProcessStep()" [disabled]="!canGoToNextStep()"
+                [class.disabled]="!canGoToNextStep()">
+                <mat-icon>chevron_right</mat-icon>
+              </button>
+            </div>
+
+            <!-- Step Indicators -->
+            <div class="step-indicators">
+              <span *ngFor="let step of tab.steps; let i = index" class="indicator"
+                [class.active]="i === currentProcessStepIndex" (click)="currentProcessStepIndex = i">
+              </span>
+            </div>
           </div>
         </div>
       </div>

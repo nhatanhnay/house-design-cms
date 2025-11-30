@@ -130,7 +130,7 @@ import { Post, Admin } from '../../models/models';
       <!-- Bottom Suggestions -->
       <div class="bottom-suggestions" *ngIf="suggestedPosts && suggestedPosts.length > 0">
         <div class="container">
-          <h3>Có thể bạn quan tâm</h3>
+          <h3>Các mẫu nhà đẹp</h3>
           <div class="suggestions-grid">
             <mat-card class="suggestion-card" *ngFor="let suggested of suggestedPosts" [routerLink]="'/post/' + (suggested.slug || suggested.id)">
               <div class="suggestion-image">

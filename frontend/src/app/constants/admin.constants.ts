@@ -54,6 +54,7 @@ export const ADMIN_CONSTANTS = {
     PRODUCTS: 'products',
     HOMEPAGE: 'homepage',
     FOOTER: 'footer',
+    SEO: 'seo',
     CONSULTATIONS: 'consultations'
   },
 

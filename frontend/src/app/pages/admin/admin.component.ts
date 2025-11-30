@@ -20,7 +20,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Observable, of, Subject } from 'rxjs';
-import { map, catchError, switchMap, startWith } from 'rxjs/operators';
+import { map, catchError, switchMap, startWith, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { DataService } from '../../services/data.service';
 import { AuthService } from '../../services/auth.service';
@@ -38,6 +38,7 @@ import { FileValidator } from '../../utils/file-validator.util';
 import { LoggerService } from '../../services/logger.service';
 import { IconSelectorComponent } from '../../components/icon-selector/icon-selector.component';
 import { GlobalSeoSettingsComponent } from '../global-seo-settings/global-seo-settings.component';
+import { SeoPreviewComponent } from '../../components/seo-preview/seo-preview.component';
 
 export interface SocialMediaItem {
   name: string;
@@ -85,7 +86,8 @@ export interface FooterContent {
     MatProgressBarModule,
     DragDropModule,
     IconSelectorComponent,
-    GlobalSeoSettingsComponent
+    GlobalSeoSettingsComponent,
+    SeoPreviewComponent
   ],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss']
@@ -100,6 +102,22 @@ export class AdminComponent implements OnInit {
   postColumns: string[] = [...ADMIN_CONSTANTS.POST_COLUMNS];
   productColumns: string[] = ['id', 'thumbnail', 'title', 'category', 'images', 'published', 'views', 'actions'];
   consultationColumns: string[] = ['id', 'name', 'phone', 'email', 'details', 'status', 'created_at', 'actions'];
+
+  // Filter and search properties for posts
+  postSearchQuery: string = '';
+  postCategoryFilter: string = '';
+  postSortBy: string = 'newest';
+  originalPosts: Post[] = [];
+  filteredPosts: Post[] = [];
+  private postSearchSubject = new Subject<string>();
+
+  // Filter and search properties for products  
+  productSearchQuery: string = '';
+  productCategoryFilter: string = '';
+  productSortBy: string = 'newest';
+  originalProducts: Product[] = [];
+  filteredProducts: Product[] = [];
+  private productSearchSubject = new Subject<string>();
 
   // Consultations Management Properties
   consultations: Consultation[] = [];
@@ -198,6 +216,27 @@ export class AdminComponent implements OnInit {
     this.loadHomepageMedia();
     this.loadFooterContent();
     this.loadNavbarLogo();
+    this.loadPostsData();
+    this.loadProductsData();
+    this.setupSearchDebouncing();
+  }
+
+  private setupSearchDebouncing(): void {
+    // Debounced search for posts
+    this.postSearchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.filterPosts();
+    });
+
+    // Debounced search for products
+    this.productSearchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.filterProducts();
+    });
   }
 
   setCurrentSection(section: string): void {
@@ -211,6 +250,48 @@ export class AdminComponent implements OnInit {
     }
     if (section === ADMIN_CONSTANTS.SECTIONS.CONSULTATIONS) {
       this.loadConsultations();
+    }
+    if (section === ADMIN_CONSTANTS.SECTIONS.POSTS) {
+      this.loadPostsData();
+    }
+    if (section === ADMIN_CONSTANTS.SECTIONS.PRODUCTS) {
+      this.loadProductsData();
+    }
+  }
+
+  // Load posts data for filtering
+  private loadPostsData(): void {
+    if (this.posts$) {
+      this.posts$.subscribe({
+        next: (posts) => {
+          this.originalPosts = posts || [];
+          this.filteredPosts = [...this.originalPosts];
+          this.filterPosts(); // Apply any existing filters
+        },
+        error: (error) => {
+          console.error('Error loading posts:', error);
+          this.originalPosts = [];
+          this.filteredPosts = [];
+        }
+      });
+    }
+  }
+
+  // Load products data for filtering
+  private loadProductsData(): void {
+    if (this.products$) {
+      this.products$.subscribe({
+        next: (products) => {
+          this.originalProducts = products || [];
+          this.filteredProducts = [...this.originalProducts];
+          this.filterProducts(); // Apply any existing filters
+        },
+        error: (error) => {
+          console.error('Error loading products:', error);
+          this.originalProducts = [];
+          this.filteredProducts = [];
+        }
+      });
     }
   }
 
@@ -1365,5 +1446,159 @@ export class AdminComponent implements OnInit {
     const target = event.target as HTMLImageElement;
     target.style.display = 'none';
     console.warn(`Image failed to load: ${target.src}`);
+  }
+
+  // Posts filtering methods
+  filterPosts(): void {
+    let filtered = [...this.originalPosts];
+
+    // Apply search filter
+    if (this.postSearchQuery.trim()) {
+      const query = this.postSearchQuery.toLowerCase().trim();
+      filtered = filtered.filter(post => 
+        post.title.toLowerCase().includes(query) ||
+        (post.summary && post.summary.toLowerCase().includes(query)) ||
+        (post.category && post.category.name.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply category filter
+    if (this.postCategoryFilter) {
+      filtered = filtered.filter(post => 
+        post.category_id?.toString() === this.postCategoryFilter
+      );
+    }
+
+    // Note: Posts don't have subcategory_id field, filtering by main category only
+
+    // Apply sorting
+    filtered = this.sortPosts(filtered, this.postSortBy);
+
+    this.filteredPosts = filtered;
+  }
+
+  sortPosts(posts: Post[], sortBy: string): Post[] {
+    switch (sortBy) {
+      case 'alphabetical':
+        return posts.sort((a, b) => a.title.localeCompare(b.title));
+      case 'reverse-alphabetical':
+        return posts.sort((a, b) => b.title.localeCompare(a.title));
+      case 'newest':
+        return posts.sort((a, b) => {
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return dateB - dateA;
+        });
+      case 'popular':
+        return posts.sort((a, b) => (b.views || 0) - (a.views || 0));
+      default:
+        return posts;
+    }
+  }
+
+  onPostSearch(): void {
+    this.postSearchSubject.next(this.postSearchQuery);
+  }
+
+  onPostCategoryChange(): void {
+    this.filterPosts();
+  }
+
+  onPostSubcategoryChange(): void {
+    this.filterPosts();
+  }
+
+  onPostSortChange(): void {
+    this.filterPosts();
+  }
+
+  getPostSubcategories(): Observable<Category[]> {
+    if (!this.postCategoryFilter) {
+      return of([]);
+    }
+    
+    return this.categoryTree$.pipe(
+      map(tree => {
+        const parentCategory = tree.find(cat => cat.id?.toString() === this.postCategoryFilter);
+        return parentCategory?.children || [];
+      })
+    );
+  }
+
+  // Products filtering methods
+  filterProducts(): void {
+    let filtered = [...this.originalProducts];
+
+    // Apply search filter
+    if (this.productSearchQuery.trim()) {
+      const query = this.productSearchQuery.toLowerCase().trim();
+      filtered = filtered.filter(product => 
+        product.title.toLowerCase().includes(query) ||
+        (product.summary && product.summary.toLowerCase().includes(query)) ||
+        (product.category && product.category.name.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply category filter
+    if (this.productCategoryFilter) {
+      filtered = filtered.filter(product => 
+        product.category_id?.toString() === this.productCategoryFilter
+      );
+    }
+
+    // Note: Products don't have subcategory_id field, filtering by main category only
+
+    // Apply sorting
+    filtered = this.sortProducts(filtered, this.productSortBy);
+
+    this.filteredProducts = filtered;
+  }
+
+  sortProducts(products: Product[], sortBy: string): Product[] {
+    switch (sortBy) {
+      case 'alphabetical':
+        return products.sort((a, b) => a.title.localeCompare(b.title));
+      case 'reverse-alphabetical':
+        return products.sort((a, b) => b.title.localeCompare(a.title));
+      case 'newest':
+        return products.sort((a, b) => {
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return dateB - dateA;
+        });
+      case 'popular':
+        return products.sort((a, b) => (b.views || 0) - (a.views || 0));
+      default:
+        return products;
+    }
+  }
+
+  onProductSearch(): void {
+    this.productSearchSubject.next(this.productSearchQuery);
+  }
+
+  onProductCategoryChange(): void {
+    this.filterProducts();
+  }
+
+  onProductSubcategoryChange(): void {
+    this.filterProducts();
+  }
+
+  onProductSortChange(): void {
+    this.filterProducts();
+  }
+
+  getProductSubcategories(): Observable<Category[]> {
+    if (!this.productCategoryFilter) {
+      return of([]);
+    }
+    
+    return this.categoryTree$.pipe(
+      map(tree => {
+        const parentCategory = tree.find(cat => cat.id?.toString() === this.productCategoryFilter);
+        return parentCategory?.children || [];
+      })
+    );
   }
 }

@@ -16,8 +16,9 @@ import { Admin, Category, HomeContent, Post, Product, ProcessTab } from '../../m
 import { AuthService } from '../../services/auth.service';
 import { DataService } from '../../services/data.service';
 import { StructuredDataService } from '../../services/structured-data.service';
-import { ConsultationFormComponent } from '../../components/consultation-form/consultation-form.component';
+
 import { SearchComponent, SearchResponse } from '../../components/search/search.component';
+import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
 @Component({
   selector: 'app-home',
@@ -32,8 +33,8 @@ import { SearchComponent, SearchResponse } from '../../components/search/search.
     MatFormFieldModule,
     MatInputModule,
     FormsModule,
-    ConsultationFormComponent,
-    SearchComponent
+    SearchComponent,
+    LazyImageDirective
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
@@ -67,6 +68,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   // Process tabs properties
   processTabs: ProcessTab[] = [];
   activeProcessTabIndex: number = 0;
+  currentProcessStepIndex: number = 0;
 
   // Search properties
   searchResults: SearchResponse | null = null;
@@ -472,6 +474,30 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   setActiveProcessTab(index: number): void {
     this.activeProcessTabIndex = index;
+    this.currentProcessStepIndex = 0; // Reset step index when changing tab
+  }
+
+  // Navigate process steps carousel
+  nextProcessStep(): void {
+    const currentTab = this.processTabs[this.activeProcessTabIndex];
+    if (currentTab && this.currentProcessStepIndex < currentTab.steps.length - 1) {
+      this.currentProcessStepIndex++;
+    }
+  }
+
+  prevProcessStep(): void {
+    if (this.currentProcessStepIndex > 0) {
+      this.currentProcessStepIndex--;
+    }
+  }
+
+  canGoToNextStep(): boolean {
+    const currentTab = this.processTabs[this.activeProcessTabIndex];
+    return currentTab ? this.currentProcessStepIndex < currentTab.steps.length - 1 : false;
+  }
+
+  canGoToPrevStep(): boolean {
+    return this.currentProcessStepIndex > 0;
   }
 
   // Set active sub-category tab (null means "Mới nhất")

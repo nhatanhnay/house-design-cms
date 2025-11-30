@@ -31,136 +31,134 @@
         <header class="product-header">
           <h1 class="product-title">{{ product.title }}</h1>
 
-        <div class="product-meta">
-          <div class="meta-item">
-            <mat-icon>event</mat-icon>
-            <span>{{ product.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
-          </div>
-          <div class="meta-item" *ngIf="product.category">
-            <mat-icon>category</mat-icon>
-            <span>{{ product.category.name }}</span>
-          </div>
-          <div class="meta-item" *ngIf="currentUser$ | async" [class.published]="product.published" [class.draft]="!product.published">
-            <mat-icon>{{ product.published ? 'visibility' : 'visibility_off' }}</mat-icon>
-            <span>{{ product.published ? 'Đã xuất bản' : 'Bản nháp' }}</span>
-          </div>
-          <div class="meta-item" *ngIf="!(currentUser$ | async)">
-            <mat-icon>visibility</mat-icon>
-            <span>{{ product.views || 0 }} lượt xem</span>
-          </div>
-        </div>
-
-        <div class="product-summary" *ngIf="product.summary">
-          <p>{{ product.summary }}</p>
-        </div>
-      </header>
-
-      <!-- Product Gallery -->
-      <div class="product-gallery">
-        <!-- Main Image -->
-        <div class="main-image">
-          <img [src]="selectedImage || product.thumbnail_url" [alt]="product.title" (error)="onImageError($event)">
-        </div>
-
-        <!-- Thumbnail Gallery -->
-        <div class="thumbnail-gallery" *ngIf="(product.thumbnail_url || (product.images && product.images.length > 0))">
-          <!-- Show thumbnail first if exists -->
-          <div class="thumbnail-item"
-               *ngIf="product.thumbnail_url"
-               [class.active]="selectedImage === product.thumbnail_url"
-               (click)="selectImage(product.thumbnail_url)">
-            <img [src]="product.thumbnail_url" [alt]="product.title">
-          </div>
-          <!-- Then show gallery images -->
-          <div class="thumbnail-item"
-               *ngFor="let img of product.images; let i = index"
-               [class.active]="selectedImage === img.image_url"
-               (click)="selectImage(img.image_url)">
-            <img [src]="img.image_url" [alt]="img.alt_text || 'Gallery ' + (i + 1)">
-          </div>
-        </div>
-      </div>
-
-      <!-- Product Content -->
-      <div class="product-content">
-        <div class="content-html" [innerHTML]="product.content"></div>
-      </div>
-
-      <!-- Product Actions -->
-      <footer class="product-footer">
-        <div class="share-buttons">
-          <h4>Chia sẻ sản phẩm</h4>
-          <div class="social-buttons">
-            <button mat-raised-button color="primary" (click)="shareOnFacebook(product)">
-              <mat-icon>share</mat-icon>
-              Facebook
-            </button>
-            <button mat-stroked-button (click)="copyLink()">
-              <mat-icon>link</mat-icon>
-              Sao chép liên kết
-            </button>
-          </div>
-        </div>
-
-        <div class="navigation-buttons">
-          <button mat-button [routerLink]="'/category/' + product.category.slug" *ngIf="product.category">
-            <mat-icon>arrow_back</mat-icon>
-            Quay lại {{ product.category.name }}
-          </button>
-          <button mat-raised-button color="primary" routerLink="/">
-            <mat-icon>home</mat-icon>
-            Về trang chủ
-          </button>
-        </div>
-      </footer>
-    </article>
-
-    <!-- Sidebar (Right) -->
-    <aside class="sidebar">
-      <div class="sidebar-section">
-        <h3>Có thể bạn quan tâm</h3>
-        <div class="related-products">
-          <div class="related-product-card" *ngFor="let relatedProduct of relatedProducts" [routerLink]="'/product/' + (relatedProduct.slug || relatedProduct.id)">
-            <div class="related-product-image">
-              <img [src]="relatedProduct.thumbnail_url || 'assets/images/placeholder-product.jpg'"
-                   [alt]="relatedProduct.title"
-                   (error)="onImageError($event)">
+          <div class="product-meta">
+            <div class="meta-item">
+              <mat-icon>event</mat-icon>
+              <span>{{ product.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
             </div>
-            <div class="related-product-info">
-              <h4>{{ relatedProduct.title }}</h4>
-              <div class="related-product-meta">
-                <mat-icon>event</mat-icon>
-                <span>{{ relatedProduct.created_at | date:'dd/MM/yyyy' }}</span>
+            <div class="meta-item" *ngIf="product.category">
+              <mat-icon>category</mat-icon>
+              <span>{{ product.category.name }}</span>
+            </div>
+            <div class="meta-item" *ngIf="currentUser$ | async" [class.published]="product.published"
+              [class.draft]="!product.published">
+              <mat-icon>{{ product.published ? 'visibility' : 'visibility_off' }}</mat-icon>
+              <span>{{ product.published ? 'Đã xuất bản' : 'Bản nháp' }}</span>
+            </div>
+            <div class="meta-item" *ngIf="!(currentUser$ | async)">
+              <mat-icon>visibility</mat-icon>
+              <span>{{ product.views || 0 }} lượt xem</span>
+            </div>
+          </div>
+
+          <div class="product-summary" *ngIf="product.summary">
+            <p>{{ product.summary }}</p>
+          </div>
+        </header>
+
+        <!-- Product Gallery -->
+        <div class="product-gallery">
+          <!-- Main Image -->
+          <div class="main-image">
+            <img [src]="selectedImage || product.thumbnail_url" [alt]="product.title" (error)="onImageError($event)">
+          </div>
+
+          <!-- Thumbnail Gallery -->
+          <div class="thumbnail-gallery"
+            *ngIf="(product.thumbnail_url || (product.images && product.images.length > 0))">
+            <!-- Show thumbnail first if exists -->
+            <div class="thumbnail-item" *ngIf="product.thumbnail_url"
+              [class.active]="selectedImage === product.thumbnail_url" (click)="selectImage(product.thumbnail_url)">
+              <img [src]="product.thumbnail_url" [alt]="product.title">
+            </div>
+            <!-- Then show gallery images -->
+            <div class="thumbnail-item" *ngFor="let img of product.images; let i = index"
+              [class.active]="selectedImage === img.image_url" (click)="selectImage(img.image_url)">
+              <img [src]="img.image_url" [alt]="img.alt_text || 'Gallery ' + (i + 1)">
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Content -->
+        <div class="product-content">
+          <div class="content-html" [innerHTML]="product.content"></div>
+        </div>
+
+        <!-- Product Actions -->
+        <footer class="product-footer">
+          <div class="share-buttons">
+            <h4>Chia sẻ sản phẩm</h4>
+            <div class="social-buttons">
+              <button mat-raised-button color="primary" (click)="shareOnFacebook(product)">
+                <mat-icon>share</mat-icon>
+                Facebook
+              </button>
+              <button mat-stroked-button (click)="copyLink()">
+                <mat-icon>link</mat-icon>
+                Sao chép liên kết
+              </button>
+            </div>
+          </div>
+
+          <div class="navigation-buttons">
+            <button mat-button [routerLink]="'/category/' + product.category.slug" *ngIf="product.category">
+              <mat-icon>arrow_back</mat-icon>
+              Quay lại {{ product.category.name }}
+            </button>
+            <button mat-raised-button color="primary" routerLink="/">
+              <mat-icon>home</mat-icon>
+              Về trang chủ
+            </button>
+          </div>
+        </footer>
+      </article>
+
+      <!-- Sidebar (Right) -->
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <h3>Có thể bạn quan tâm</h3>
+          <div class="related-products">
+            <div class="related-product-card" *ngFor="let relatedProduct of relatedProducts"
+              [routerLink]="'/product/' + (relatedProduct.slug || relatedProduct.id)">
+              <div class="related-product-image">
+                <img [src]="relatedProduct.thumbnail_url || 'assets/images/placeholder-product.jpg'"
+                  [alt]="relatedProduct.title" (error)="onImageError($event)">
+              </div>
+              <div class="related-product-info">
+                <h4>{{ relatedProduct.title }}</h4>
+                <div class="related-product-meta">
+                  <mat-icon>event</mat-icon>
+                  <span>{{ relatedProduct.created_at | date:'dd/MM/yyyy' }}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </aside>
-  </div>
+      </aside>
+    </div>
 
-  <!-- Bottom Suggestions -->
-  <div class="bottom-suggestions" *ngIf="suggestedProducts && suggestedProducts.length > 0">
-    <div class="container">
-      <h3>Có thể bạn quan tâm</h3>
-      <div class="suggestions-grid">
-        <mat-card class="suggestion-card" *ngFor="let suggested of suggestedProducts" [routerLink]="'/product/' + (suggested.slug || suggested.id)">
-          <div class="suggestion-image">
-            <img [src]="suggested.thumbnail_url || 'assets/images/placeholder-product.jpg'"
-                 [alt]="suggested.title"
-                 (error)="onImageError($event)">
-          </div>
-          <mat-card-content>
-            <h4>{{ suggested.title }}</h4>
-            <div class="suggestion-meta">
-              <mat-icon>event</mat-icon>
-              <span>{{ suggested.created_at | date:'dd/MM/yyyy' }}</span>
+    <!-- Bottom Suggestions -->
+    <div class="bottom-suggestions" *ngIf="suggestedProducts && suggestedProducts.length > 0">
+      <div class="container">
+        <h3>Các mẫu nhà đẹp</h3>
+        <div class="suggestions-grid">
+          <mat-card class="suggestion-card" *ngFor="let suggested of suggestedProducts"
+            [routerLink]="'/product/' + (suggested.slug || suggested.id)">
+            <div class="suggestion-image">
+              <img [src]="suggested.thumbnail_url || 'assets/images/placeholder-product.jpg'" [alt]="suggested.title"
+                (error)="onImageError($event)">
             </div>
-          </mat-card-content>
-        </mat-card>
+            <mat-card-content>
+              <h4>{{ suggested.title }}</h4>
+              <div class="suggestion-meta">
+                <mat-icon>event</mat-icon>
+                <span>{{ suggested.created_at | date:'dd/MM/yyyy' }}</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
       </div>
     </div>
-  </div>
 
     <!-- Error State -->
     <div class="error-state" *ngIf="!isLoading && (hasError || !product)">
