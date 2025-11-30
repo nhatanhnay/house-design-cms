@@ -7,6 +7,10 @@
   height: 64px;
   background-color: var(--main-dark-gray) !important;
   color: var(--text-white) !important;
+  
+  .container {
+    padding: 0 !important;
+  }
 }
 
 .navbar-content {
