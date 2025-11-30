@@ -72,12 +72,6 @@ import { LoginRequest } from '../../models/models';
                   <span>{{ isLoading ? 'Đang đăng nhập...' : 'Đăng Nhập' }}</span>
                 </button>
               </form>
-              
-              <div class="login-info">
-                <p><strong>Thông tin đăng nhập mặc định:</strong></p>
-                <p>Tên đăng nhập: <code>admin</code></p>
-                <p>Mật khẩu: <code>admin123</code></p>
-              </div>
             </mat-card-content>
           </mat-card>
         </div>
@@ -150,33 +144,6 @@ import { LoginRequest } from '../../models/models';
     
     .login-btn[disabled] {
       opacity: 0.6;
-    }
-    
-    .login-info {
-      margin-top: 30px;
-      padding: 20px;
-      background-color: var(--surface);
-      border-radius: 8px;
-      border-left: 4px solid var(--brown);
-    }
-    
-    .login-info p {
-      margin: 5px 0;
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-    }
-    
-    .login-info p:first-child {
-      font-weight: 500;
-      color: var(--text-primary);
-    }
-    
-    .login-info code {
-      background-color: rgba(0, 0, 0, 0.1);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: 'Courier New', monospace;
-      color: var(--brown);
     }
     
     @media (max-width: 480px) {

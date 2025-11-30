@@ -34,7 +34,7 @@ export class SitemapComponent implements OnInit {
     ]).pipe(
       map(([categories, posts]) => {
         const urls: SitemapUrl[] = [];
-        const baseUrl = 'https://yourdomain.com';
+        const baseUrl = 'https://mmadesign.vn';
 
         // Add homepage
         urls.push({
