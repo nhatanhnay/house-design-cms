@@ -2176,7 +2176,9 @@
     }
   }
 
-  .mobile-only .feature-strip .feature-content {
+  .feature-strip .feature-content,
+  .feature-strip.left-aligned .feature-content,
+  .feature-strip.right-aligned .feature-content {
     flex-direction: column !important;
     text-align: center;
   }
