@@ -2174,15 +2174,13 @@
       transform: translateY(-4px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     }
-    
-    .feature-content {
-      flex-direction: column;
-      text-align: center;
-    }
-    
-    &.right-aligned .feature-content {
-      flex-direction: column;
-    }
+  }
+
+  .feature-strip .feature-content,
+  .feature-strip.left-aligned .feature-content,
+  .feature-strip.right-aligned .feature-content {
+    flex-direction: column !important;
+    text-align: center;
   }
 
   .feature-content {
