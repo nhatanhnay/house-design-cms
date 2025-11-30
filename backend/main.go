@@ -41,6 +41,23 @@ func main() {
 				return true
 			}
 
+			// Allow production domain
+			if origin == "https://mmadesign.vn" || origin == "http://mmadesign.vn" ||
+				origin == "https://www.mmadesign.vn" || origin == "http://www.mmadesign.vn" {
+				return true
+			}
+
+			// Allow if origin is empty (same-origin requests or server-to-server)
+			if origin == "" {
+				return true
+			}
+
+			// For production: allow domain if configured via env
+			allowedDomain := os.Getenv("ALLOWED_ORIGIN")
+			if allowedDomain != "" && (origin == allowedDomain || strings.HasPrefix(origin, allowedDomain)) {
+				return true
+			}
+
 			return false
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
