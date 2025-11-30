@@ -173,6 +173,19 @@ func main() {
 		})
 	})
 
+	// Sitemap.xml endpoint
+	r.GET("/sitemap.xml", handlers.GenerateSitemap)
+
+	// Robots.txt endpoint
+	r.GET("/robots.txt", func(c *gin.Context) {
+		robotsTxt := `User-agent: *
+Allow: /
+
+Sitemap: https://mmadesign.vn/sitemap.xml`
+		c.Header("Content-Type", "text/plain; charset=utf-8")
+		c.String(200, robotsTxt)
+	})
+
 	port := os.Getenv("SERVER_PORT")
 	if port == "" {
 		port = "8080"

@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
@@ -2695,4 +2696,122 @@ func SearchContent(c *gin.Context) {
 		"type":         contentType,
 		"sort":         sortType,
 	})
+}
+
+// ============================================
+// SITEMAP HANDLER
+// ============================================
+
+// URLSet represents the sitemap XML structure
+type URLSet struct {
+	XMLName xml.Name `xml:"urlset"`
+	XMLNS   string   `xml:"xmlns,attr"`
+	URLs    []URL    `xml:"url"`
+}
+
+// URL represents a single URL entry in the sitemap
+type URL struct {
+	Loc        string  `xml:"loc"`
+	LastMod    string  `xml:"lastmod,omitempty"`
+	ChangeFreq string  `xml:"changefreq,omitempty"`
+	Priority   float64 `xml:"priority,omitempty"`
+}
+
+// GenerateSitemap generates a dynamic sitemap.xml
+func GenerateSitemap(c *gin.Context) {
+	baseURL := "https://mmadesign.vn"
+
+	urls := []URL{
+		// Homepage - highest priority
+		{
+			Loc:        baseURL,
+			ChangeFreq: "daily",
+			Priority:   1.0,
+		},
+	}
+
+	// Add categories
+	rows, err := database.DB.Query(`
+		SELECT slug, updated_at FROM categories 
+		WHERE is_active = true 
+		ORDER BY display_order ASC, created_at ASC
+	`)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var slug string
+			var updatedAt time.Time
+			if err := rows.Scan(&slug, &updatedAt); err == nil {
+				urls = append(urls, URL{
+					Loc:        fmt.Sprintf("%s/category/%s", baseURL, slug),
+					LastMod:    updatedAt.Format("2006-01-02"),
+					ChangeFreq: "weekly",
+					Priority:   0.8,
+				})
+			}
+		}
+	}
+
+	// Add published posts
+	rows, err = database.DB.Query(`
+		SELECT slug, updated_at FROM posts 
+		WHERE published = true AND slug != ''
+		ORDER BY created_at DESC
+	`)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var slug string
+			var updatedAt time.Time
+			if err := rows.Scan(&slug, &updatedAt); err == nil {
+				urls = append(urls, URL{
+					Loc:        fmt.Sprintf("%s/post/%s", baseURL, slug),
+					LastMod:    updatedAt.Format("2006-01-02"),
+					ChangeFreq: "monthly",
+					Priority:   0.6,
+				})
+			}
+		}
+	}
+
+	// Add published products
+	rows, err = database.DB.Query(`
+		SELECT slug, updated_at FROM products 
+		WHERE published = true AND slug != ''
+		ORDER BY created_at DESC
+	`)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var slug string
+			var updatedAt time.Time
+			if err := rows.Scan(&slug, &updatedAt); err == nil {
+				urls = append(urls, URL{
+					Loc:        fmt.Sprintf("%s/product/%s", baseURL, slug),
+					LastMod:    updatedAt.Format("2006-01-02"),
+					ChangeFreq: "monthly",
+					Priority:   0.6,
+				})
+			}
+		}
+	}
+
+	// Create sitemap
+	sitemap := URLSet{
+		XMLNS: "http://www.sitemaps.org/schemas/sitemap/0.9",
+		URLs:  urls,
+	}
+
+	// Generate XML
+	xmlData, err := xml.MarshalIndent(sitemap, "", "  ")
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Failed to generate sitemap")
+		return
+	}
+
+	// Add XML header
+	xmlOutput := []byte(xml.Header + string(xmlData))
+
+	c.Header("Content-Type", "application/xml; charset=utf-8")
+	c.Data(http.StatusOK, "application/xml; charset=utf-8", xmlOutput)
 }
