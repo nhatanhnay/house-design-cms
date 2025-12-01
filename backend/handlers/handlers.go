@@ -626,6 +626,11 @@ func UploadImage(c *gin.Context) {
 		return
 	}
 
+	// Set file permissions to ensure readability
+	if err := os.Chmod(filepath, 0644); err != nil {
+		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
+	}
+
 	// Return relative URL (not full URL) so frontend proxy can handle it
 	// This works with both development (proxy) and production (same domain)
 	imageURL := fmt.Sprintf("/data/uploads/images/%s", filename)
@@ -698,6 +703,11 @@ func UploadVideo(c *gin.Context) {
 	if _, err := io.Copy(dst, file); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 		return
+	}
+
+	// Set file permissions to ensure readability
+	if err := os.Chmod(filepath, 0644); err != nil {
+		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
 	}
 
 	// Return the URL
@@ -837,6 +847,11 @@ func UploadHomepageImage(c *gin.Context) {
 		return
 	}
 
+	// Set file permissions to ensure readability
+	if err := os.Chmod(filePath, 0644); err != nil {
+		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
+	}
+
 	// Return the URL
 	baseURL := getBaseURL(c)
 	imageURL := fmt.Sprintf("%s/homepage/images/%s", baseURL, filename)
@@ -918,6 +933,11 @@ func UploadHomepageVideo(c *gin.Context) {
 	if _, err := io.Copy(dst, file); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 		return
+	}
+
+	// Set file permissions to ensure readability
+	if err := os.Chmod(filePath, 0644); err != nil {
+		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
 	}
 
 	// Return the URL
@@ -1048,6 +1068,11 @@ func ReplaceHomepageMedia(c *gin.Context) {
 		return
 	}
 
+	// Set file permissions to ensure readability
+	if err := os.Chmod(oldFilePath, 0644); err != nil {
+		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
+	}
+
 	// Return the URL
 	baseURL := getBaseURL(c)
 	mediaURL := fmt.Sprintf("%s/homepage/%s/%s", baseURL, mediaType, oldFilename)
@@ -1169,6 +1194,11 @@ func UploadNavbarLogo(c *gin.Context) {
 	if _, err := io.Copy(dst, file); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 		return
+	}
+
+	// Set file permissions to ensure readability
+	if err := os.Chmod(filePath, 0644); err != nil {
+		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
 	}
 
 	// Return the URL
@@ -1305,6 +1335,11 @@ func UploadOGImage(c *gin.Context) {
 	if _, err := io.Copy(dst, file); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 		return
+	}
+
+	// Set file permissions to ensure readability
+	if err := os.Chmod(filePath, 0644); err != nil {
+		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
 	}
 
 	// Return the URL
@@ -1563,6 +1598,11 @@ func UploadSvgIcon(c *gin.Context) {
 	if _, err := io.Copy(dst, file); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 		return
+	}
+
+	// Set file permissions to ensure readability
+	if err := os.Chmod(filePath, 0644); err != nil {
+		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
 	}
 
 	// Read SVG content for preview
