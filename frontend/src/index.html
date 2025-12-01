@@ -38,20 +38,50 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="https://mmadesign.vn/">
 
-    <!-- Preload critical resources -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" as="style">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="preload" href="https://fonts.googleapis.com/icon?family=Material+Icons" as="style">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
-    <!-- DNS prefetch for external domains -->
+    <!-- DNS prefetch and preconnect for external domains (must come first) -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com">
     <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Preload critical fonts with font-display:swap for better CLS -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" as="style">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="preload" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=block" as="style">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons&display=block" rel="stylesheet">
 </head>
 
 <body class="mat-typography">
+    <!-- Critical CSS placeholder to prevent FOUC -->
+    <style>
+        app-root {
+            display: block;
+            min-height: 100vh;
+        }
+
+        /* Skeleton loading for navbar */
+        app-root::before {
+            content: '';
+            display: block;
+            height: 64px;
+            background: #3A3A3A;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+    </style>
     <app-root></app-root>
+
+    <!-- Modulepreload hint for main bundle -->
+    <script type="module">
+        // Hint browser to start parsing JS earlier
+        if ('connection' in navigator && navigator.connection.saveData) {
+            // Reduce animations on slow connections
+            document.documentElement.classList.add('reduce-motion');
+        }
+    </script>
 </body>
 
 </html>

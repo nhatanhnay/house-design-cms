@@ -35,6 +35,10 @@
 .brand {
   display: flex;
   align-items: center;
+  
+  /* CLS optimization: Reserve space for brand */
+  min-width: 260px;
+  min-height: 60px;
 }
 
 .brand-link {
@@ -49,9 +53,12 @@
 .brand-logo {
   max-height: 60px;
   max-width: 240px;
-  height: auto;
+  height: 60px;
   width: auto;
   object-fit: contain;
+  
+  /* CLS optimization: Prevent layout shift */
+  aspect-ratio: 4 / 1;
 }
 
 .brand-text {

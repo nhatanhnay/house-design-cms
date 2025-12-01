@@ -160,6 +160,10 @@
   position: absolute;
   bottom: 0;
   left: 0;
+  
+  /* CLS optimization: Reserve space */
+  min-height: 160px;
+  contain: layout style;
 }
 
 .stats-container {
@@ -172,6 +176,9 @@
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  
+  /* CLS optimization: Reserve space for stats */
+  min-height: 140px;
 }
 
 .stat-box {

@@ -17,7 +17,11 @@ import { filter } from 'rxjs/operators';
       <main class="main-content">
         <router-outlet></router-outlet>
       </main>
-      <app-consultation-form></app-consultation-form>
+      @defer (on viewport) {
+        <app-consultation-form></app-consultation-form>
+      } @placeholder {
+        <div class="consultation-placeholder"></div>
+      }
       <app-footer></app-footer>
     </div>
   `,
@@ -31,6 +35,11 @@ import { filter } from 'rxjs/operators';
     .main-content {
       flex: 1;
       padding-top: 64px; /* Navbar height */
+    }
+    
+    .consultation-placeholder {
+      min-height: 550px;
+      background: linear-gradient(135deg, rgba(224, 149, 67, 0.1) 0%, rgba(58, 58, 58, 0.3) 100%);
     }
   `]
 })

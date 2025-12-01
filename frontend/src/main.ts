@@ -1,5 +1,5 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideRouter, withViewTransitions } from '@angular/router';
+import { provideRouter, withViewTransitions, withPreloading, PreloadAllModules } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { importProvidersFrom } from '@angular/core';
@@ -13,7 +13,8 @@ bootstrapApplication(AppComponent, {
   providers: [
     provideRouter(
       routes,
-      withViewTransitions()
+      withViewTransitions(),
+      withPreloading(PreloadAllModules)
     ),
     provideAnimations(),
     provideHttpClient(withInterceptors([authInterceptor])),

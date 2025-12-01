@@ -4,6 +4,12 @@
   margin-top: 80px;
   position: relative;
   
+  /* CLS optimization: Reserve space and isolate layout */
+  min-height: 550px;
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 550px;
+  
   &::before {
     content: '';
     position: absolute;
@@ -190,6 +196,8 @@
   @media (max-width: 768px) {
     padding: 50px 20px;
     margin-top: 50px;
+    min-height: 600px;
+    contain-intrinsic-size: auto 600px;
 
     .section-header {
       margin-bottom: 35px;
@@ -257,6 +265,8 @@
   @media (max-width: 480px) {
     padding: 40px 16px;
     margin-top: 40px;
+    min-height: 650px;
+    contain-intrinsic-size: auto 650px;
 
     .section-header {
       margin-bottom: 30px;
