@@ -626,9 +626,12 @@ func UploadImage(c *gin.Context) {
 		return
 	}
 
-	// Set file permissions to ensure readability
+	// Set file permissions and ownership to ensure readability by www-data
 	if err := os.Chmod(filepath, 0644); err != nil {
 		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
+	}
+	if err := os.Chown(filepath, 33, 33); err != nil {
+		fmt.Printf("Warning: Could not set file ownership: %v\n", err)
 	}
 
 	// Return relative URL (not full URL) so frontend proxy can handle it
@@ -705,9 +708,12 @@ func UploadVideo(c *gin.Context) {
 		return
 	}
 
-	// Set file permissions to ensure readability
+	// Set file permissions and ownership to ensure readability by www-data
 	if err := os.Chmod(filepath, 0644); err != nil {
 		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
+	}
+	if err := os.Chown(filepath, 33, 33); err != nil {
+		fmt.Printf("Warning: Could not set file ownership: %v\n", err)
 	}
 
 	// Return the URL
@@ -847,9 +853,12 @@ func UploadHomepageImage(c *gin.Context) {
 		return
 	}
 
-	// Set file permissions to ensure readability
+	// Set file permissions and ownership to ensure readability by www-data
 	if err := os.Chmod(filePath, 0644); err != nil {
 		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
+	}
+	if err := os.Chown(filePath, 33, 33); err != nil {
+		fmt.Printf("Warning: Could not set file ownership: %v\n", err)
 	}
 
 	// Return the URL
@@ -935,9 +944,12 @@ func UploadHomepageVideo(c *gin.Context) {
 		return
 	}
 
-	// Set file permissions to ensure readability
+	// Set file permissions and ownership to ensure readability by www-data
 	if err := os.Chmod(filePath, 0644); err != nil {
 		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
+	}
+	if err := os.Chown(filePath, 33, 33); err != nil {
+		fmt.Printf("Warning: Could not set file ownership: %v\n", err)
 	}
 
 	// Return the URL
@@ -1068,9 +1080,12 @@ func ReplaceHomepageMedia(c *gin.Context) {
 		return
 	}
 
-	// Set file permissions to ensure readability
+	// Set file permissions and ownership to ensure readability by www-data
 	if err := os.Chmod(oldFilePath, 0644); err != nil {
 		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
+	}
+	if err := os.Chown(oldFilePath, 33, 33); err != nil {
+		fmt.Printf("Warning: Could not set file ownership: %v\n", err)
 	}
 
 	// Return the URL
@@ -1196,9 +1211,12 @@ func UploadNavbarLogo(c *gin.Context) {
 		return
 	}
 
-	// Set file permissions to ensure readability
+	// Set file permissions and ownership to ensure readability by www-data
 	if err := os.Chmod(filePath, 0644); err != nil {
 		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
+	}
+	if err := os.Chown(filePath, 33, 33); err != nil {
+		fmt.Printf("Warning: Could not set file ownership: %v\n", err)
 	}
 
 	// Return the URL
@@ -1337,9 +1355,12 @@ func UploadOGImage(c *gin.Context) {
 		return
 	}
 
-	// Set file permissions to ensure readability
+	// Set file permissions and ownership to ensure readability by www-data
 	if err := os.Chmod(filePath, 0644); err != nil {
 		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
+	}
+	if err := os.Chown(filePath, 33, 33); err != nil {
+		fmt.Printf("Warning: Could not set file ownership: %v\n", err)
 	}
 
 	// Return the URL
@@ -1600,9 +1621,12 @@ func UploadSvgIcon(c *gin.Context) {
 		return
 	}
 
-	// Set file permissions to ensure readability
+	// Set file permissions and ownership to ensure readability by www-data
 	if err := os.Chmod(filePath, 0644); err != nil {
 		fmt.Printf("Warning: Could not set file permissions: %v\n", err)
+	}
+	if err := os.Chown(filePath, 33, 33); err != nil {
+		fmt.Printf("Warning: Could not set file ownership: %v\n", err)
 	}
 
 	// Read SVG content for preview
