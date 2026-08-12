@@ -482,3 +482,14 @@
     line-height: 1.5;
   }
 }
+
+/* Màn hẹp thì cho nhãn xuống dòng, không đẩy tràn ngang */
+@media (max-width: 560px) {
+  .hero-kicker {
+    white-space: normal;
+
+    &::after {
+      display: none;
+    }
+  }
+}

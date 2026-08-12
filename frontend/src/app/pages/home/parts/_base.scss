@@ -86,14 +86,26 @@
   padding: 0;
 }
 
+/* Container căn giữa max-width 1200px khiến khối chữ nằm gần giữa trên màn
+   rộng — đúng thứ bố cục lệch trái muốn tránh. Hero dùng chiều ngang thật của
+   trang, chỉ chừa lề. */
+.hero-content-overlay > .container {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 0 clamp(20px, 5vw, 104px);
+}
+
 /* Bố cục lệch trái: chữ căn giữa trên ảnh là bố cục an toàn nhất và cũng
    nhạt nhất — dồn khối chữ sang trái, để ảnh thở ở nửa phải. */
 .hero-content {
   color: var(--text-white);
   text-align: left;
-  max-width: 780px;
+  /* Không dùng ch ở đây: đơn vị ch tính theo font-size của chính khối này (16px)
+     nên 46ch chỉ ra ~368px, làm tiêu đề 6rem bẻ thành sáu dòng. */
+  max-width: clamp(320px, 46vw, 880px);
   margin: 0;
-  padding: 0 20px;
+  padding: 0;
 }
 
 .hero-kicker {
@@ -101,6 +113,8 @@
   align-items: center;
   gap: 14px;
   margin: 0 0 20px;
+  /* Nhãn một dòng: max-width của khối chữ dành cho tiêu đề, không cho nó bẻ đôi */
+  white-space: nowrap;
   font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
   font-size: 0.68rem;
   letter-spacing: 0.26em;

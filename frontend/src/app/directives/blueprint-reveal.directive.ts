@@ -10,6 +10,25 @@ import {
 import { DOCUMENT } from '@angular/common';
 
 /**
+ * Bề rộng ảnh dùng để phân tích, tính theo bề rộng hiển thị thực tế.
+ *
+ * Cố định 360px làm nét dày ra trên màn rộng: lớp nét bị phóng lên gấp 7 lần
+ * ở màn 2560px nên mỗi nét 1px nở thành mảng 7px nhoè. Bám theo bề rộng hiển
+ * thị thì hệ số phóng luôn quanh 2 lần, nét giữ được độ mảnh.
+ */
+const ANALYSIS_MIN_WIDTH = 280;
+const ANALYSIS_MAX_WIDTH = 900;
+const ANALYSIS_RATIO = 0.55;
+
+const EDGE_THRESHOLD = 45;
+const EDGE_GAIN = 1.5;
+const PRE_BLUR_PX = 1;
+
+const DRAW_MS = 1500;
+const HOLD_MS = 240;
+const FADE_MS = 1000;
+
+/**
  * Hiện ảnh công trình bằng chính bản vẽ của nó.
  *
  * Trình duyệt đọc tấm ảnh đã tải, dò biên các mảng khối bằng bộ lọc Sobel, vẽ
@@ -20,15 +39,6 @@ import { DOCUMENT } from '@angular/common';
  * vân gỗ và tán lá, ngưỡng 70 làm nét bè ra thành mảng. 45 kèm làm mượt 1px cho
  * nét sạch mà vẫn giữ được khung cửa và mép mái.
  */
-const ANALYSIS_WIDTH = 360;
-const EDGE_THRESHOLD = 45;
-const EDGE_GAIN = 1.5;
-const PRE_BLUR_PX = 1;
-
-const DRAW_MS = 1500;
-const HOLD_MS = 240;
-const FADE_MS = 1000;
-
 @Directive({
   selector: 'img[appBlueprint]',
   standalone: true
@@ -154,7 +164,10 @@ export class BlueprintRevealDirective implements OnInit, OnDestroy {
 
   /** Dò biên ở kích thước rút gọn rồi dựng lớp nét màu đồng trên nền trong suốt. */
   private buildLineLayer(img: HTMLImageElement, box: DOMRect): HTMLCanvasElement {
-    const w = ANALYSIS_WIDTH;
+    const w = Math.round(Math.min(
+      ANALYSIS_MAX_WIDTH,
+      Math.max(ANALYSIS_MIN_WIDTH, box.width * ANALYSIS_RATIO)
+    ));
     const h = Math.max(1, Math.round(w * box.height / box.width));
 
     const work = this.document.createElement('canvas');
