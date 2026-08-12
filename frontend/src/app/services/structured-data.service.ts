@@ -1,26 +1,39 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class StructuredDataService {
+  private readonly document = inject(DOCUMENT);
+
+  /** Domain thật, lấy từ environment thay vì hardcode. */
+  private get baseUrl(): string {
+    return environment.baseUrl.replace(/\/+$/, '');
+  }
 
   private removeExistingSchema(type: string): void {
-    const scripts = document.querySelectorAll(`script[type="application/ld+json"][data-schema="${type}"]`);
+    const scripts = this.document.querySelectorAll(`script[type="application/ld+json"][data-schema="${type}"]`);
     scripts.forEach(script => script.remove());
   }
 
-  addOrganizationSchema(): void {
-    this.removeExistingSchema('organization');
+  private appendSchema(type: string, schema: object): void {
+    this.removeExistingSchema(type);
 
-    const script = document.createElement('script');
+    const script = this.document.createElement('script');
     script.type = 'application/ld+json';
-    script.setAttribute('data-schema', 'organization');
-    script.text = JSON.stringify({
+    script.setAttribute('data-schema', type);
+    script.text = JSON.stringify(schema);
+    this.document.head.appendChild(script);
+  }
+
+  addOrganizationSchema(): void {
+    this.appendSchema('organization', {
       "@context": "https://schema.org",
       "@type": "Organization",
-      "name": "MMA Architectural Design",
-      "url": "https://yourdomain.com",
+      "name": environment.siteName,
+      "url": this.baseUrl,
       "description": "Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo",
       "address": {
         "@type": "PostalAddress",
@@ -39,20 +52,14 @@ export class StructuredDataService {
         "name": "Vietnam"
       }
     });
-    document.head.appendChild(script);
   }
 
   addLocalBusinessSchema(business: any): void {
-    this.removeExistingSchema('localbusiness');
-
-    const script = document.createElement('script');
-    script.type = 'application/ld+json';
-    script.setAttribute('data-schema', 'localbusiness');
-    script.text = JSON.stringify({
+    this.appendSchema('localbusiness', {
       "@context": "https://schema.org",
       "@type": "LocalBusiness",
-      "@id": "https://yourdomain.com/#localbusiness",
-      "name": business.name || "MMA Architectural Design",
+      "@id": `${this.baseUrl}/#localbusiness`,
+      "name": business.name || environment.siteName,
       "description": business.description || "Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại",
       "address": {
         "@type": "PostalAddress",
@@ -64,25 +71,18 @@ export class StructuredDataService {
       },
       "telephone": business.phone || "",
       "email": business.email || "",
-      "url": "https://yourdomain.com",
-      "image": business.logo || "",
+      "url": this.baseUrl,
+      "image": business.logo ? `${this.baseUrl}${business.logo}` : "",
       "priceRange": "$$",
       "openingHours": business.openingHours || [
         "Mo-Fr 08:00-17:00",
         "Sa 08:00-12:00"
       ]
     });
-    document.head.appendChild(script);
   }
 
-
-  addBreadcrumbSchema(breadcrumbs: Array<{name: string, url: string}>): void {
-    this.removeExistingSchema('breadcrumb');
-
-    const script = document.createElement('script');
-    script.type = 'application/ld+json';
-    script.setAttribute('data-schema', 'breadcrumb');
-    script.text = JSON.stringify({
+  addBreadcrumbSchema(breadcrumbs: Array<{ name: string, url: string }>): void {
+    this.appendSchema('breadcrumb', {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       "itemListElement": breadcrumbs.map((item, index) => ({
@@ -92,35 +92,20 @@ export class StructuredDataService {
         "item": item.url
       }))
     });
-    document.head.appendChild(script);
   }
 
   addWebsiteSchema(): void {
-    this.removeExistingSchema('website');
-
-    const script = document.createElement('script');
-    script.type = 'application/ld+json';
-    script.setAttribute('data-schema', 'website');
-    script.text = JSON.stringify({
+    this.appendSchema('website', {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      "name": "MMA Architectural Design",
-      "url": "https://yourdomain.com",
+      "name": environment.siteName,
+      "url": this.baseUrl,
       "description": "Chuyên thiết kế và thi công biệt thự, nhà ở hiện đại với phong cách kiến trúc độc đáo",
       "publisher": {
         "@type": "Organization",
-        "name": "MMA Architectural Design"
-      },
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": "https://yourdomain.com/search?q={search_term_string}"
-        },
-        "query-input": "required name=search_term_string"
+        "name": environment.siteName
       },
       "inLanguage": "vi-VN"
     });
-    document.head.appendChild(script);
   }
 }

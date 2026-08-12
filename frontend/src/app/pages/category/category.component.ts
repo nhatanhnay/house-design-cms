@@ -1,26 +1,42 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { Observable, switchMap, of } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin, of } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
 import { DataService } from '../../services/data.service';
 import { AuthService } from '../../services/auth.service';
-import { Post, Admin, Category, Product } from '../../models/models';
+import { SeoService } from '../../services/seo.service';
+import { Admin, Category } from '../../models/models';
+import { CardItem, byNewest, cardItemKey, toCardItem } from '../../models/card-item';
+import { SkeletonImageDirective } from '../../directives/skeleton-image.directive';
+
+/** Tab lọc theo danh mục con. `id === null` là "Mới nhất". */
+interface SubTab {
+  id: number | null;
+  label: string;
+}
 
 @Component({
   selector: 'app-category',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, RouterModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, RouterModule, SkeletonImageDirective],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="category-page">
-      <!-- Category Header -->
-      <div class="category-header">
-        <img [src]="categoryThumbnail || 'assets/images/placeholder-category.jpg'"
+      <!-- Ảnh bìa + tiêu đề danh mục -->
+      <div class="category-header" [class.no-thumbnail]="!categoryThumbnail">
+        <!-- Không có ảnh bìa thì dùng nền chuyển sắc: ảnh mặc định 600x400 bị
+             object-fit:cover kéo lên full màn hình trông rất tệ. -->
+        <img *ngIf="categoryThumbnail"
+             [src]="categoryThumbnail"
+             [appSkeleton]="categoryThumbnail"
              [alt]="categoryName"
-             class="category-thumbnail"
-             (error)="onImageError($event)">
+             class="category-thumbnail on-dark"
+             fetchpriority="high">
         <div class="header-overlay">
           <div class="title-bar">
             <h1 class="category-title">{{ categoryName || 'Danh mục không tìm thấy' }}</h1>
@@ -30,26 +46,29 @@ import { Post, Admin, Category, Product } from '../../models/models';
           </div>
         </div>
       </div>
+
       <div class="container">
+        <nav class="breadcrumb" *ngIf="breadcrumb.length > 0" aria-label="Đường dẫn">
+          <span *ngFor="let item of breadcrumb; let i = index">
+            <a [routerLink]="item.slug ? '/category/' + item.slug : '/'">{{ item.name }}</a>
+            <mat-icon *ngIf="i < breadcrumb.length - 1" aria-hidden="true">chevron_right</mat-icon>
+          </span>
+        </nav>
 
-        <!-- Subcategories Section -->
-        <div class="subcategories-section" *ngIf="allSubcategories && allSubcategories.length > 0">
-          <!-- Breadcrumb -->
-          <div class="breadcrumb" *ngIf="breadcrumb.length > 0">
-            <span *ngFor="let item of breadcrumb; let i = index">
-              <a [routerLink]="item.slug ? '/category/' + item.slug : '/'">{{ item.name }}</a>
-              <mat-icon *ngIf="i < breadcrumb.length - 1">chevron_right</mat-icon>
-            </span>
-          </div>
-
+        <!-- Danh mục con -->
+        <section class="subcategories-section" *ngIf="!isLoading && allSubcategories.length > 0">
           <h2 class="section-title">Danh mục con</h2>
 
           <div class="subcategories-grid">
-            <mat-card class="subcategory-card" *ngFor="let subcat of subcategories" [routerLink]="'/category/' + subcat.slug">
+            <mat-card class="subcategory-card"
+                      *ngFor="let subcat of pagedSubcategories; trackBy: trackByCategoryId"
+                      [routerLink]="'/category/' + subcat.slug">
               <div class="subcategory-thumbnail">
-                <img [src]="subcat.thumbnail_url || 'assets/images/placeholder-category.jpg'"
+                <img [src]="subcat.thumbnail_url"
+                     [appSkeleton]="subcat.thumbnail_url"
                      [alt]="subcat.name"
-                     (error)="onImageError($event)">
+                     loading="lazy"
+                     decoding="async">
               </div>
               <mat-card-content>
                 <h3>{{ subcat.name }}</h3>
@@ -58,131 +77,130 @@ import { Post, Admin, Category, Product } from '../../models/models';
             </mat-card>
           </div>
 
-          <!-- Subcategory Pagination -->
           <div class="pagination" *ngIf="subcategoryTotalPages > 1">
-            <button mat-icon-button (click)="prevSubcategoryPage()" [disabled]="subcategoryPage === 0">
-              <mat-icon>chevron_left</mat-icon>
+            <button mat-icon-button type="button" (click)="goToSubcategoryPage(subcategoryPage - 1)"
+                    [disabled]="subcategoryPage === 0" aria-label="Trang trước">
+              <mat-icon aria-hidden="true">chevron_left</mat-icon>
             </button>
             <div class="page-numbers">
-              <button mat-button
-                      *ngFor="let page of [].constructor(subcategoryTotalPages); let i = index"
-                      [class.active]="i === subcategoryPage"
-                      (click)="goToSubcategoryPage(i)">
-                {{ i + 1 }}
+              <button mat-button type="button"
+                      *ngFor="let page of subcategoryPages"
+                      [class.active]="page === subcategoryPage"
+                      [attr.aria-current]="page === subcategoryPage ? 'page' : null"
+                      (click)="goToSubcategoryPage(page)">
+                {{ page + 1 }}
               </button>
             </div>
-            <button mat-icon-button (click)="nextSubcategoryPage()" [disabled]="subcategoryPage === subcategoryTotalPages - 1">
-              <mat-icon>chevron_right</mat-icon>
+            <button mat-icon-button type="button" (click)="goToSubcategoryPage(subcategoryPage + 1)"
+                    [disabled]="subcategoryPage >= subcategoryTotalPages - 1" aria-label="Trang sau">
+              <mat-icon aria-hidden="true">chevron_right</mat-icon>
             </button>
           </div>
-        </div>
+        </section>
 
-        <!-- Loading State -->
-        <div class="loading-state" *ngIf="isLoading">
-          <div class="loading-spinner"></div>
+        <!-- Đang tải -->
+        <div class="loading-state" *ngIf="isLoading" aria-live="polite" aria-busy="true">
+          <div class="loading-spinner" aria-hidden="true"></div>
           <p>Đang tải bài viết...</p>
         </div>
 
-        <!-- Combined Posts & Products Grid -->
-        <div class="posts-section" *ngIf="allItems && allItems.length > 0; else noItems">
+        <!-- Bài viết & sản phẩm -->
+        <section class="posts-section" *ngIf="!isLoading && items.length > 0">
           <h2 class="section-title">{{ categoryName }}</h2>
 
-          <!-- Subcategory Tabs (if has subcategories) -->
-          <div class="subcategory-tabs" *ngIf="allSubcategories && allSubcategories.length > 0">
-            <!-- "Mới nhất" tab -->
-            <button 
-              class="subcategory-tab" 
-              [class.active]="getActiveSubcategoryTab() === null"
-              (click)="setActiveSubcategoryTab(null)">
-              <span>MỚI NHẤT</span>
-            </button>
-
-            <!-- Individual subcategory tabs -->
-            <button 
-              class="subcategory-tab" 
-              *ngFor="let subcategory of allSubcategories"
-              [class.active]="getActiveSubcategoryTab() === subcategory.id"
-              (click)="setActiveSubcategoryTab(subcategory.id)">
-              <span>{{ subcategory.name | uppercase }}</span>
+          <div class="subcategory-tabs" *ngIf="tabs.length > 0" role="tablist" [attr.aria-label]="categoryName">
+            <button type="button"
+                    class="subcategory-tab"
+                    *ngFor="let tab of tabs; trackBy: trackByTabId"
+                    [class.active]="activeTabId === tab.id"
+                    [attr.aria-selected]="activeTabId === tab.id"
+                    role="tab"
+                    (click)="selectTab(tab.id)">
+              <span>{{ tab.label }}</span>
             </button>
           </div>
 
           <div class="posts-grid">
-            <!-- Post/Product Card -->
-            <mat-card class="post-card" *ngFor="let item of getPaginatedItems()" [routerLink]="isProduct(item) ? '/product/' + (item.slug || item.id) : '/post/' + (item.slug || item.id)">
-            <div class="post-image">
-              <img
-                [src]="getImageUrl(item) || 'assets/images/placeholder-post.jpg'"
-                [alt]="item.title"
-                (error)="onImageError($event)">
-              <div class="post-overlay">
-                <div class="post-category-badge">{{ categoryName }}</div>
-                <div class="item-type-badge" *ngIf="isProduct(item)">
-                  <mat-icon>shopping_cart</mat-icon>
-                  Sản phẩm
-                </div>
-              </div>
-            </div>
-
-            <mat-card-content class="post-content">
-              <h3 class="post-title">{{ item.title }}</h3>
-
-              <p class="post-summary">{{ item.summary || 'Không có mô tả' }}</p>
-
-              <div class="post-meta">
-                <div class="post-date">
-                  <mat-icon>event</mat-icon>
-                  <span>{{ item.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
-                </div>
-                <div class="post-status" *ngIf="currentUser$ | async" [class.published]="item.published" [class.draft]="!item.published">
-                  <mat-icon>{{ item.published ? 'visibility' : 'visibility_off' }}</mat-icon>
-                  <span>{{ item.published ? 'Đã xuất bản' : 'Bản nháp' }}</span>
-                </div>
-                <div class="post-views" *ngIf="!(currentUser$ | async)">
-                  <mat-icon>visibility</mat-icon>
-                  <span>{{ item.views || 0 }} lượt xem</span>
+            <mat-card class="post-card" *ngFor="let item of pagedItems; trackBy: trackByItem"
+                      [routerLink]="item.route">
+              <div class="post-image">
+                <img [src]="item.imageUrl"
+                     [appSkeleton]="item.imageUrl"
+                     [alt]="item.title"
+                     loading="lazy"
+                     decoding="async">
+                <div class="post-overlay">
+                  <div class="post-category-badge">{{ categoryName }}</div>
+                  <div class="item-type-badge" *ngIf="item.isProduct">
+                    <mat-icon aria-hidden="true">shopping_cart</mat-icon>
+                    Sản phẩm
+                  </div>
                 </div>
               </div>
 
-              <div class="read-more">
-                <span>{{ isProduct(item) ? 'Xem sản phẩm' : 'Xem chi tiết' }}</span>
-                <mat-icon>arrow_forward</mat-icon>
-              </div>
-            </mat-card-content>
-          </mat-card>
+              <mat-card-content class="post-content">
+                <h3 class="post-title">{{ item.title }}</h3>
+                <p class="post-summary">{{ item.summary || 'Không có mô tả' }}</p>
+
+                <div class="post-meta">
+                  <div class="post-date">
+                    <mat-icon aria-hidden="true">event</mat-icon>
+                    <span>{{ item.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                  <div class="post-status" *ngIf="currentUser$ | async"
+                       [class.published]="item.published" [class.draft]="!item.published">
+                    <mat-icon aria-hidden="true">{{ item.published ? 'visibility' : 'visibility_off' }}</mat-icon>
+                    <span>{{ item.published ? 'Đã xuất bản' : 'Bản nháp' }}</span>
+                  </div>
+                  <div class="post-views" *ngIf="!(currentUser$ | async)">
+                    <mat-icon aria-hidden="true">visibility</mat-icon>
+                    <span>{{ item.views }} lượt xem</span>
+                  </div>
+                </div>
+
+                <div class="read-more">
+                  <span>{{ item.isProduct ? 'Xem sản phẩm' : 'Xem chi tiết' }}</span>
+                  <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                </div>
+              </mat-card-content>
+            </mat-card>
           </div>
 
-          <!-- Item Pagination -->
           <div class="pagination" *ngIf="itemTotalPages > 1">
-            <button mat-icon-button (click)="prevItemPage()" [disabled]="itemPage === 0">
-              <mat-icon>chevron_left</mat-icon>
+            <button mat-icon-button type="button" (click)="goToItemPage(itemPage - 1)"
+                    [disabled]="itemPage === 0" aria-label="Trang trước">
+              <mat-icon aria-hidden="true">chevron_left</mat-icon>
             </button>
             <div class="page-numbers">
-              <button mat-button
-                      *ngFor="let page of [].constructor(itemTotalPages); let i = index"
-                      [class.active]="i === itemPage"
-                      (click)="goToItemPage(i)">
-                {{ i + 1 }}
+              <button mat-button type="button"
+                      *ngFor="let page of itemPages"
+                      [class.active]="page === itemPage"
+                      [attr.aria-current]="page === itemPage ? 'page' : null"
+                      (click)="goToItemPage(page)">
+                {{ page + 1 }}
               </button>
             </div>
-            <button mat-icon-button (click)="nextItemPage()" [disabled]="itemPage === itemTotalPages - 1">
-              <mat-icon>chevron_right</mat-icon>
+            <button mat-icon-button type="button" (click)="goToItemPage(itemPage + 1)"
+                    [disabled]="itemPage >= itemTotalPages - 1" aria-label="Trang sau">
+              <mat-icon aria-hidden="true">chevron_right</mat-icon>
             </button>
           </div>
-        </div>
+        </section>
 
-        <!-- Empty State -->
-        <ng-template #noItems>
-          <div class="no-posts">
-            <mat-icon class="no-posts-icon">article</mat-icon>
-            <h3>Chưa có bài viết hoặc sản phẩm nào</h3>
-            <p>Danh mục này hiện tại chưa có nội dung nào. Hãy quay lại sau nhé!</p>
-            <button mat-raised-button color="primary" routerLink="/">
-              <mat-icon>home</mat-icon>
-              Về trang chủ
-            </button>
-          </div>
-        </ng-template>
+        <!-- Trống: chỉ hiện khi đã tải xong, không chồng lên spinner như trước -->
+        <div class="no-posts" *ngIf="!isLoading && items.length === 0">
+          <mat-icon class="no-posts-icon" aria-hidden="true">article</mat-icon>
+          <h3>{{ notFound ? 'Không tìm thấy danh mục' : 'Chưa có bài viết hoặc sản phẩm nào' }}</h3>
+          <p>
+            {{ notFound
+              ? 'Danh mục bạn tìm không tồn tại hoặc đã bị gỡ.'
+              : 'Danh mục này hiện tại chưa có nội dung nào. Hãy quay lại sau nhé!' }}
+          </p>
+          <button mat-raised-button color="primary" routerLink="/">
+            <mat-icon aria-hidden="true">home</mat-icon>
+            Về trang chủ
+          </button>
+        </div>
       </div>
     </div>
   `,
@@ -263,6 +281,14 @@ import { Post, Admin, Category, Product } from '../../models/models';
       object-position: center;
     }
 
+    .category-header.no-thumbnail {
+      background:
+        radial-gradient(circle at 30% 20%, rgba(224, 149, 67, 0.18) 0%, transparent 55%),
+        linear-gradient(135deg, #3a3a3a 0%, #262626 100%);
+      height: 40vh;
+      min-height: 280px;
+    }
+
     .header-overlay {
       position: absolute;
       top: 80px;
@@ -277,7 +303,9 @@ import { Post, Admin, Category, Product } from '../../models/models';
     }
 
     .title-bar {
-      background: rgba(102, 126, 234, 0.95);
+      /* Trước là rgba(102,126,234,.95) — tím xanh, không thuộc bảng màu thương hiệu */
+      background: rgba(58, 58, 58, 0.92);
+      border-left: 4px solid var(--accent-copper, #e09543);
       padding: 30px 60px;
       margin-bottom: 20px;
       backdrop-filter: blur(10px);
@@ -319,7 +347,7 @@ import { Post, Admin, Category, Product } from '../../models/models';
     .posts-count {
       display: inline-block;
       padding: 8px 16px;
-      background: var(--primary-blue, #3498db);
+      background: var(--brand, #e09543);
       color: white;
       border-radius: 20px;
       font-size: 0.9rem;
@@ -367,25 +395,25 @@ import { Post, Admin, Category, Product } from '../../models/models';
       padding: 20px 0;
     }
 
+    /* Lưới co giãn thay cho repeat(3, 360px): cỡ cứng cần 1140px nên ở viewport
+       1025-1180px (media query 1024px chưa kích hoạt) nó tràn ra ngoài container. */
     .subcategories-grid {
       display: grid;
-      grid-template-columns: repeat(3, 360px);
-      grid-template-rows: repeat(1, 350px); /* Cố định 1 dòng cho subcategories */
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 30px;
       margin-top: 20px;
       margin-bottom: 20px;
-      justify-content: start; /* Căn trái như home */
     }
 
     .subcategory-card {
       cursor: pointer;
       border-radius: 16px;
       overflow: hidden;
-      transition: all 0.3s ease;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
       background: white;
       border: none;
-      width: 360px;
+      width: 100%;
       height: 350px;
       display: flex;
       flex-direction: column;
@@ -494,15 +522,14 @@ import { Post, Admin, Category, Product } from '../../models/models';
       font-weight: 700;
     }
 
-    /* Posts Grid - 3x2 = 6 items */
+    /* Lưới co giãn; số hàng theo số item thực tế thay vì luôn 2 hàng 500px */
     .posts-grid {
       display: grid;
-      grid-template-columns: repeat(3, 360px);
-      grid-template-rows: repeat(2, 500px); /* Luôn hiển thị 2 dòng */
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-auto-rows: 500px;
       gap: 30px;
       margin-top: 20px;
       margin-bottom: 20px;
-      justify-content: start; /* Căn trái như home */
     }
 
     /* Post Cards */
@@ -516,7 +543,7 @@ import { Post, Admin, Category, Product } from '../../models/models';
       border: none;
       text-decoration: none;
       color: inherit;
-      width: 360px;
+      width: 100%;
       height: 500px;
       display: flex;
       flex-direction: column;
@@ -554,11 +581,17 @@ import { Post, Admin, Category, Product } from '../../models/models';
       background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.3));
     }
 
+    /* Lớp phủ chỉ để làm nổi nhãn trên ảnh thật; phủ lên skeleton trống chỉ
+       khiến khối trông đục như lỗi hiển thị. */
+    .post-image:has(img.is-failed) .post-overlay {
+      background: none;
+    }
+
     .post-category-badge {
       position: absolute;
       top: 15px;
       left: 15px;
-      background: var(--primary-blue, #3498db);
+      background: var(--brand, #e09543);
       color: white;
       padding: 6px 12px;
       border-radius: 20px;
@@ -570,7 +603,7 @@ import { Post, Admin, Category, Product } from '../../models/models';
       position: absolute;
       top: 15px;
       right: 15px;
-      background: #28a745;
+      background: var(--state-success, #2e7d52);
       color: white;
       padding: 6px 12px;
       border-radius: 20px;
@@ -661,18 +694,18 @@ import { Post, Admin, Category, Product } from '../../models/models';
     }
 
     .post-status.published {
-      color: #28a745;
+      color: var(--state-success, #2e7d52);
     }
 
     .post-status.draft {
-      color: #ffc107;
+      color: var(--state-warning, #b8802b);
     }
 
     .read-more {
       display: inline-flex;
       align-items: center;
       justify-content: space-between;
-      color: var(--primary-blue, #3498db);
+      color: var(--brand-strong, #c97c2b);
       font-weight: 500;
       font-size: 0.9rem;
       margin-top: auto;
@@ -799,21 +832,7 @@ import { Post, Admin, Category, Product } from '../../models/models';
     @media (max-width: 1024px) {
       .subcategories-grid,
       .posts-grid {
-        grid-template-columns: repeat(2, 1fr);
         gap: 20px;
-      }
-
-      .subcategories-grid {
-        grid-template-rows: repeat(2, 350px); /* 2 dòng cho tablet - hiển thị 4 items */
-      }
-
-      .posts-grid {
-        grid-template-rows: repeat(3, 500px); /* 3 dòng cho tablet - hiển thị 6 items */
-      }
-
-      .subcategory-card,
-      .post-card {
-        width: 100%;
       }
 
       .title-bar {
@@ -914,18 +933,9 @@ import { Post, Admin, Category, Product } from '../../models/models';
       .subcategories-grid,
       .posts-grid {
         grid-template-columns: 1fr;
+        grid-auto-rows: auto;
         gap: 16px;
         margin-top: 18px;
-      }
-
-      .subcategories-grid {
-        grid-template-rows: repeat(3, auto); /* 3 dòng cho mobile - hiển thị 3 items */
-        min-height: auto; /* Cho phép co dãn trên mobile */
-      }
-
-      .posts-grid {
-        grid-template-rows: repeat(6, auto); /* 6 dòng cho mobile - hiển thị 6 items */
-        min-height: auto; /* Cho phép co dãn trên mobile */
       }
 
       .subcategory-card,
@@ -1080,14 +1090,6 @@ import { Post, Admin, Category, Product } from '../../models/models';
         margin-top: 16px;
       }
 
-      .subcategories-grid {
-        grid-template-rows: repeat(3, auto); /* Giữ nguyên 3 dòng */
-      }
-
-      .posts-grid {
-        grid-template-rows: repeat(6, auto); /* Giữ nguyên 6 dòng */
-      }
-
       .subcategory-card,
       .post-card {
         min-height: 340px;
@@ -1210,14 +1212,6 @@ import { Post, Admin, Category, Product } from '../../models/models';
         min-height: 320px;
       }
 
-      .subcategories-grid {
-        grid-template-rows: repeat(3, auto); /* Giữ nguyên 3 dòng */
-      }
-
-      .posts-grid {
-        grid-template-rows: repeat(6, auto); /* Giữ nguyên 6 dòng */
-      }
-
       .subcategory-content,
       .post-content {
         padding: 10px;
@@ -1236,241 +1230,214 @@ import { Post, Admin, Category, Product } from '../../models/models';
   `]
 })
 export class CategoryComponent implements OnInit {
-  items$: Observable<(Post | Product)[]>;
-  currentUser$: Observable<Admin | null>;
+  private readonly route = inject(ActivatedRoute);
+  private readonly dataService = inject(DataService);
+  private readonly authService = inject(AuthService);
+  private readonly seo = inject(SeoService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly currentUser$ = this.authService.currentUser$;
+
   categoryName = '';
   categoryDescription = '';
   categoryThumbnail = '';
-  categoryId: number | null = null; // Track current category ID
-  subcategories: Category[] = [];
+  breadcrumb: Array<{ name: string; slug?: string }> = [];
+
   allSubcategories: Category[] = [];
-  allItems: (Post | Product)[] = [];
-  allItemsUnfiltered: (Post | Product)[] = []; // Store all items before tab filtering
-  breadcrumb: Array<{name: string, slug?: string}> = [];
+  pagedSubcategories: Category[] = [];
+
+  tabs: SubTab[] = [];
+  activeTabId: number | null = null;
+
+  /** Item của tab đang chọn. */
+  items: CardItem[] = [];
+  pagedItems: CardItem[] = [];
+
   isLoading = true;
+  /** true khi slug không khớp danh mục nào — dùng để đổi thông điệp trống. */
+  notFound = false;
 
-  // Active subcategory tab (null = "Tất cả")
-  activeSubcategoryTab: number | null = null;
-
-  // Pagination for subcategories
   subcategoryPage = 0;
-  subcategoryPageSize = 3;
-
-  // Pagination for posts/products
   itemPage = 0;
-  itemPageSize = 6; // 3x2 grid
 
-  constructor(
-    private route: ActivatedRoute,
-    private dataService: DataService,
-    private authService: AuthService
-  ) {
-    this.items$ = this.route.params.pipe(
-      switchMap(params => {
-        this.isLoading = true;
-        this.categoryName = params['slug'];
+  private readonly subcategoryPageSize = 3;
+  private readonly itemPageSize = 6;
 
-        // First get categories to find the category ID by slug
-        return this.dataService.getCategories().pipe(
-          switchMap(categories => {
-            const category = categories.find(cat => cat.slug === params['slug']);
+  /** Toàn bộ item của danh mục, chưa lọc theo tab. */
+  private allItems: CardItem[] = [];
 
-            if (category) {
-              this.categoryName = category.name;
-              this.categoryDescription = category.description;
-              this.categoryThumbnail = category.thumbnail_url || '';
-              this.categoryId = category.id; // Store category ID
+  readonly trackByItem = cardItemKey;
 
-              // Build breadcrumb
-              this.breadcrumb = [{name: 'Trang chủ'}];
-              if (category.parent_id) {
-                const parent = categories.find(c => c.id === category.parent_id);
-                if (parent) {
-                  this.breadcrumb.push({name: parent.name, slug: parent.slug});
-                }
-              }
-              this.breadcrumb.push({name: category.name, slug: category.slug});
-
-              // Get all category IDs including subcategories
-              const categoryIds = [category.id];
-              this.allSubcategories = categories.filter(cat => cat.parent_id === category.id);
-              this.subcategories = this.getPaginatedSubcategories();
-              
-              // Initialize active tab to "Tất cả" if has subcategories
-              if (this.allSubcategories.length > 0) {
-                this.activeSubcategoryTab = null;
-              }
-              
-              this.allSubcategories.forEach(sub => categoryIds.push(sub.id));
-
-              // Get both posts and products from all these categories
-              return this.dataService.getPosts().pipe(
-                switchMap(allPosts => {
-                  return this.dataService.getProducts().pipe(
-                    switchMap(allProducts => {
-                      console.log('🔍 CategoryComponent - All Posts:', allPosts);
-                      console.log('🔍 CategoryComponent - All Products:', allProducts);
-                      console.log('🔍 CategoryComponent - Category IDs to filter:', categoryIds);
-                      
-                      const filteredPosts = allPosts.filter(post =>
-                        categoryIds.includes(post.category_id)
-                      );
-                      const filteredProducts = allProducts.filter(product =>
-                        categoryIds.includes(product.category_id)
-                      );
-
-                      console.log('✅ Filtered Posts:', filteredPosts.length, filteredPosts);
-                      console.log('✅ Filtered Products:', filteredProducts.length, filteredProducts);
-
-                      // Combine and sort by created_at
-                      const combined = [...filteredPosts, ...filteredProducts].sort((a, b) => {
-                        const dateA = new Date(a.created_at || 0).getTime();
-                        const dateB = new Date(b.created_at || 0).getTime();
-                        return dateB - dateA; // Newest first
-                      });
-
-                      console.log('📦 Combined items:', combined.length, combined);
-                      console.log('🔎 First item type check:', combined[0], 'isProduct:', this.isProduct(combined[0]));
-
-                      return of(combined);
-                    })
-                  );
-                })
-              );
-            } else {
-              this.categoryName = 'Danh mục không tìm thấy';
-              this.categoryDescription = '';
-              this.categoryThumbnail = '';
-              this.breadcrumb = [];
-              return of([]);
-            }
-          })
-        );
-      })
-    );
-    this.currentUser$ = this.authService.currentUser$;
+  trackByCategoryId(_index: number, category: Category): number {
+    return category.id;
   }
 
-  ngOnInit(): void {
-    // Subscribe to items observable to handle loading state and store items
-    this.items$.subscribe({
-      next: (items) => {
-        this.isLoading = false;
-        this.allItemsUnfiltered = items; // Store all items
-        this.filterItemsByTab(); // Apply initial filter
-      },
-      error: (error) => {
-        this.isLoading = false;
-      }
-    });
-  }
-
-  // Filter items by active tab
-  filterItemsByTab(): void {
-    if (this.activeSubcategoryTab === null) {
-      // "Tất cả" - show all items
-      this.allItems = this.allItemsUnfiltered;
-    } else {
-      // Filter by specific subcategory
-      this.allItems = this.allItemsUnfiltered.filter(item => 
-        item.category_id === this.activeSubcategoryTab
-      );
-    }
-    // Reset to first page when filter changes
-    this.itemPage = 0;
-  }
-
-  // Set active subcategory tab
-  setActiveSubcategoryTab(subcategoryId: number | null): void {
-    this.activeSubcategoryTab = subcategoryId;
-    this.filterItemsByTab();
-  }
-
-  // Get active subcategory tab
-  getActiveSubcategoryTab(): number | null {
-    return this.activeSubcategoryTab;
-  }
-
-  // Subcategory pagination
-  getPaginatedSubcategories(): Category[] {
-    const start = this.subcategoryPage * this.subcategoryPageSize;
-    const end = start + this.subcategoryPageSize;
-    return this.allSubcategories.slice(start, end);
+  trackByTabId(_index: number, tab: SubTab): string {
+    return String(tab.id);
   }
 
   get subcategoryTotalPages(): number {
     return Math.ceil(this.allSubcategories.length / this.subcategoryPageSize);
   }
 
-  nextSubcategoryPage(): void {
-    if (this.subcategoryPage < this.subcategoryTotalPages - 1) {
-      this.subcategoryPage++;
-      this.subcategories = this.getPaginatedSubcategories();
-    }
-  }
-
-  prevSubcategoryPage(): void {
-    if (this.subcategoryPage > 0) {
-      this.subcategoryPage--;
-      this.subcategories = this.getPaginatedSubcategories();
-    }
-  }
-
-  goToSubcategoryPage(page: number): void {
-    this.subcategoryPage = page;
-    this.subcategories = this.getPaginatedSubcategories();
-  }
-
-  // Item (post/product) pagination
-  getPaginatedItems(): (Post | Product)[] {
-    const start = this.itemPage * this.itemPageSize;
-    const end = start + this.itemPageSize;
-    return this.allItems.slice(start, end);
-  }
-
   get itemTotalPages(): number {
-    return Math.ceil(this.allItems.length / this.itemPageSize);
+    return Math.ceil(this.items.length / this.itemPageSize);
   }
 
-  nextItemPage(): void {
-    if (this.itemPage < this.itemTotalPages - 1) {
-      this.itemPage++;
-    }
+  get subcategoryPages(): number[] {
+    return Array.from({ length: this.subcategoryTotalPages }, (_, i) => i);
   }
 
-  prevItemPage(): void {
-    if (this.itemPage > 0) {
-      this.itemPage--;
+  get itemPages(): number[] {
+    return Array.from({ length: this.itemTotalPages }, (_, i) => i);
+  }
+
+  ngOnInit(): void {
+    this.route.params
+      .pipe(
+        switchMap(params => {
+          this.isLoading = true;
+          this.notFound = false;
+          this.cdr.markForCheck();
+
+          return forkJoin({
+            slug: of(params['slug'] as string),
+            categories: this.dataService.getCategories().pipe(catchError(() => of([] as Category[]))),
+            posts: this.dataService.getPosts().pipe(catchError(() => of([]))),
+            products: this.dataService.getProducts().pipe(catchError(() => of([])))
+          });
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(({ slug, categories, posts, products }) => {
+        this.build(slug, categories, posts, products);
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      });
+  }
+
+  private build(slug: string, categories: Category[], posts: any[], products: any[]): void {
+    const category = categories.find(cat => cat.slug === slug);
+
+    if (!category) {
+      this.notFound = true;
+      this.categoryName = 'Danh mục không tìm thấy';
+      this.categoryDescription = '';
+      this.categoryThumbnail = '';
+      this.breadcrumb = [];
+      this.allSubcategories = [];
+      this.pagedSubcategories = [];
+      this.tabs = [];
+      this.allItems = [];
+      this.items = [];
+      this.pagedItems = [];
+      this.seo.update({
+        title: 'Không tìm thấy danh mục',
+        description: 'Danh mục bạn tìm không tồn tại hoặc đã bị gỡ.',
+        noindex: true
+      });
+      return;
     }
+
+    this.categoryName = category.name;
+    this.categoryDescription = category.description;
+    this.categoryThumbnail = category.thumbnail_url || '';
+
+    this.breadcrumb = [{ name: 'Trang chủ' }];
+    const parent = category.parent_id ? categories.find(c => c.id === category.parent_id) : undefined;
+    if (parent) {
+      this.breadcrumb.push({ name: parent.name, slug: parent.slug });
+    }
+    this.breadcrumb.push({ name: category.name, slug: category.slug });
+
+    this.allSubcategories = categories.filter(cat => cat.parent_id === category.id);
+    this.subcategoryPage = 0;
+    this.pagedSubcategories = this.allSubcategories.slice(0, this.subcategoryPageSize);
+
+    const categoryIds = [category.id, ...this.allSubcategories.map(c => c.id)];
+    const isAdmin = this.authService.isAuthenticated();
+
+    this.allItems = [
+      ...posts
+        .filter((p: any) => categoryIds.includes(p.category_id) && (isAdmin || p.published))
+        .map((p: any) => toCardItem(p, false)),
+      ...products
+        .filter((p: any) => categoryIds.includes(p.category_id) && (isAdmin || p.published))
+        .map((p: any) => toCardItem(p, true))
+    ].sort(byNewest);
+
+    this.tabs = this.allSubcategories.length
+      ? [
+          { id: null, label: 'MỚI NHẤT' },
+          ...this.allSubcategories.map(c => ({ id: c.id, label: c.name.toUpperCase() }))
+        ]
+      : [];
+
+    this.activeTabId = null;
+    this.applyTab();
+    this.applySeo(category, parent);
+  }
+
+  private applyTab(): void {
+    this.items = this.activeTabId === null
+      ? this.allItems
+      : this.allItems.filter(item => item.categoryId === this.activeTabId);
+
+    this.itemPage = 0;
+    this.updatePagedItems();
+  }
+
+  private updatePagedItems(): void {
+    const start = this.itemPage * this.itemPageSize;
+    this.pagedItems = this.items.slice(start, start + this.itemPageSize);
+  }
+
+  private applySeo(category: Category, parent?: Category): void {
+    this.seo.update({
+      title: category.meta_title || category.name,
+      description: category.meta_description || category.description,
+      keywords: category.meta_keywords,
+      image: category.og_image_url || category.thumbnail_url,
+      path: `/category/${category.slug}`,
+      type: 'website',
+      modifiedAt: category.updated_at
+    });
+
+    const trail: Array<{ name: string; path?: string }> = [{ name: 'Trang chủ', path: '/' }];
+    if (parent) {
+      trail.push({ name: parent.name, path: `/category/${parent.slug}` });
+    }
+    trail.push({ name: category.name, path: `/category/${category.slug}` });
+    this.seo.setBreadcrumb(trail);
+  }
+
+  selectTab(tabId: number | null): void {
+    if (this.activeTabId === tabId) {
+      return;
+    }
+    this.activeTabId = tabId;
+    this.applyTab();
+    this.cdr.markForCheck();
   }
 
   goToItemPage(page: number): void {
-    this.itemPage = page;
-  }
-
-  onImageError(event: any): void {
-    event.target.src = 'assets/images/placeholder-post.jpg';
-  }
-
-  isProduct(item: Post | Product): item is Product {
-    // Products have thumbnail_url instead of image_url
-    // Check for thumbnail_url existence (Products) vs image_url (Posts)
-    return 'thumbnail_url' in item && !('image_url' in item);
-  }
-
-  asProduct(item: Post | Product): Product {
-    return item as Product;
-  }
-
-  getImageUrl(item: Post | Product): string {
-    if (this.isProduct(item)) {
-      // For products, use thumbnail_url first, then fallback to gallery or og_image_url
-      return item.thumbnail_url ||
-             (item.images && item.images.length > 0 ? item.images[0].image_url : '') ||
-             item.og_image_url || '';
-    } else {
-      // For posts, use image_url
-      return (item as Post).image_url || '';
+    if (page < 0 || page >= this.itemTotalPages) {
+      return;
     }
+    this.itemPage = page;
+    this.updatePagedItems();
+    this.cdr.markForCheck();
   }
+
+  goToSubcategoryPage(page: number): void {
+    if (page < 0 || page >= this.subcategoryTotalPages) {
+      return;
+    }
+    this.subcategoryPage = page;
+    const start = page * this.subcategoryPageSize;
+    this.pagedSubcategories = this.allSubcategories.slice(start, start + this.subcategoryPageSize);
+    this.cdr.markForCheck();
+  }
+
 }

@@ -7,11 +7,6 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Khong bao gio deploy 2 lan song song vao cung 1 server
-concurrency:
-  group: production-deploy
-  cancel-in-progress: false
-
 env:
   GO_VERSION: '1.23'
   NODE_VERSION: '20'
@@ -21,10 +16,10 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: backend/go.sum
@@ -45,7 +40,7 @@ jobs:
           file house-design-backend || true
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -64,7 +59,7 @@ jobs:
           du -sh dist/house-design-frontend
 
       - name: Upload release artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release
           retention-days: 14
@@ -80,12 +75,60 @@ jobs:
     runs-on: ubuntu-latest
     # PR chi build de kiem tra, khong deploy
     if: github.event_name != 'pull_request'
+    # Chi serialise rieng buoc deploy, khong de PR build khoa production deploy
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
     steps:
       - name: Download release artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release
           path: release
+
+      - name: Kiem tra secrets truoc khi dong vao production
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          set -Eeuo pipefail
+          missing=''
+          for name in VPS_HOST VPS_USER VPS_SSH_KEY DB_PASSWORD JWT_SECRET; do
+            [ -n "${!name:-}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Thieu secret:$missing"
+            exit 1
+          fi
+          if [ "${#JWT_SECRET}" -lt 32 ]; then
+            echo "::error::JWT_SECRET phai it nhat 32 ky tu (dang co ${#JWT_SECRET})"
+            exit 1
+          fi
+          echo "Secrets day du"
+
+      - name: Render .env tu secrets
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          # printf thay vi heredoc de tranh loi thut dong trong YAML block scalar
+          {
+            printf 'DB_HOST=localhost\n'
+            printf 'DB_PORT=5432\n'
+            printf 'DB_USER=postgres\n'
+            printf 'DB_PASSWORD=%s\n' "$DB_PASSWORD"
+            printf 'DB_NAME=house_design\n'
+            printf 'DB_SSLMODE=disable\n'
+            printf 'JWT_SECRET=%s\n' "$JWT_SECRET"
+            printf 'SERVER_PORT=8080\n'
+            printf 'SERVER_HOST=127.0.0.1\n'
+          } > release/env
+          echo "Da render .env ($(wc -l < release/env) dong)"
 
       - name: Setup SSH
         env:
@@ -121,7 +164,11 @@ jobs:
           rsync -az -e "$SSH_CMD" \
             release/backend/house-design-backend \
             release/scripts/deploy-remote.sh \
+            release/env \
             "$TARGET:$STAGE/"
+
+          # .env chua secret -> siet quyen ngay tren server
+          $SSH_CMD "$TARGET" "chmod 600 '$STAGE/env'"
 
           echo "Da upload release $RELEASE_ID len $STAGE"
 

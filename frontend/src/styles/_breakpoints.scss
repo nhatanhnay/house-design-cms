@@ -1,0 +1,45 @@
+/* ---------------------------------------------------------------------------
+   Breakpoint dùng chung.
+
+   Bốn mốc 1024 / 768 / 480 / 360 đang được viết lại thủ công trong từng file
+   SCSS. Gom về một nơi để đổi mốc chỉ phải sửa một chỗ.
+
+   Cách dùng:
+     @use '../../../styles/breakpoints' as bp;
+     @include bp.tablet { ... }
+--------------------------------------------------------------------------- */
+
+$desktop-small: 1024px;
+$tablet:        768px;
+$mobile:        480px;
+$mobile-small:  360px;
+
+/// Từ tablet ngang trở xuống (<= 1024px)
+@mixin desktop-small {
+  @media (max-width: $desktop-small) { @content; }
+}
+
+/// Từ tablet dọc trở xuống (<= 768px)
+@mixin tablet {
+  @media (max-width: $tablet) { @content; }
+}
+
+/// Điện thoại (<= 480px)
+@mixin mobile {
+  @media (max-width: $mobile) { @content; }
+}
+
+/// Điện thoại nhỏ (<= 360px)
+@mixin mobile-small {
+  @media (max-width: $mobile-small) { @content; }
+}
+
+/// Thiết bị có con trỏ thô và không hỗ trợ hover thật (cảm ứng)
+@mixin touch {
+  @media (hover: none) and (pointer: coarse) { @content; }
+}
+
+/// Người dùng đã yêu cầu giảm hiệu ứng chuyển động
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) { @content; }
+}

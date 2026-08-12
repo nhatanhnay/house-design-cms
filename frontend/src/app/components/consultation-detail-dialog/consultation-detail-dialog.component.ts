@@ -62,11 +62,8 @@ export class ConsultationDetailDialogComponent {
   }
 
   onDelete(): void {
-    if (confirm('Bạn có chắc chắn muốn xóa yêu cầu tư vấn này?')) {
-      const result: ConsultationDetailDialogResult = {
-        action: 'delete'
-      };
-      this.dialogRef.close(result);
-    }
+    // Không hỏi ở đây: AdminComponent đã mở ConfirmDialogComponent sau khi dialog
+    // này đóng, hỏi hai lần chỉ làm người dùng bấm cho xong.
+    this.dialogRef.close({ action: 'delete' } satisfies ConsultationDetailDialogResult);
   }
 }

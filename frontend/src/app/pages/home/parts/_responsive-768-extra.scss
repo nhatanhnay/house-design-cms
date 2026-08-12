@@ -1,0 +1,23 @@
+// Sinh tự động khi tách home.component.scss (36 kB, vượt ngưỡng budget).
+// File gốc gộp cả layout desktop lẫn 4 tầng media query vào một chỗ.
+// Bổ sung cho <= 768px.
+
+@media (max-width: 768px) {
+  .hero-nav {
+    width: 38px;
+    height: 38px;
+
+    mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+    }
+  }
+
+  .hero-prev { left: 8px; }
+  .hero-next { right: 8px; }
+
+  .carousel-indicators {
+    bottom: 150px;
+  }
+}

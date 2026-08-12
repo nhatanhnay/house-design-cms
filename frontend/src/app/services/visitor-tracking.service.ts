@@ -39,9 +39,10 @@ export class VisitorTrackingService {
     const referrer = document.referrer || '';
     const pageUrl = window.location.origin + url;
 
+    // Theo dõi lượt xem là việc phụ: hỏng thì im lặng bỏ qua, không làm phiền
+    // console của người dùng cũng như không chặn luồng chính.
     this.dataService.trackVisitor(pageUrl, referrer).subscribe({
-      next: () => console.log('Visitor tracked:', pageUrl),
-      error: (error) => console.error('Error tracking visitor:', error)
+      error: () => undefined
     });
   }
 }

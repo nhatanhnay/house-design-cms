@@ -229,3 +229,21 @@ docker system prune -a
 # Truncate large log files
 truncate -s 0 /opt/house-design-cms/logs/*.log
 ```
+
+## Nginx: sitemap.xml và robots.txt
+
+Sitemap do backend sinh động tại `GET /sitemap.xml` (`handlers.GenerateSitemap`) — trả
+đúng `Content-Type: application/xml`, dùng slug và gồm cả bài viết lẫn sản phẩm.
+
+Nginx phải proxy đường dẫn này về backend. Nếu không, `try_files` sẽ rơi vào
+`index.html` của Angular và Google nhận về một trang HTML thay vì XML:
+
+```nginx
+location = /sitemap.xml {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_set_header Host $host;
+}
+```
+
+`robots.txt` được frontend build ra dưới dạng file tĩnh (`frontend/src/robots.txt`)
+nên nginx phục vụ trực tiếp, không cần proxy.

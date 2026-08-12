@@ -1,9 +1,10 @@
 import { HttpClient, HttpHeaders, HttpParams, HttpEvent } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Category, CategoryTreeItem, Consultation, CreateCategoryRequest, GlobalSEOSettings, HomeContent, Post, Product, UpdateCategoryRequest } from '../models/models';
+import { ApiCacheService } from './api-cache.service';
 import { AuthService } from './auth.service';
 import { FooterContent } from '../pages/admin/admin.component';
 
@@ -12,6 +13,9 @@ import { FooterContent } from '../pages/admin/admin.component';
 })
 export class DataService {
   private apiUrl: string;
+
+  /** Cache đọc dùng chung; cacheInvalidationInterceptor tự xoá sau mỗi lần ghi. */
+  private readonly cache = inject(ApiCacheService);
 
   constructor(private http: HttpClient, private authService: AuthService) {
     // Runtime detection: if the environment apiUrl points to localhost but the
@@ -32,13 +36,33 @@ export class DataService {
 
   }
 
+  private cached<T>(key: string, factory: () => Observable<T>): Observable<T> {
+    return this.cache.wrap(key, factory);
+  }
+
+  /** Buộc lần đọc tiếp theo gọi lại API. Bỏ trống = xoá toàn bộ. */
+  invalidateCache(...keys: string[]): void {
+    this.cache.invalidate(...keys);
+  }
+
+  /**
+   * Go trả `null` (không phải `[]`) khi marshal một slice rỗng, và handler lỗi
+   * trả về object `{error: ...}`. Ép mọi endpoint danh sách về mảng để component
+   * không phải tự phòng thủ ở từng chỗ gọi `.filter()`.
+   */
+  private asArray<T>(value: unknown): T[] {
+    return Array.isArray(value) ? value as T[] : [];
+  }
+
   // Categories
   getCategories(): Observable<Category[]> {
-    // Add cache-busting timestamp to prevent HTTP caching issues
-    const cacheBuster = new Date().getTime();
-    return this.http.get<any[]>(`${this.apiUrl}/categories?_t=${cacheBuster}`).pipe(
-      map(apiCategories => {
-        return apiCategories.map(apiCategory => ({
+    return this.cached('categories', () => this.fetchCategories());
+  }
+
+  private fetchCategories(): Observable<Category[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/categories`).pipe(
+      map(response => {
+        return this.asArray<any>(response).map(apiCategory => ({
           id: apiCategory.id,
           name: apiCategory.name,
           slug: apiCategory.slug,
@@ -181,12 +205,15 @@ export class DataService {
 
   // Posts
   getPosts(categoryId?: number): Observable<Post[]> {
-    const cacheBuster = new Date().getTime();
-    let params = new HttpParams().set('_t', cacheBuster.toString());
-    if (categoryId) {
-      params = params.set('category', categoryId.toString());
-    }
-    return this.http.get<Post[]>(`${this.apiUrl}/posts`, { params });
+    const key = categoryId ? `posts:${categoryId}` : 'posts';
+    return this.cached(key, () => {
+      let params = new HttpParams();
+      if (categoryId) {
+        params = params.set('category', categoryId.toString());
+      }
+      return this.http.get<Post[]>(`${this.apiUrl}/posts`, { params })
+        .pipe(map(response => this.asArray<Post>(response)));
+    });
   }
 
   getPost(id: number): Observable<Post> {
@@ -238,7 +265,7 @@ export class DataService {
 
   // Home Content
   getHomeContent(): Observable<HomeContent> {
-    return this.http.get<HomeContent>(`${this.apiUrl}/home-content`);
+    return this.cached('home-content', () => this.http.get<HomeContent>(`${this.apiUrl}/home-content`));
   }
 
   updateHomeContent(content: Partial<HomeContent>): Observable<HomeContent> {
@@ -255,7 +282,31 @@ export class DataService {
 
   // Footer Content
   getFooterContent(): Observable<FooterContent> {
-    return this.http.get<FooterContent>(`${this.apiUrl}/footer-content`);
+    return this.cached('footer-content', () => this.http.get<FooterContent>(`${this.apiUrl}/footer-content`));
+  }
+
+  /**
+   * 7 bài liên quan cùng danh mục, trừ bài đang xem.
+   *
+   * Trước đây các trang chi tiết gọi getPosts() không tham số rồi lọc phía client —
+   * tức kéo về toàn bộ CSDL chỉ để lấy 7 bản ghi.
+   */
+  getRelatedPosts(categoryId: number, excludeId: number, limit = 7): Observable<Post[]> {
+    return this.getPosts(categoryId).pipe(
+      map(posts => posts
+        .filter(post => post.published && post.id !== excludeId)
+        .slice(0, limit))
+    );
+  }
+
+  /** Sản phẩm liên quan cùng danh mục. Endpoint products chưa lọc theo category
+   *  nên vẫn phải lọc phía client, nhưng kết quả đã được cache dùng chung. */
+  getRelatedProducts(categoryId: number, excludeId: number, limit = 7): Observable<Product[]> {
+    return this.getProducts().pipe(
+      map(products => products
+        .filter(product => product.published && product.category_id === categoryId && product.id !== excludeId)
+        .slice(0, limit))
+    );
   }
 
   updateFooterContent(content: Partial<FooterContent>): Observable<FooterContent> {
@@ -374,9 +425,6 @@ export class DataService {
       // DO NOT set 'Content-Type': browser will set 'multipart/form-data; boundary=...' automatically
     });
 
-    console.log('Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
-    console.log('Token:', token ? 'Present' : 'Missing');
-
     return this.http.post<{ url: string }>(`${this.apiUrl}/upload`, formData, { headers });
   }
 
@@ -393,8 +441,6 @@ export class DataService {
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
-
-    console.log('Uploading file with progress:', file.name, 'Size:', file.size, 'Type:', file.type);
 
     return this.http.post<{ url: string }>(`${this.apiUrl}/upload`, formData, {
       headers,
@@ -468,8 +514,8 @@ export class DataService {
 
   // Get all products
   getProducts(): Observable<Product[]> {
-    const cacheBuster = new Date().getTime();
-    return this.http.get<Product[]>(`${this.apiUrl}/products?_t=${cacheBuster}`);
+    return this.cached('products', () => this.http.get<Product[]>(`${this.apiUrl}/products`)
+      .pipe(map(response => this.asArray<Product>(response))));
   }
 
   // Get single product by ID
@@ -584,7 +630,8 @@ export class DataService {
       'Authorization': `Bearer ${token}`
     });
 
-    return this.http.get<Consultation[]>(`${this.apiUrl}/consultations`, { headers });
+    return this.http.get<Consultation[]>(`${this.apiUrl}/consultations`, { headers })
+      .pipe(map(response => this.asArray<Consultation>(response)));
   }
 
   // Create consultation (public endpoint)

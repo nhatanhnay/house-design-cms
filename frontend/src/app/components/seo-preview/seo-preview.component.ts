@@ -2,6 +2,7 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-seo-preview',
@@ -61,7 +62,7 @@ export class SeoPreviewComponent implements OnChanges {
   @Input() metaDescription: string = '';
   @Input() slug: string = '';
   @Input() ogImage: string = '';
-  @Input() baseUrl: string = 'https://yourdomain.com';
+  @Input() baseUrl: string = environment.baseUrl;
 
   displayTitle: string = '';
   displayDescription: string = '';

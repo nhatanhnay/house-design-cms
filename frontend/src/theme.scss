@@ -1,0 +1,82 @@
+@use '@angular/material' as mat;
+
+/* ---------------------------------------------------------------------------
+   Theme Material theo màu thương hiệu.
+
+   Trước đây build nạp prebuilt-themes/indigo-pink.css, nên mọi component Material
+   chưa bị ghi đè thủ công (snackbar, dialog, form-field, ripple, checkbox…) đều
+   mang màu indigo/hồng — trái hẳn với bảng màu đồng/xám của site. Đó cũng là lý do
+   styles.scss phải rải hàng loạt !important để vá từng chỗ.
+--------------------------------------------------------------------------- */
+
+@include mat.core();
+
+/* Palette đồng, sinh quanh #E09543 */
+$brand-copper: (
+  50:  #fdf3e8,
+  100: #f9e0c4,
+  200: #f4cc9d,
+  300: #efb775,
+  400: #eba656,
+  500: #e09543,
+  600: #d0873c,
+  700: #bb7534,
+  800: #a6642d,
+  900: #814720,
+  contrast: (
+    50:  rgba(0, 0, 0, 0.87),
+    100: rgba(0, 0, 0, 0.87),
+    200: rgba(0, 0, 0, 0.87),
+    300: rgba(0, 0, 0, 0.87),
+    400: rgba(0, 0, 0, 0.87),
+    500: #ffffff,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff,
+  )
+);
+
+/* Palette xám trung tính, sinh quanh #3A3A3A */
+$brand-graphite: (
+  50:  #f4f4f4,
+  100: #e6e6e6,
+  200: #cccccc,
+  300: #a8a8a8,
+  400: #7d7d7d,
+  500: #5c5c5c,
+  600: #4a4a4a,
+  700: #3a3a3a,
+  800: #2a2a2a,
+  900: #1a1a1a,
+  contrast: (
+    50:  rgba(0, 0, 0, 0.87),
+    100: rgba(0, 0, 0, 0.87),
+    200: rgba(0, 0, 0, 0.87),
+    300: rgba(0, 0, 0, 0.87),
+    400: #ffffff,
+    500: #ffffff,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff,
+  )
+);
+
+$app-primary: mat.define-palette($brand-copper, 500, 300, 700);
+$app-accent:  mat.define-palette($brand-graphite, 700, 400, 900);
+$app-warn:    mat.define-palette(mat.$red-palette, 700);
+
+$app-theme: mat.define-light-theme((
+  color: (
+    primary: $app-primary,
+    accent:  $app-accent,
+    warn:    $app-warn,
+  ),
+  typography: mat.define-typography-config(
+    $font-family: 'Roboto, "Helvetica Neue", sans-serif',
+  ),
+  density: 0,
+));
+
+@include mat.all-component-themes($app-theme);

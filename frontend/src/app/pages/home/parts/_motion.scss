@@ -1,0 +1,13 @@
+// Sinh tự động khi tách home.component.scss (36 kB, vượt ngưỡng budget).
+// File gốc gộp cả layout desktop lẫn 4 tầng media query vào một chỗ.
+// Giảm hiệu ứng chuyển động.
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-card {
+    animation: none;
+  }
+
+  .carousel-slide {
+    transition: none;
+  }
+}

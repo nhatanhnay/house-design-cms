@@ -1,0 +1,109 @@
+// Sinh tự động khi tách home.component.scss (36 kB, vượt ngưỡng budget).
+// File gốc gộp cả layout desktop lẫn 4 tầng media query vào một chỗ.
+// Tablet ngang trở xuống (<= 1024px).
+
+@media (max-width: 1024px) {
+  // Carousel responsive for tablet - show 2 items
+  .category-posts-carousel-wrapper {
+    gap: 15px;
+  }
+
+  .carousel-nav {
+    width: 44px;
+    height: 44px;
+
+    mat-icon {
+      font-size: 26px;
+      width: 26px;
+      height: 26px;
+    }
+  }
+
+  .category-posts-carousel-wrapper {
+    height: 1020px; // (500px * 2 + 20px gap) for tablet
+  }
+
+  .category-posts-carousel {
+    min-height: 1020px;
+  }
+
+  .category-posts-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    height: 1020px; // (500px * 2 rows) + 20px gap
+
+    .post-card {
+      // Tablet: 2 columns x 2 rows = 4 items per page
+      width: 100% !important;
+      height: 500px !important;
+      max-width: none !important;
+      min-width: auto !important;
+    }
+  }
+
+  .process-steps-grid {
+    gap: 16px;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding: 10px 20px;
+  }
+
+  .process-step-item {
+    flex: 0 0 220px;
+    min-width: 220px;
+    padding: 24px;
+  }
+
+  .step-arrow {
+    mat-icon {
+      font-size: 40px;
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  .step-icon {
+    width: 100px;
+    height: 100px;
+  }
+
+  // Hero stats responsive - 2 columns on tablet
+  .stats-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    padding: 0 20px;
+  }
+
+  .stat-box {
+    padding: 35px 15px;
+    
+    .stat-number {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+    
+    .stat-label {
+      font-size: 1rem;
+    }
+    
+    // Top-left corner
+    &:nth-child(1) {
+      border-radius: 20px 0 0 0;
+    }
+    
+    // Top-right corner
+    &:nth-child(2) {
+      border-radius: 0 20px 0 0;
+    }
+    
+    // Bottom-left corner
+    &:nth-child(3) {
+      border-radius: 0 0 0 20px;
+    }
+    
+    // Bottom-right corner
+    &:nth-child(4) {
+      border-radius: 0 0 20px 0;
+    }
+  }
+}

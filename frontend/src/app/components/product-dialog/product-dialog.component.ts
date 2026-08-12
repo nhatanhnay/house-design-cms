@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -20,6 +20,7 @@ import { DataService } from '../../services/data.service';
 import { AuthService } from '../../services/auth.service';
 import { Category, Product, ProductImage } from '../../models/models';
 import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter';
+import { LoggerService } from '../../services/logger.service';
 
 @Component({
   selector: 'app-product-dialog',
@@ -327,7 +328,7 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
     .empty-gallery {
       text-align: center;
       padding: 40px;
-      color: #999;
+      color: #6B6B6B;
     }
 
     .empty-gallery mat-icon {
@@ -482,6 +483,7 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
   `]
 })
 export class ProductDialogComponent implements OnInit {
+  private readonly logger = inject(LoggerService);
   productForm!: FormGroup;
   categories$: Observable<Category[]>;
   public Editor: any = ClassicEditor;
@@ -600,7 +602,7 @@ export class ProductDialogComponent implements OnInit {
           this.updateGalleryImages(productId);
         },
         error: (error) => {
-          console.error('Error saving product:', error);
+          this.logger.error('Error saving product', error, 'ProductDialog');
           this.isLoading = false;
           this.snackBar.open('Có lỗi xảy ra khi lưu sản phẩm!', 'Đóng', { duration: 3000 });
         }
@@ -646,7 +648,7 @@ export class ProductDialogComponent implements OnInit {
       error: (error) => {
         this.isUploadingImage = false;
         this.featuredImageUploadProgress = 0;
-        console.error('Upload error:', error);
+        this.logger.error('Upload error', error, 'ProductDialog');
 
         let errorMessage = 'Lỗi khi tải lên hình ảnh';
         if (error.status === 401) {
@@ -746,7 +748,7 @@ export class ProductDialogComponent implements OnInit {
             }
           },
           error: (error) => {
-            console.error('Error deleting image:', error);
+            this.logger.error('Error deleting image', error, 'ProductDialog');
             this.isLoading = false;
             this.snackBar.open('Lỗi khi xóa ảnh gallery', 'Đóng', { duration: 3000 });
           }
@@ -786,7 +788,7 @@ export class ProductDialogComponent implements OnInit {
                   }
                 },
                 error: (error) => {
-                  console.error('Error adding product image:', error);
+                  this.logger.error('Error adding product image', error, 'ProductDialog');
                   this.isLoading = false;
                   this.snackBar.open('Lỗi khi lưu ảnh gallery vào database', 'Đóng', { duration: 5000 });
                 }
@@ -794,7 +796,7 @@ export class ProductDialogComponent implements OnInit {
             }
           },
           error: (error) => {
-            console.error('Error uploading gallery image:', error);
+            this.logger.error('Error uploading gallery image', error, 'ProductDialog');
             this.isLoading = false;
             this.snackBar.open('Lỗi khi upload ảnh gallery', 'Đóng', { duration: 5000 });
           }
@@ -853,7 +855,7 @@ export class ProductDialogComponent implements OnInit {
                   }
                 },
                 error: (error) => {
-                  console.error('Error adding product image:', error);
+                  this.logger.error('Error adding product image', error, 'ProductDialog');
                   this.isLoading = false;
                   this.snackBar.open('Lỗi khi lưu ảnh gallery vào database', 'Đóng', { duration: 5000 });
                 }
@@ -861,7 +863,7 @@ export class ProductDialogComponent implements OnInit {
             }
           },
           error: (error) => {
-            console.error('Error uploading gallery image:', error);
+            this.logger.error('Error uploading gallery image', error, 'ProductDialog');
             this.isLoading = false;
             this.snackBar.open('Lỗi khi upload ảnh gallery', 'Đóng', { duration: 5000 });
           }

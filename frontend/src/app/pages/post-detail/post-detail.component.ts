@@ -1,33 +1,39 @@
-import { Component, OnInit, AfterViewChecked } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { Observable, switchMap } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { of } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
 import { DataService } from '../../services/data.service';
 import { AuthService } from '../../services/auth.service';
-import { Post, Admin } from '../../models/models';
+import { SeoService } from '../../services/seo.service';
+import { environment } from '../../../environments/environment';
+import { Post } from '../../models/models';
+import { SkeletonImageDirective } from '../../directives/skeleton-image.directive';
 
 @Component({
   selector: 'app-post-detail',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatChipsModule, RouterModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, RouterModule, SkeletonImageDirective],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="post-detail-page">
       <div class="container">
         <!-- Breadcrumb -->
-        <div class="breadcrumb" *ngIf="post && !isLoading">
+        <nav class="breadcrumb" *ngIf="post && !isLoading" aria-label="Đường dẫn">
           <a routerLink="/">Trang chủ</a>
           <mat-icon>chevron_right</mat-icon>
           <a [routerLink]="'/category/' + post.category.slug" *ngIf="post.category">
             {{ post.category.name }}
           </a>
-        </div>
+        </nav>
 
         <!-- Loading State -->
-        <div class="loading-state" *ngIf="isLoading">
+        <div class="loading-state" *ngIf="isLoading" aria-live="polite" aria-busy="true">
           <div class="loading-spinner"></div>
           <p>Đang tải bài viết...</p>
         </div>
@@ -66,7 +72,7 @@ import { Post, Admin } from '../../models/models';
 
           <!-- Featured Image -->
           <div class="featured-image" *ngIf="post.image_url">
-            <img [src]="post.image_url" [alt]="post.title" (error)="onImageError($event)">
+            <img [src]="post.image_url" [appSkeleton]="post.image_url" [alt]="post.title" fetchpriority="high">
           </div>
 
           <!-- Post Content -->
@@ -79,11 +85,11 @@ import { Post, Admin } from '../../models/models';
             <div class="share-buttons">
               <h4>Chia sẻ bài viết</h4>
               <div class="social-buttons">
-                <button mat-raised-button color="primary" (click)="shareOnFacebook(post)">
+                <button type="button" mat-raised-button color="primary" (click)="shareOnFacebook(post)">
                   <mat-icon>share</mat-icon>
                   Facebook
                 </button>
-                <button mat-stroked-button (click)="copyLink()">
+                <button type="button" mat-stroked-button (click)="copyLink()">
                   <mat-icon>link</mat-icon>
                   Sao chép liên kết
                 </button>
@@ -108,11 +114,13 @@ import { Post, Admin } from '../../models/models';
           <div class="sidebar-section">
             <h3>Có thể bạn quan tâm</h3>
             <div class="related-posts">
-              <div class="related-post-card" *ngFor="let relatedPost of relatedPosts" [routerLink]="'/post/' + (relatedPost.slug || relatedPost.id)">
+              <div class="related-post-card" *ngFor="let relatedPost of relatedPosts; trackBy: trackByPostId" [routerLink]="'/post/' + (relatedPost.slug || relatedPost.id)">
                 <div class="related-post-image">
-                  <img [src]="relatedPost.image_url || 'assets/images/placeholder-post.jpg'"
+                  <img [src]="relatedPost.image_url"
+                       [appSkeleton]="relatedPost.image_url"
                        [alt]="relatedPost.title"
-                       (error)="onImageError($event)">
+                       loading="lazy"
+                       decoding="async">
                 </div>
                 <div class="related-post-info">
                   <h4>{{ relatedPost.title }}</h4>
@@ -132,11 +140,13 @@ import { Post, Admin } from '../../models/models';
         <div class="container">
           <h3>Các mẫu nhà đẹp</h3>
           <div class="suggestions-grid">
-            <mat-card class="suggestion-card" *ngFor="let suggested of suggestedPosts" [routerLink]="'/post/' + (suggested.slug || suggested.id)">
+            <mat-card class="suggestion-card" *ngFor="let suggested of suggestedPosts; trackBy: trackByPostId" [routerLink]="'/post/' + (suggested.slug || suggested.id)">
               <div class="suggestion-image">
-                <img [src]="suggested.image_url || 'assets/images/placeholder-post.jpg'"
+                <img [src]="suggested.image_url"
+                     [appSkeleton]="suggested.image_url"
                      [alt]="suggested.title"
-                     (error)="onImageError($event)">
+                     loading="lazy"
+                     decoding="async">
               </div>
               <mat-card-content>
                 <h4>{{ suggested.title }}</h4>
@@ -223,7 +233,7 @@ import { Post, Admin } from '../../models/models';
       width: 40px;
       height: 40px;
       border: 4px solid #f3f3f3;
-      border-top: 4px solid var(--primary-blue, #3498db);
+      border-top: 4px solid var(--brand, #e09543);
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin: 0 auto 20px;
@@ -376,7 +386,7 @@ import { Post, Admin } from '../../models/models';
     }
 
     .content-html blockquote {
-      border-left: 4px solid var(--primary-blue, #3498db);
+      border-left: 4px solid var(--brand, #e09543);
       padding-left: 20px;
       margin: 20px 0;
       font-style: italic;
@@ -471,7 +481,7 @@ import { Post, Admin } from '../../models/models';
     }
 
     .error-state h3 {
-      color: var(--dark-blue, #2c3e50);
+      color: #1a1a1a;
       margin-bottom: 10px;
     }
 
@@ -507,7 +517,7 @@ import { Post, Admin } from '../../models/models';
       color: #333;
       margin-bottom: 20px;
       padding-bottom: 10px;
-      border-bottom: 2px solid #3498db;
+      border-bottom: 2px solid var(--brand, #e09543);
     }
 
     .related-posts {
@@ -565,7 +575,7 @@ import { Post, Admin } from '../../models/models';
       align-items: center;
       gap: 4px;
       font-size: 0.75rem;
-      color: #999;
+      color: #6B6B6B;
     }
 
     .related-post-meta mat-icon {
@@ -587,7 +597,7 @@ import { Post, Admin } from '../../models/models';
       color: #333;
       margin-bottom: 30px;
       padding-bottom: 15px;
-      border-bottom: 2px solid #3498db;
+      border-bottom: 2px solid var(--brand, #e09543);
     }
 
     .suggestions-grid {
@@ -646,7 +656,7 @@ import { Post, Admin } from '../../models/models';
       align-items: center;
       gap: 4px;
       font-size: 0.8rem;
-      color: #999;
+      color: #6B6B6B;
     }
 
     .suggestion-meta mat-icon {
@@ -724,171 +734,170 @@ import { Post, Admin } from '../../models/models';
     }
   `]
 })
-export class PostDetailComponent implements OnInit, AfterViewChecked {
-  post$: Observable<Post>;
-  isLoading = true;
+export class PostDetailComponent implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly dataService = inject(DataService);
+  private readonly authService = inject(AuthService);
+  private readonly seo = inject(SeoService);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly currentUser$ = this.authService.currentUser$;
+
   post: Post | null = null;
+  isLoading = true;
   hasError = false;
-  currentUser$: Observable<Admin | null>;
+
   relatedPosts: Post[] = [];
   suggestedPosts: Post[] = [];
-  private imagesProcessed = false;
 
-  constructor(
-    private route: ActivatedRoute,
-    private dataService: DataService,
-    private authService: AuthService
-  ) {
-    this.post$ = this.route.params.pipe(
-      switchMap(params => {
-        const id = parseInt(params['id']);
-        return this.dataService.getPost(id);
-      })
-    );
-    this.currentUser$ = this.authService.currentUser$;
+  trackByPostId(_index: number, post: Post): number {
+    return post.id;
   }
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
-      const slugOrId = params['slug'];
+    this.route.params
+      .pipe(
+        switchMap(params => {
+          const slugOrId = params['slug'];
+          this.isLoading = true;
+          this.hasError = false;
+          this.post = null;
+          this.relatedPosts = [];
+          this.suggestedPosts = [];
+          this.cdr.markForCheck();
 
-      if (slugOrId) {
-        this.isLoading = true;
-        this.hasError = false;
-        this.post = null;
-
-        // Try to parse as ID first (if it's a number, use old method)
-        const numericId = parseInt(slugOrId);
-        const isNumeric = !isNaN(numericId) && slugOrId === numericId.toString();
-
-        const postObservable = isNumeric
-          ? this.dataService.getPost(numericId)
-          : this.dataService.getPostBySlug(slugOrId);
-
-        postObservable.subscribe({
-          next: (post) => {
-            console.log('🔍 Post loaded:', post.id, post.title, 'Initial views:', post.views);
-            this.isLoading = false;
-            this.post = post;
-            this.hasError = false;
-            this.imagesProcessed = false; // Reset flag for new post
-
-            // Load related posts from the same category
-            if (post.category_id) {
-              this.loadRelatedPosts(post.category_id, post.id);
-            }
-
-            // Increment view count (only if not logged in as admin)
-            const hasToken = this.authService.getToken();
-            console.log('🔐 Auth check - Has token:', !!hasToken);
-
-            if (!hasToken) {
-              console.log('🚀 Calling incrementPostView for post ID:', post.id);
-              this.dataService.incrementPostView(post.id).subscribe({
-                next: (response) => {
-                  console.log('✅ Post view count incremented for post ID:', post.id, 'Response:', response);
-                  // Increment the local view count for immediate UI update
-                  if (this.post) {
-                    this.post.views = (this.post.views || 0) + 1;
-                    console.log('📊 Updated post views to:', this.post.views);
-                  }
-                },
-                error: (error) => {
-                  console.error('❌ Error incrementing post views:', error);
-                  console.error('Error details:', {
-                    message: error.message,
-                    status: error.status,
-                    statusText: error.statusText,
-                    url: error.url
-                  });
-                }
-              });
-            } else {
-              console.log('⏭️ Skipping view increment - User is logged in as admin');
-            }
-          },
-          error: (error) => {
-            this.isLoading = false;
-            this.hasError = true;
-            this.post = null;
+          if (!slugOrId) {
+            return of(null);
           }
-        });
-      } else {
+
+          // Route nhận cả slug lẫn id để link cũ không chết.
+          const numericId = Number(slugOrId);
+          const isNumeric = Number.isInteger(numericId) && String(numericId) === slugOrId;
+
+          return (isNumeric
+            ? this.dataService.getPost(numericId)
+            : this.dataService.getPostBySlug(slugOrId)
+          ).pipe(catchError(() => of(null)));
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(post => {
         this.isLoading = false;
-        this.hasError = true;
-        this.post = null;
+
+        if (!post) {
+          this.hasError = true;
+          this.seo.update({
+            title: 'Không tìm thấy bài viết',
+            description: 'Bài viết không tồn tại hoặc đã bị xoá.',
+            noindex: true
+          });
+          this.cdr.markForCheck();
+          return;
+        }
+
+        this.post = post;
+        this.applySeo(post);
+        this.loadRelated(post);
+        this.countView(post);
+        this.cdr.markForCheck();
+      });
+  }
+
+  /**
+   * Đưa dữ liệu SEO mà biên tập viên đã nhập ra thẻ meta thật.
+   *
+   * Trước đây model đã có meta_title/meta_description/og_image_url và admin có cả
+   * màn hình xem trước, nhưng không trang chi tiết nào ghi chúng ra <head> — mọi
+   * bài viết dùng chung đúng một tiêu đề mặc định.
+   */
+  private applySeo(post: Post): void {
+    this.seo.update({
+      title: post.meta_title || post.title,
+      description: post.meta_description || post.summary,
+      keywords: post.focus_keywords,
+      image: post.og_image_url || post.image_url,
+      path: `/post/${post.slug || post.id}`,
+      type: 'article',
+      publishedAt: post.created_at,
+      modifiedAt: post.updated_at
+    });
+
+    this.seo.setStructuredData('article', {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: post.title,
+      description: post.meta_description || post.summary || '',
+      image: post.og_image_url || post.image_url || undefined,
+      datePublished: post.created_at,
+      dateModified: post.updated_at || post.created_at,
+      articleSection: post.category?.name,
+      inLanguage: 'vi-VN',
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': `${environment.baseUrl}/post/${post.slug || post.id}`
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: environment.siteName
       }
     });
-  }
 
-  ngAfterViewChecked(): void {
-    if (this.post && !this.imagesProcessed) {
-      this.removeImageDimensions();
-      this.imagesProcessed = true;
+    const trail: Array<{ name: string; path?: string }> = [{ name: 'Trang chủ', path: '/' }];
+    if (post.category) {
+      trail.push({ name: post.category.name, path: `/category/${post.category.slug}` });
     }
+    trail.push({ name: post.title, path: `/post/${post.slug || post.id}` });
+    this.seo.setBreadcrumb(trail);
   }
 
-  private removeImageDimensions(): void {
-    // Remove width and height attributes from all images and figures in content
-    const contentImages = document.querySelectorAll('.content-html img');
-    contentImages.forEach((img: Element) => {
-      img.removeAttribute('width');
-      img.removeAttribute('height');
-    });
+  /**
+   * Chỉ lấy bài cùng danh mục qua `?category=`.
+   * Trước đây gọi getPosts() không tham số — kéo toàn bộ CSDL về chỉ để lấy 7 bản ghi.
+   */
+  private loadRelated(post: Post): void {
+    if (!post.category_id) {
+      return;
+    }
 
-    const contentFigures = document.querySelectorAll('.content-html figure');
-    contentFigures.forEach((figure: Element) => {
-      figure.removeAttribute('width');
-      figure.removeAttribute('height');
-      (figure as HTMLElement).style.width = '';
-      (figure as HTMLElement).style.height = '';
-    });
+    this.dataService.getRelatedPosts(post.category_id, post.id)
+      .pipe(catchError(() => of([] as Post[])), takeUntilDestroyed(this.destroyRef))
+      .subscribe(posts => {
+        this.relatedPosts = posts.slice(0, 3);
+        this.suggestedPosts = posts.slice(3, 7);
+        this.cdr.markForCheck();
+      });
   }
 
-  onImageError(event: any): void {
-    event.target.src = 'assets/images/placeholder-post.jpg';
+  /** Không tính lượt xem cho phiên quản trị. */
+  private countView(post: Post): void {
+    if (this.authService.getToken()) {
+      return;
+    }
+
+    this.dataService.incrementPostView(post.id)
+      .pipe(catchError(() => of(null)), takeUntilDestroyed(this.destroyRef))
+      .subscribe(result => {
+        if (result !== null && this.post) {
+          this.post = { ...this.post, views: (this.post.views || 0) + 1 };
+          this.cdr.markForCheck();
+        }
+      });
   }
 
   shareOnFacebook(post: Post): void {
     const url = encodeURIComponent(window.location.href);
     const text = encodeURIComponent(post.title);
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, '_blank');
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, '_blank', 'noopener');
   }
 
-  copyLink(): void {
-    navigator.clipboard.writeText(window.location.href).then(() => {
-      // You could show a snackbar here
-    });
-  }
-
-  loadRelatedPosts(categoryId: number, currentPostId: number): void {
-    this.dataService.getPosts().subscribe({
-      next: (posts) => {
-        // Filter posts from the same category, exclude current post
-        const sameCategoryPosts = posts.filter(p =>
-          p.category_id === categoryId &&
-          p.id !== currentPostId &&
-          p.published
-        );
-
-        // Take 3 for sidebar, 4 for bottom (different sets)
-        this.relatedPosts = sameCategoryPosts.slice(0, 3);
-        this.suggestedPosts = sameCategoryPosts.slice(3, 7);
-
-        // If not enough posts, fill with other published posts
-        if (this.suggestedPosts.length < 4) {
-          const otherPosts = posts.filter(p =>
-            p.id !== currentPostId &&
-            p.published &&
-            !this.relatedPosts.some(rp => rp.id === p.id) &&
-            !this.suggestedPosts.some(sp => sp.id === p.id)
-          );
-          this.suggestedPosts = [...this.suggestedPosts, ...otherPosts].slice(0, 4);
-        }
-      },
-      error: (error) => {
-        console.error('Error loading related posts:', error);
-      }
-    });
+  async copyLink(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      this.snackBar.open('Đã sao chép liên kết', 'Đóng', { duration: 2500 });
+    } catch {
+      this.snackBar.open('Không sao chép được. Hãy copy từ thanh địa chỉ.', 'Đóng', { duration: 4000 });
+    }
   }
 }

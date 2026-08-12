@@ -21,9 +21,15 @@ func InitDatabase() {
 	dbHost := getEnv("DB_HOST", "localhost")
 	dbPort := getEnv("DB_PORT", "5432")
 	dbUser := getEnv("DB_USER", "postgres")
-	dbPassword := getEnv("DB_PASSWORD", "12346789")
 	dbName := getEnv("DB_NAME", "house_design")
 	dbSSLMode := getEnv("DB_SSLMODE", "disable")
+
+	// Không để password mặc định trong code: repo này public, hardcode password
+	// đồng nghĩa với công khai nó.
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		log.Fatal("DB_PASSWORD chưa được set - thêm vào backend/.env")
+	}
 
 	// Create PostgreSQL connection string
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",

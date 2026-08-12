@@ -785,7 +785,7 @@
         display: block;
         margin-top: 8px;
         font-size: 0.85rem;
-        color: #999;
+        color: #6B6B6B;
       }
     }
 
@@ -1143,7 +1143,7 @@
     }
 
     .form-input::placeholder {
-      color: #999;
+      color: #6B6B6B;
     }
 
     app-icon-selector {
@@ -1407,7 +1407,7 @@
       justify-content: center;
       background: #f5f5f5;
       border-radius: 4px;
-      color: #999;
+      color: #6B6B6B;
 
       mat-icon {
         font-size: 24px;
@@ -1466,7 +1466,7 @@
       }
 
       &::placeholder {
-        color: #999;
+        color: #6B6B6B;
       }
     }
 
@@ -1525,3 +1525,38 @@
 
 
 
+
+/* ---------------------------------------------------------------------------
+   Sidenav responsive
+
+   Trước đây mat-sidenav hardcode mode="side" opened; ở <=480px sidebar rộng 100%
+   nên đẩy toàn bộ vùng làm việc ra ngoài màn hình và không có nút đóng.
+   Nay component đổi sang mode="over" theo BreakpointObserver.
+--------------------------------------------------------------------------- */
+.sidenav-toggle {
+  position: sticky;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  margin: 8px;
+  background: var(--main-dark-gray);
+  color: #fff;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-copper);
+    outline-offset: 2px;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-sidebar {
+    width: min(280px, 85vw) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-sidebar {
+    /* mode="over" nên phủ lên nội dung; không còn đẩy vùng làm việc đi mất */
+    width: min(280px, 85vw) !important;
+  }
+}

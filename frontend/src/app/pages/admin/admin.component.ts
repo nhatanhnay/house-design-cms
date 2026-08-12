@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -39,6 +39,10 @@ import { LoggerService } from '../../services/logger.service';
 import { IconSelectorComponent } from '../../components/icon-selector/icon-selector.component';
 import { GlobalSeoSettingsComponent } from '../global-seo-settings/global-seo-settings.component';
 import { SeoPreviewComponent } from '../../components/seo-preview/seo-preview.component';
+import { SkeletonImageDirective } from '../../directives/skeleton-image.directive';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../components/confirm-dialog/confirm-dialog.component';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 export interface SocialMediaItem {
   name: string;
@@ -87,12 +91,25 @@ export interface FooterContent {
     DragDropModule,
     IconSelectorComponent,
     GlobalSeoSettingsComponent,
-    SeoPreviewComponent
+    SeoPreviewComponent,
+    SkeletonImageDirective
   ],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss']
 })
 export class AdminComponent implements OnInit {
+  private readonly breakpointObserver = inject(BreakpointObserver);
+  private readonly destroyRefForBreakpoints = inject(DestroyRef);
+
+  /**
+   * Sidenav trước đây hardcode `mode="side" opened`, và ở <=480px SCSS đặt
+   * width:100% — vì mode="side" đẩy nội dung nên toàn bộ vùng làm việc bị đẩy
+   * ra khỏi màn hình, không có cách nào đóng lại.
+   */
+  sidenavMode: 'side' | 'over' = 'side';
+  sidenavOpened = true;
+  isHandset = false;
+
   categories$: Observable<Category[]>;
   posts$: Observable<Post[]>;
   products$: Observable<Product[]>;
@@ -212,6 +229,15 @@ export class AdminComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.breakpointObserver
+      .observe([Breakpoints.Handset, Breakpoints.TabletPortrait])
+      .pipe(takeUntilDestroyed(this.destroyRefForBreakpoints))
+      .subscribe(result => {
+        this.isHandset = result.matches;
+        this.sidenavMode = result.matches ? 'over' : 'side';
+        this.sidenavOpened = !result.matches;
+      });
+
     this.loadHomepageContent();
     this.loadHomepageMedia();
     this.loadFooterContent();
@@ -269,7 +295,7 @@ export class AdminComponent implements OnInit {
           this.filterPosts(); // Apply any existing filters
         },
         error: (error) => {
-          console.error('Error loading posts:', error);
+          this.logger.error('Error loading posts', error, 'PostManagement');
           this.originalPosts = [];
           this.filteredPosts = [];
         }
@@ -287,7 +313,7 @@ export class AdminComponent implements OnInit {
           this.filterProducts(); // Apply any existing filters
         },
         error: (error) => {
-          console.error('Error loading products:', error);
+          this.logger.error('Error loading products', error, 'ProductManagement');
           this.originalProducts = [];
           this.filteredProducts = [];
         }
@@ -327,13 +353,6 @@ export class AdminComponent implements OnInit {
         this.dataService.getCategories().pipe(
           map(categories => {
             this.logger.logCategoryOperation('loaded', { count: categories.length });
-            console.log('🔎 Raw categories from API:', categories);
-            console.log('🔎 First category SEO fields:', {
-              id: categories[0]?.id,
-              meta_title: categories[0]?.meta_title,
-              meta_description: categories[0]?.meta_description,
-              meta_keywords: categories[0]?.meta_keywords
-            });
             this.logger.debug('Category details:', categories.map(c => ({
               id: c.id,
               name: c.name,
@@ -403,19 +422,23 @@ export class AdminComponent implements OnInit {
     this.openCategoryDialog(category, category.level > 0);
   }
 
-  deleteCategory(id: number): void {
-    if (confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
-      this.dataService.deleteCategory(id).subscribe({
+  deleteCategory(category: Category): void {
+    this.confirmDestructive({
+      title: 'Xoá danh mục?',
+      subject: category.name,
+      message: 'Bài viết và sản phẩm thuộc danh mục này có thể không còn hiển thị. Không thể hoàn tác.'
+    }, () => {
+      this.dataService.deleteCategory(category.id).subscribe({
         next: () => {
           this.refreshData();
-          this.showSuccessMessage('Danh mục đã được xóa');
+          this.showSuccessMessage(`Đã xoá danh mục "${category.name}"`);
         },
         error: (error) => {
           this.logger.error('Error deleting category', error, 'CategoryManagement');
           this.showErrorMessage('Lỗi khi xóa danh mục');
         }
       });
-    }
+    });
   }
 
   toggleCategory(category: CategoryTreeItem): void {
@@ -538,19 +561,23 @@ export class AdminComponent implements OnInit {
     window.open(`/post/${post.id}`, '_blank');
   }
 
-  deletePost(id: number): void {
-    if (confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
-      this.dataService.deletePost(id).subscribe({
+  deletePost(post: Post): void {
+    this.confirmDestructive({
+      title: 'Xoá bài viết?',
+      subject: post.title,
+      message: 'Bài viết sẽ bị gỡ khỏi website. Không thể hoàn tác.'
+    }, () => {
+      this.dataService.deletePost(post.id).subscribe({
         next: () => {
           this.refreshPostsList();
-          this.showSuccessMessage('Bài viết đã được xóa');
+          this.showSuccessMessage(`Đã xoá "${post.title}"`);
         },
         error: (error) => {
           this.logger.error('Error deleting post', error, 'PostManagement');
           this.showErrorMessage('Lỗi khi xóa bài viết');
         }
       });
-    }
+    });
   }
 
   // Homepage Management Methods
@@ -662,7 +689,11 @@ export class AdminComponent implements OnInit {
     const filename = this.getFilename(mediaUrl);
     const mediaType = type === 'images' ? 'hình ảnh' : 'video';
 
-    if (confirm(`Bạn có chắc chắn muốn xóa ${mediaType} này?`)) {
+    this.confirmDestructive({
+      title: `Xoá ${mediaType}?`,
+      subject: filename,
+      message: 'Tệp sẽ bị xoá khỏi máy chủ. Không thể hoàn tác.'
+    }, () => {
       this.dataService.deleteHomepageMedia(type, filename).subscribe({
         next: () => {
           this.loadHomepageMedia();
@@ -674,7 +705,7 @@ export class AdminComponent implements OnInit {
           this.showErrorMessage(`Lỗi khi xóa ${mediaType}`);
         }
       });
-    }
+    });
   }
 
   playVideo(videoUrl: string): void {
@@ -710,11 +741,9 @@ export class AdminComponent implements OnInit {
         setTimeout(() => {
           this.logoUploadProgress = 0;
           this.navbarLogoUrl = response.url || response.logo_url;
-          this.showSuccessMessage('Logo đã được tải lên. Trang sẽ tự động làm mới...');
-          // Reload page to refresh navbar logo
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
+          // Nạp lại logo thay vì reload cả trang.
+          this.loadNavbarLogo();
+          this.showSuccessMessage('Đã tải lên logo mới');
         }, 500);
       },
       error: (error) => {
@@ -735,22 +764,24 @@ export class AdminComponent implements OnInit {
   }
 
   deleteNavbarLogo(): void {
-    if (confirm('Bạn có chắc chắn muốn xóa logo navbar?')) {
+    this.confirmDestructive({
+      title: 'Xoá logo navbar?',
+      message: 'Navbar sẽ quay về icon mặc định cho tới khi bạn tải logo mới.'
+    }, () => {
       this.dataService.deleteNavbarLogo().subscribe({
         next: () => {
           this.navbarLogoUrl = '';
-          this.showSuccessMessage('Logo đã được xóa. Trang sẽ tự động làm mới...');
-          // Reload page to refresh navbar
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
+          // Không reload cả trang nữa: reload làm mất section đang mở và mọi
+          // nội dung chưa lưu ở tab khác. Chỉ nạp lại đúng dữ liệu vừa đổi.
+          this.loadNavbarLogo();
+          this.showSuccessMessage('Đã xoá logo navbar');
         },
         error: (error) => {
           this.logger.error('Error deleting logo', error, 'LogoManagement');
           this.showErrorMessage('Lỗi khi xóa logo');
         }
       });
-    }
+    });
   }
 
   loadNavbarLogo(): void {
@@ -919,6 +950,35 @@ export class AdminComponent implements OnInit {
   }
 
   // Utility Methods
+  /**
+   * Hộp thoại xác nhận theo Material, nêu rõ đối tượng sắp bị xoá.
+   * Thay cho `window.confirm()` vốn lệch giao diện và chỉ hỏi chung chung
+   * ("Bạn có chắc chắn muốn xóa danh mục này?") nên rất dễ xoá nhầm.
+   */
+  private confirmDestructive(data: Omit<ConfirmDialogData, 'destructive'>, onConfirm: () => void): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      width: '440px',
+      maxWidth: '92vw',
+      autoFocus: 'dialog',
+      data: { ...data, destructive: true, confirmLabel: 'Xoá' } satisfies ConfirmDialogData
+    }).afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        onConfirm();
+      }
+    });
+  }
+
+  /** Đóng sidenav sau khi chọn mục trên điện thoại (mode overlay). */
+  onSidenavItemSelected(): void {
+    if (this.isHandset) {
+      this.sidenavOpened = false;
+    }
+  }
+
+  toggleSidenav(): void {
+    this.sidenavOpened = !this.sidenavOpened;
+  }
+
   private showSuccessMessage(message: string, duration: number = ADMIN_CONSTANTS.SNACKBAR_DURATION.MEDIUM): void {
     this.snackBar.open(message, 'Đóng', { duration });
   }
@@ -1184,19 +1244,23 @@ export class AdminComponent implements OnInit {
     window.open(`/product/${product.id}`, '_blank');
   }
 
-  deleteProduct(id: number): void {
-    if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
-      this.dataService.deleteProduct(id).subscribe({
+  deleteProduct(product: Product): void {
+    this.confirmDestructive({
+      title: 'Xoá sản phẩm?',
+      subject: product.title,
+      message: 'Sản phẩm và toàn bộ ảnh đính kèm sẽ bị gỡ. Không thể hoàn tác.'
+    }, () => {
+      this.dataService.deleteProduct(product.id).subscribe({
         next: () => {
           this.refreshProductsList();
-          this.showSuccessMessage('Sản phẩm đã được xóa');
+          this.showSuccessMessage(`Đã xoá "${product.title}"`);
         },
         error: (error) => {
           this.logger.error('Error deleting product', error, 'ProductManagement');
           this.showErrorMessage('Lỗi khi xóa sản phẩm');
         }
       });
-    }
+    });
   }
 
   private refreshProductsList(): void {
@@ -1245,19 +1309,23 @@ export class AdminComponent implements OnInit {
     });
   }
 
-  deleteConsultation(id: number): void {
-    if (confirm('Bạn có chắc chắn muốn xóa yêu cầu tư vấn này?')) {
-      this.dataService.deleteConsultation(id).subscribe({
+  deleteConsultation(consultation: Consultation): void {
+    this.confirmDestructive({
+      title: 'Xoá yêu cầu tư vấn?',
+      subject: `${consultation.name} — ${consultation.phone}`,
+      message: 'Thông tin liên hệ của khách sẽ mất vĩnh viễn.'
+    }, () => {
+      this.dataService.deleteConsultation(consultation.id).subscribe({
         next: () => {
           this.loadConsultations();
-          this.showSuccessMessage('Đã xóa yêu cầu tư vấn');
+          this.showSuccessMessage('Đã xoá yêu cầu tư vấn');
         },
         error: (error) => {
           this.logger.error('Error deleting consultation', error, 'ConsultationManagement');
           this.showErrorMessage('Lỗi khi xóa yêu cầu tư vấn');
         }
       });
-    }
+    });
   }
 
   getStatusLabel(status: string): string {
@@ -1283,7 +1351,7 @@ export class AdminComponent implements OnInit {
       if (result.action === 'save' && result.status) {
         this.updateConsultationStatus(consultation.id, result.status);
       } else if (result.action === 'delete') {
-        this.deleteConsultation(consultation.id);
+        this.deleteConsultation(consultation);
       }
     });
   }
@@ -1295,7 +1363,7 @@ export class AdminComponent implements OnInit {
         this.processTabs = JSON.parse(this.homepageContent.process_tabs);
         this.processTabsJson = JSON.stringify(this.processTabs, null, 2);
       } catch (error) {
-        console.error('Error parsing process tabs:', error);
+        this.logger.error('Error parsing process tabs', error, 'HomepageManagement');
         this.processTabs = this.getDefaultProcessTabs();
         this.processTabsJson = JSON.stringify(this.processTabs, null, 2);
       }
@@ -1367,8 +1435,8 @@ export class AdminComponent implements OnInit {
       this.processTabs = JSON.parse(this.processTabsJson);
       this.homepageContent.process_tabs = this.processTabsJson;
       this.onContentChange();
-    } catch (error) {
-      alert('JSON không hợp lệ. Vui lòng kiểm tra lại cú pháp.');
+    } catch {
+      this.showErrorMessage('JSON không hợp lệ. Kiểm tra lại dấu ngoặc và dấu phẩy.');
     }
   }
 
@@ -1426,7 +1494,7 @@ export class AdminComponent implements OnInit {
             this.showSuccessMessage('Icon đã được upload thành công');
           },
           error: (error) => {
-            console.error('Error uploading icon:', error);
+            this.logger.error('Error uploading icon', error, 'MediaManagement');
             this.showErrorMessage('Lỗi khi upload icon. Vui lòng thử lại.');
             this.uploadingStepIcon = false;
           }
@@ -1439,13 +1507,7 @@ export class AdminComponent implements OnInit {
   onIconError(event: any, tabIndex: number, stepIndex: number): void {
     // Hide broken image and show placeholder
     event.target.style.display = 'none';
-    console.warn(`Icon not found: ${this.processTabs[tabIndex].steps[stepIndex].icon_url}`);
-  }
-
-  onImageError(event: any): void {
-    const target = event.target as HTMLImageElement;
-    target.style.display = 'none';
-    console.warn(`Image failed to load: ${target.src}`);
+    this.logger.warn(`Icon not found: ${this.processTabs[tabIndex].steps[stepIndex].icon_url}`, 'MediaManagement');
   }
 
   // Posts filtering methods

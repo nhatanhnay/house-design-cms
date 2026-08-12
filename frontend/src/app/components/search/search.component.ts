@@ -1,4 +1,4 @@
-import { Component, OnInit, Output, EventEmitter, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, Output, EventEmitter, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { RouterModule } from '@angular/router';
+import { SkeletonImageDirective } from '../../directives/skeleton-image.directive';
 import { DataService } from '../../services/data.service';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 
@@ -48,26 +49,31 @@ export interface SearchResponse {
     MatButtonModule,
     MatIconModule,
     MatCardModule,
-    RouterModule
+    RouterModule,
+    SkeletonImageDirective
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="search-container">
       <!-- Search Bar with Filters -->
       <div class="search-bar">
         <div class="search-input-wrapper">
-          <input type="text" 
+          <label for="search-input" class="visually-hidden">Tìm kiếm tin tức và sản phẩm</label>
+          <input type="search"
+                 id="search-input"
                  class="search-input"
-                 [(ngModel)]="searchQuery" 
+                 [(ngModel)]="searchQuery"
                  (input)="onSearchInput()"
-                 placeholder="Tìm kiếm tin tức, sản phẩm..."
->
+                 autocomplete="off"
+                 placeholder="Tìm kiếm tin tức, sản phẩm...">
         </div>
         
         <!-- Filter Controls (show when has results) -->
         <div class="filter-controls" *ngIf="searchResults && searchResults.results.length > 0">
           <span class="results-count">{{ searchResults.total_count }} kết quả</span>
           <div class="filter-field">
-            <select [(ngModel)]="contentType" (ngModelChange)="onFilterChange()" class="custom-select">
+            <label for="filter-type" class="visually-hidden">Lọc theo loại nội dung</label>
+            <select id="filter-type" [(ngModel)]="contentType" (ngModelChange)="onFilterChange()" class="custom-select">
               <option value="">Tất cả</option>
               <option value="post">Tin tức</option>
               <option value="product">Sản phẩm</option>
@@ -75,7 +81,8 @@ export interface SearchResponse {
           </div>
 
           <div class="filter-field">
-            <select [(ngModel)]="sortType" (ngModelChange)="onFilterChange()" class="custom-select">
+            <label for="filter-sort" class="visually-hidden">Sắp xếp kết quả</label>
+            <select id="filter-sort" [(ngModel)]="sortType" (ngModelChange)="onFilterChange()" class="custom-select">
               <option value="newest">Mới nhất</option>
               <option value="popular">Nổi nhất</option>
             </select>
@@ -84,14 +91,14 @@ export interface SearchResponse {
       </div>
 
       <!-- Loading State -->
-      <div class="loading-state" *ngIf="isLoading">
+      <div class="loading-state" *ngIf="isLoading" aria-live="polite" aria-busy="true">
         <div class="loading-spinner"></div>
         <p>Đang tìm kiếm...</p>
       </div>
 
       <!-- Search Results -->
       <div class="search-results" *ngIf="!isLoading && searchResults && searchResults.results.length > 0">
-        <div class="results-header">
+        <div class="results-header" aria-live="polite">
           <h3>Kết quả tìm kiếm</h3>
           <p class="results-info">
             Tìm thấy {{ searchResults.total_count }} kết quả
@@ -102,13 +109,15 @@ export interface SearchResponse {
         <div class="results-grid">
           <mat-card 
             class="result-card" 
-            *ngFor="let result of searchResults.results"
+            *ngFor="let result of searchResults.results; trackBy: trackByResult"
             [routerLink]="getResultRoute(result)">
             
             <div class="result-image">
-              <img [src]="result.thumbnail_url || 'assets/images/placeholder-post.jpg'" 
+              <img [src]="result.thumbnail_url"
+                   [appSkeleton]="result.thumbnail_url"
                    [alt]="result.title"
-                   (error)="onImageError($event)">
+                   loading="lazy"
+                   decoding="async">
               <div class="result-overlay">
                 <div class="result-category">{{ result.category_name }}</div>
                 <div class="content-type-badge" [class]="result.content_type">
@@ -143,31 +152,34 @@ export interface SearchResponse {
 
         <!-- Pagination -->
         <div class="pagination" *ngIf="searchResults.total_pages > 1">
-          <button mat-icon-button 
-                  (click)="goToPage(searchResults.current_page - 1)" 
-                  [disabled]="searchResults.current_page === 1">
+          <button type="button" mat-icon-button
+                  (click)="goToPage(searchResults.current_page - 1)"
+                  [disabled]="searchResults.current_page === 1"
+                  aria-label="Trang trước">
             <mat-icon>chevron_left</mat-icon>
           </button>
 
           <div class="page-numbers">
-            <button mat-button
+            <button type="button" mat-button
                     *ngFor="let page of getPageNumbers()"
                     [class.active]="page === searchResults.current_page"
+                    [attr.aria-current]="page === searchResults.current_page ? 'page' : null"
                     (click)="goToPage(page)">
               {{ page }}
             </button>
           </div>
 
-          <button mat-icon-button 
-                  (click)="goToPage(searchResults.current_page + 1)" 
-                  [disabled]="searchResults.current_page === searchResults.total_pages">
+          <button type="button" mat-icon-button
+                  (click)="goToPage(searchResults.current_page + 1)"
+                  [disabled]="searchResults.current_page === searchResults.total_pages"
+                  aria-label="Trang sau">
             <mat-icon>chevron_right</mat-icon>
           </button>
         </div>
       </div>
 
       <!-- No Results -->
-      <div class="no-results" *ngIf="!isLoading && searchResults && searchResults.results.length === 0 && searchQuery">
+      <div class="no-results" *ngIf="!isLoading && searchResults && searchResults.results.length === 0 && searchQuery" role="status" aria-live="polite">
         <mat-icon class="no-results-icon">search_off</mat-icon>
         <h3>Không tìm thấy kết quả</h3>
         <p>Không có kết quả nào cho "{{ searchQuery }}". Hãy thử với từ khóa khác.</p>
@@ -379,7 +391,7 @@ export interface SearchResponse {
       position: absolute;
       top: 12px;
       left: 12px;
-      background: var(--primary-blue, #3498db);
+      background: var(--brand, var(--brand, #e09543));
       color: white;
       padding: 6px 12px;
       border-radius: 16px;
@@ -468,7 +480,7 @@ export interface SearchResponse {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      color: var(--primary-blue, #3498db);
+      color: var(--brand, var(--brand, #e09543));
       font-weight: 500;
       font-size: 0.9rem;
     }
@@ -688,8 +700,14 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  private readonly cdr = inject(ChangeDetectorRef);
+
   onSearchInput(): void {
     this.searchSubject.next(this.searchQuery);
+  }
+
+  trackByResult(_index: number, result: SearchResult): string {
+    return `${result.content_type}-${result.id}`;
   }
 
   onFilterChange(): void {
@@ -718,12 +736,13 @@ export class SearchComponent implements OnInit, OnDestroy {
         this.searchResults = response;
         this.isLoading = false;
         this.resultsChange.emit(response);
+        this.cdr.markForCheck();
       },
-      error: (error) => {
-        console.error('Search error:', error);
+      error: () => {
         this.isLoading = false;
         this.searchResults = null;
         this.resultsChange.emit(null);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -764,7 +783,4 @@ export class SearchComponent implements OnInit, OnDestroy {
     return '/post/' + (result.slug || result.id);
   }
 
-  onImageError(event: any): void {
-    event.target.src = 'assets/images/placeholder-post.jpg';
-  }
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"house-design-backend/config"
 	"house-design-backend/database"
@@ -21,12 +22,24 @@ func main() {
 		log.Println("Warning: Failed to load .env file:", err)
 	}
 
+	// JWT secret phải đọc sau LoadEnv, vì biến package-level của middleware
+	// được khởi tạo trước khi main() chạy.
+	if err := middleware.InitJWTSecret(); err != nil {
+		log.Fatal("JWT secret không hợp lệ: ", err)
+	}
+
 	// Initialize database
 	database.InitDatabase()
 	defer database.DB.Close()
 
 	// Initialize Gin router
 	r := gin.Default()
+
+	// Chỉ tin proxy nội bộ (nginx chạy cùng máy). Nếu tin mọi proxy thì
+	// X-Forwarded-For giả mạo được, làm sai số liệu bảng visitors.
+	if err := r.SetTrustedProxies([]string{"127.0.0.1"}); err != nil {
+		log.Fatal("Failed to set trusted proxies:", err)
+	}
 
 	// CORS middleware - use AllowOriginFunc to accept http/https forms of the public IP
 	r.Use(cors.New(cors.Config{
@@ -77,23 +90,32 @@ func main() {
 			auth.POST("/logout", handlers.Logout)
 		}
 
-		// Public routes
-		api.GET("/categories", handlers.GetCategories)
-		api.GET("/posts", handlers.GetPosts)
-		api.GET("/posts/:id", handlers.GetPost)
-		api.GET("/posts/slug/:slug", handlers.GetPostBySlug)
-		api.GET("/products", handlers.GetProducts)
-		api.GET("/products/:id", handlers.GetProduct)
-		api.GET("/products/slug/:slug", handlers.GetProductBySlug)
-		api.GET("/search", handlers.SearchContent) // Public search endpoint
-		api.GET("/homepage/media", handlers.GetHomepageImages)
-		api.GET("/home-content", handlers.GetHomeContent)
-		api.GET("/footer-content", handlers.GetFooterContent)
-		api.GET("/seo-settings", handlers.GetGlobalSEOSettings)
-		api.GET("/navbar/logo", handlers.GetNavbarLogo)
+		// Public read routes.
+		// Cache-Control thay cho ?_t=<timestamp> phía frontend: cache-buster khiến
+		// trình duyệt và CDN không tái sử dụng được request nào.
+		public := api.Group("")
+		public.Use(middleware.PublicCache(60*time.Second, 300*time.Second))
+		{
+			public.GET("/categories", handlers.GetCategories)
+			public.GET("/posts", handlers.GetPosts)
+			public.GET("/posts/:id", handlers.GetPost)
+			public.GET("/posts/slug/:slug", handlers.GetPostBySlug)
+			public.GET("/products", handlers.GetProducts)
+			public.GET("/products/:id", handlers.GetProduct)
+			public.GET("/products/slug/:slug", handlers.GetProductBySlug)
+			public.GET("/search", handlers.SearchContent)
+			public.GET("/homepage/media", handlers.GetHomepageImages)
+			public.GET("/home-content", handlers.GetHomeContent)
+			public.GET("/footer-content", handlers.GetFooterContent)
+			public.GET("/seo-settings", handlers.GetGlobalSEOSettings)
+			public.GET("/navbar/logo", handlers.GetNavbarLogo)
+		}
 
-		// Public consultation submission
-		api.POST("/consultations", handlers.CreateConsultation)
+		// Form tư vấn là endpoint công khai không token: chặn bot đổ rác vào
+		// hộp thư quản trị bằng giới hạn 5 lần / 10 phút cho mỗi IP.
+		api.POST("/consultations",
+			middleware.RateLimit(5, 10*time.Minute),
+			handlers.CreateConsultation)
 
 		// Public tracking endpoints
 		api.POST("/posts/:id/view", handlers.IncrementPostView)
@@ -173,8 +195,9 @@ func main() {
 		})
 	})
 
-	// Sitemap.xml endpoint
-	r.GET("/sitemap.xml", handlers.GenerateSitemap)
+	// Sitemap.xml endpoint. Lưu ý: nginx phải proxy /sitemap.xml về backend,
+	// nếu không try_files sẽ rơi vào index.html của Angular.
+	r.GET("/sitemap.xml", middleware.PublicCache(3600*time.Second, 86400*time.Second), handlers.GenerateSitemap)
 
 	// Robots.txt endpoint
 	r.GET("/robots.txt", func(c *gin.Context) {
@@ -191,7 +214,14 @@ Sitemap: https://mmadesign.vn/sitemap.xml`
 		port = "8080"
 	}
 
-	address := "0.0.0.0:" + port
+	// Mặc định chỉ bind loopback: nginx là cửa vào duy nhất nên không cần phơi
+	// port 8080 ra internet. Đặt SERVER_HOST=0.0.0.0 nếu thật sự cần.
+	host := os.Getenv("SERVER_HOST")
+	if host == "" {
+		host = "127.0.0.1"
+	}
+
+	address := host + ":" + port
 	log.Printf("Server starting on %s", address)
 	if err := r.Run(address); err != nil {
 		log.Fatal("Failed to start server:", err)

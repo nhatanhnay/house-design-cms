@@ -1,4 +1,6 @@
 export const environment = {
-  production: false,
-  apiUrl: '/api'
+  production: true,
+  apiUrl: '/api',
+  baseUrl: 'https://mmadesign.vn',
+  siteName: 'MMA Architectural Design'
 };

@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { HomeContent, ProcessTab } from '../../models/models';
 import { DataService } from '../../services/data.service';
+import { LoggerService } from '../../services/logger.service';
 
 @Component({
   selector: 'home-content-edit-dialog',
@@ -26,6 +27,7 @@ import { DataService } from '../../services/data.service';
   templateUrl: './home-content-edit-dialog.component.html'
 })
 export class HomeContentEditDialog {
+  private readonly logger = inject(LoggerService);
   processTabs: ProcessTab[] = [];
   processTabsJson: string = '';
   uploadingStepIcon: boolean = false;
@@ -58,7 +60,7 @@ export class HomeContentEditDialog {
         this.processTabs = JSON.parse(this.data.process_tabs);
         this.processTabsJson = JSON.stringify(this.processTabs, null, 2);
       } catch (error) {
-        console.error('Error parsing process tabs:', error);
+        this.logger.error('Error parsing process tabs', error, 'HomeContentDialog');
         this.processTabs = this.getDefaultProcessTabs();
         this.processTabsJson = JSON.stringify(this.processTabs, null, 2);
       }
@@ -190,7 +192,7 @@ export class HomeContentEditDialog {
             this.uploadingStepIcon = false;
           },
           error: (error) => {
-            console.error('Error uploading icon:', error);
+            this.logger.error('Error uploading icon', error, 'HomeContentDialog');
             alert('Lỗi khi upload icon. Vui lòng thử lại.');
             this.uploadingStepIcon = false;
           }
@@ -213,6 +215,6 @@ export class HomeContentEditDialog {
   onIconError(event: any, tabIndex: number, stepIndex: number): void {
     // Hide broken image and show placeholder
     event.target.style.display = 'none';
-    console.warn(`Icon not found: ${this.processTabs[tabIndex].steps[stepIndex].icon_url}`);
+    this.logger.warn(`Icon not found: ${this.processTabs[tabIndex].steps[stepIndex].icon_url}`, 'HomeContentDialog');
   }
 }

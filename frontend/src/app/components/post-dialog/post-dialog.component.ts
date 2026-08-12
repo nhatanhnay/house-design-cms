@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -19,6 +19,7 @@ import { DataService } from '../../services/data.service';
 import { AuthService } from '../../services/auth.service';
 import { Category, Post } from '../../models/models';
 import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter';
+import { LoggerService } from '../../services/logger.service';
 
 @Component({
   selector: 'app-post-dialog',
@@ -316,7 +317,7 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
 
     .upload-hint {
       font-size: 12px;
-      color: #999;
+      color: #6B6B6B;
     }
 
     .upload-loading {
@@ -430,6 +431,7 @@ import { CKEditorUploadAdapterPlugin } from '../../utils/ckeditor-upload-adapter
   `]
 })
 export class PostDialogComponent implements OnInit {
+  private readonly logger = inject(LoggerService);
   postForm: FormGroup;
   isLoading = false;
   categories$: Observable<Category[]>;
@@ -630,7 +632,7 @@ export class PostDialogComponent implements OnInit {
       error: (error) => {
         this.isUploadingImage = false;
         this.imageUploadProgress = 0;
-        console.error('Upload error:', error);
+        this.logger.error('Upload error', error, 'PostDialog');
 
         let errorMessage = 'Lỗi khi tải lên hình ảnh';
         if (error.status === 401) {

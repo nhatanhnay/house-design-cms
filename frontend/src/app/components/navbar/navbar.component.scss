@@ -170,8 +170,10 @@
 
 .category-dropdown:hover .mat-mdc-focus-indicator,
 .category-dropdown-container:hover .category-dropdown .mat-mdc-focus-indicator,
+.category-dropdown-container.open .category-dropdown .mat-mdc-focus-indicator,
 .category-dropdown:hover .mat-mdc-button-ripple,
-.category-dropdown-container:hover .category-dropdown .mat-mdc-button-ripple {
+.category-dropdown-container:hover .category-dropdown .mat-mdc-button-ripple,
+.category-dropdown-container.open .category-dropdown .mat-mdc-button-ripple {
   background-color: var(--accent-copper) !important;
   border-radius: 4px 4px 0 0 !important;
   border-bottom-left-radius: 0 !important;
@@ -181,7 +183,8 @@
   position: absolute !important;
 }
 
-.category-dropdown-container:hover .category-dropdown {
+.category-dropdown-container:hover .category-dropdown,
+.category-dropdown-container.open .category-dropdown {
   background-color: var(--accent-copper) !important;
   border-radius: 4px 4px 0 0 !important;
   border-bottom-left-radius: 0 !important;
@@ -196,7 +199,8 @@
   transition: transform 0.2s ease;
 }
 
-.category-dropdown-container:hover .dropdown-arrow {
+.category-dropdown-container:hover .dropdown-arrow,
+.category-dropdown-container.open .dropdown-arrow {
   transform: rotate(180deg);
 }
 
@@ -205,7 +209,9 @@
   position: absolute;
   top: 100%;
   left: 0;
-  width: 100%;
+  min-width: 100%;
+  width: max-content;
+  max-width: 320px;
   background: white;
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -221,8 +227,12 @@
   margin-top: 0;
 }
 
-/* Show dropdown on hover */
-.category-dropdown-container:hover .dropdown-menu {
+/* Hiện dropdown khi hover, khi focus vào bên trong, hoặc khi component mở nó
+   (chạm trên thiết bị không có hover). Chỉ dựa vào :hover thì bàn phím và
+   màn hình cảm ứng không mở được menu con. */
+.category-dropdown-container:hover .dropdown-menu,
+.category-dropdown-container:focus-within .dropdown-menu,
+.category-dropdown-container.open .dropdown-menu {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -594,4 +604,37 @@
 .subcategory-icon {
   color: var(--accent-copper) !important;
   font-size: 18px !important;
+}
+/* ---------------------------------------------------------------------------
+   Chỉ báo focus cho bàn phím.
+
+   Các quy tắc phía trên đặt .mat-mdc-focus-indicator thành transparent để làm
+   hiệu ứng hover, kéo theo việc xoá luôn dấu focus mặc định của Material. Quy
+   tắc dưới đây trả lại đường viền rõ ràng cho người dùng bàn phím.
+--------------------------------------------------------------------------- */
+.nav-links a:focus-visible,
+.nav-links button:focus-visible,
+.mobile-menu-btn:focus-visible,
+.mobile-menu-item:focus-visible,
+.dropdown-item:focus-visible,
+.brand-link:focus-visible {
+  outline: 2px solid var(--secondary-silver);
+  outline-offset: -2px;
+  border-radius: 2px;
+}
+
+.mobile-menu-item:focus-visible,
+.dropdown-item:focus-visible {
+  outline-color: var(--accent-copper);
+  background-color: #f8f9fa;
+}
+
+/* Không có menu nào nên chạy transition khi người dùng đã tắt hiệu ứng */
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-menu,
+  .mobile-menu,
+  .mobile-menu-overlay,
+  .dropdown-arrow {
+    transition: none !important;
+  }
 }

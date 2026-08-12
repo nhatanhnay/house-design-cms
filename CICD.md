@@ -54,6 +54,19 @@ Settings → Secrets and variables → Actions → New repository secret:
 | `VPS_HOST` | `157.66.26.139` |
 | `VPS_USER` | `root` |
 | `VPS_SSH_KEY` | Toàn bộ private key (kể cả dòng `BEGIN`/`END`) của keypair deploy |
+| `DB_PASSWORD` | Password PostgreSQL của user `postgres` |
+| `JWT_SECRET` | Chuỗi bí mật ≥ 32 ký tự — sinh bằng `openssl rand -base64 48` |
+
+### `.env` được render từ Secrets
+
+Mỗi lần deploy, workflow dựng `backend/.env` từ `DB_PASSWORD` + `JWT_SECRET` rồi `install -m 600` lên server **trước khi** restart service. Nghĩa là:
+
+- **GitHub Secrets là nguồn sự thật duy nhất.** Sửa tay `.env` trên server sẽ bị ghi đè ở lần deploy kế tiếp.
+- Đổi secret = sửa trên GitHub UI rồi **Re-run jobs**, không cần SSH.
+- Job deploy fail sớm nếu thiếu secret hoặc `JWT_SECRET` ngắn hơn 32 ký tự — không đụng tới server.
+- Rollback khôi phục cả `.env.bak` lẫn binary, vì secret sai cũng làm backend chết chứ không riêng gì code.
+
+> ⚠️ Đổi `JWT_SECRET` sẽ vô hiệu hoá mọi token admin đang đăng nhập → phải login lại `/admin`.
 
 Keypair deploy tạo bằng:
 
@@ -90,12 +103,18 @@ curl http://127.0.0.1:8080/health
 readlink -f /var/www/html/house-design-frontend # đang live release nào
 ```
 
-## Nợ kỹ thuật cần xử lý
+## Bảo mật
 
-Repo đang **public**, nên các mục dưới đây đang lộ công khai:
+Đã xử lý:
 
-- [ ] `backend/middleware/auth.go:12` hardcode JWT secret `"your-secret-key-change-in-production"` — biến env `JWT_SECRET` **không được đọc**, phải sửa code mới đổi được
-- [ ] `backend/database/` hardcode password PostgreSQL làm giá trị fallback
-- [ ] Backend bind `0.0.0.0:8080` + `ufw` inactive → API gọi trực tiếp được, bỏ qua HTTPS
-- [ ] sshd còn `PasswordAuthentication yes` + `PermitRootLogin yes` → nên tắt password auth sau khi đã có SSH key
-- [ ] Gin chưa `SetTrustedProxies` → `X-Forwarded-For` giả mạo được, ảnh hưởng số liệu bảng `visitors`
+- [x] JWT secret đọc từ `JWT_SECRET` env, reject nếu rỗng / vẫn là giá trị mặc định cũ / ngắn hơn 32 ký tự
+- [x] Bỏ password PostgreSQL hardcode — `DB_PASSWORD` giờ bắt buộc, thiếu là backend không start
+- [x] Backend bind `127.0.0.1:8080` (đổi qua `SERVER_HOST`) → không còn phơi API ra internet, và không cần bật ufw
+- [x] `SetTrustedProxies(["127.0.0.1"])` → `X-Forwarded-For` không giả mạo được nữa
+
+Còn lại — **cần thao tác tay**, không tự động hoá được:
+
+- [ ] **Đổi password PostgreSQL.** Giá trị cũ `12346789` nằm trong git history của repo public, xoá khỏi code không thu hồi được. Phải `ALTER USER postgres WITH PASSWORD '...'` rồi cập nhật secret `DB_PASSWORD`.
+- [ ] **Đổi password root VPS.** Ngắn, và server đang bật cả `PermitRootLogin yes` lẫn `PasswordAuthentication yes`.
+- [ ] **Tắt SSH password auth** — chỉ làm SAU khi đã tự thêm SSH key cá nhân vào server, nếu không sẽ tự khoá mình ra ngoài (`authorized_keys` hiện chỉ có key CI).
+- [ ] **Đổi password admin CMS.** Kiểm tra `seedAdminUser()` xem còn dùng giá trị mặc định không.

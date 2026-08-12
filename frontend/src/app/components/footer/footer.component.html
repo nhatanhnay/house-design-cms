@@ -8,15 +8,15 @@
     <div class="footer-section">
       <h4>Liên Hệ</h4>
       <div class="contact-item">
-        <mat-icon>phone</mat-icon>
-        <span>{{ footerContent.phone }}</span>
+        <mat-icon aria-hidden="true">phone</mat-icon>
+        <a [href]="'tel:' + footerContent.phone.replace(' ', '')">{{ footerContent.phone }}</a>
       </div>
       <div class="contact-item">
-        <mat-icon>email</mat-icon>
-        <span>{{ footerContent.email }}</span>
+        <mat-icon aria-hidden="true">email</mat-icon>
+        <a [href]="'mailto:' + footerContent.email">{{ footerContent.email }}</a>
       </div>
       <div class="contact-item">
-        <mat-icon>location_on</mat-icon>
+        <mat-icon aria-hidden="true">location_on</mat-icon>
         <span>{{ footerContent.address }}</span>
       </div>
     </div>
@@ -24,20 +24,21 @@
     <div class="footer-section">
       <h4>Dịch Vụ</h4>
       <ul class="service-list">
-        <li *ngFor="let service of footerContent.services">{{ service }}</li>
+        <li *ngFor="let service of footerContent.services; trackBy: trackByIndex">{{ service }}</li>
       </ul>
     </div>
 
     <div class="footer-section social-section">
       <h4>Theo Dõi</h4>
       <div class="social-links">
-        <a *ngFor="let socialMedia of footerContent.social_media"
+        <a *ngFor="let socialMedia of footerContent.social_media; trackBy: trackBySocialName"
            [href]="socialMedia.url"
            class="social-link"
            target="_blank"
-           rel="noopener"
-           [title]="socialMedia.name">
-          <mat-icon>{{ socialMedia.icon }}</mat-icon>
+           rel="noopener noreferrer"
+           [title]="socialMedia.name"
+           [attr.aria-label]="socialMedia.name">
+          <mat-icon aria-hidden="true">{{ socialMedia.icon }}</mat-icon>
         </a>
       </div>
     </div>

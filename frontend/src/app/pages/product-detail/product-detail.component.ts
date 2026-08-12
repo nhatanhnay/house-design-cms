@@ -1,175 +1,188 @@
-import { Component, OnInit, AfterViewChecked } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { Observable, switchMap } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { of } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
 import { DataService } from '../../services/data.service';
 import { AuthService } from '../../services/auth.service';
-import { Product, Admin } from '../../models/models';
+import { SeoService } from '../../services/seo.service';
+import { environment } from '../../../environments/environment';
+import { Product } from '../../models/models';
+import { SkeletonImageDirective } from '../../directives/skeleton-image.directive';
 
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatChipsModule, RouterModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, RouterModule, SkeletonImageDirective],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss'
 })
-export class ProductDetailComponent implements OnInit, AfterViewChecked {
-  product$: Observable<Product>;
-  isLoading = true;
+export class ProductDetailComponent implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly dataService = inject(DataService);
+  private readonly authService = inject(AuthService);
+  private readonly seo = inject(SeoService);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly currentUser$ = this.authService.currentUser$;
+
   product: Product | null = null;
+  isLoading = true;
   hasError = false;
-  currentUser$: Observable<Admin | null>;
   selectedImage: string | null = null;
+
   relatedProducts: Product[] = [];
   suggestedProducts: Product[] = [];
-  private imagesProcessed = false;
 
-  constructor(
-    private route: ActivatedRoute,
-    private dataService: DataService,
-    private authService: AuthService
-  ) {
-    this.product$ = this.route.params.pipe(
-      switchMap(params => {
-        const id = parseInt(params['id']);
-        return this.dataService.getProduct(id);
-      })
-    );
-    this.currentUser$ = this.authService.currentUser$;
+  trackByProductId(_index: number, product: Product): number {
+    return product.id;
+  }
+
+  trackByImageUrl(_index: number, image: { image_url: string }): string {
+    return image.image_url;
   }
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
-      const slugOrId = params['slug'];
+    this.route.params
+      .pipe(
+        switchMap(params => {
+          const slugOrId = params['slug'];
+          this.isLoading = true;
+          this.hasError = false;
+          this.product = null;
+          this.selectedImage = null;
+          this.relatedProducts = [];
+          this.suggestedProducts = [];
+          this.cdr.markForCheck();
 
-      if (slugOrId) {
-        this.isLoading = true;
-        this.hasError = false;
-        this.product = null;
-        this.selectedImage = null;
-
-        // Try to parse as ID first (if it's a number, use old method)
-        const numericId = parseInt(slugOrId);
-        const isNumeric = !isNaN(numericId) && slugOrId === numericId.toString();
-
-        const productObservable = isNumeric
-          ? this.dataService.getProduct(numericId)
-          : this.dataService.getProductBySlug(slugOrId);
-
-        productObservable.subscribe({
-          next: (product) => {
-            this.isLoading = false;
-            this.product = product;
-            this.hasError = false;
-            this.imagesProcessed = false; // Reset flag for new product
-            // Set thumbnail as main image, or first gallery image if no thumbnail
-            this.selectedImage = product.thumbnail_url ||
-              (product.images && product.images.length > 0 ? product.images[0].image_url : null);
-
-            // Load related products from the same category
-            if (product.category_id) {
-              this.loadRelatedProducts(product.category_id, product.id);
-            }
-
-            // Increment view count (only if not logged in as admin)
-            if (!this.authService.getToken()) {
-              this.dataService.incrementProductView(product.id).subscribe({
-                next: () => console.log('Product view count incremented'),
-                error: (error) => console.error('Error incrementing product views:', error)
-              });
-            }
-          },
-          error: (error) => {
-            console.error('Error loading product:', error);
-            this.isLoading = false;
-            this.hasError = true;
-            this.product = null;
+          if (!slugOrId) {
+            return of(null);
           }
-        });
-      } else {
+
+          const numericId = Number(slugOrId);
+          const isNumeric = Number.isInteger(numericId) && String(numericId) === slugOrId;
+
+          return (isNumeric
+            ? this.dataService.getProduct(numericId)
+            : this.dataService.getProductBySlug(slugOrId)
+          ).pipe(catchError(() => of(null)));
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(product => {
         this.isLoading = false;
-        this.hasError = true;
-        this.product = null;
-      }
-    });
+
+        if (!product) {
+          this.hasError = true;
+          this.seo.update({
+            title: 'Không tìm thấy sản phẩm',
+            description: 'Sản phẩm không tồn tại hoặc đã bị xoá.',
+            noindex: true
+          });
+          this.cdr.markForCheck();
+          return;
+        }
+
+        this.product = product;
+        this.selectedImage = product.thumbnail_url || product.images?.[0]?.image_url || null;
+        this.applySeo(product);
+        this.loadRelated(product);
+        this.countView(product);
+        this.cdr.markForCheck();
+      });
   }
 
-  ngAfterViewChecked(): void {
-    if (this.product && !this.imagesProcessed) {
-      this.removeImageDimensions();
-      this.imagesProcessed = true;
+  /** Ghi dữ liệu SEO của sản phẩm ra <head> thay vì để trống như trước. */
+  private applySeo(product: Product): void {
+    const image = product.og_image_url || product.thumbnail_url || product.images?.[0]?.image_url;
+
+    this.seo.update({
+      title: product.meta_title || product.title,
+      description: product.meta_description || product.summary,
+      keywords: product.focus_keywords,
+      image,
+      path: `/product/${product.slug || product.id}`,
+      type: 'product',
+      publishedAt: product.created_at,
+      modifiedAt: product.updated_at
+    });
+
+    this.seo.setStructuredData('product', {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.title,
+      description: product.meta_description || product.summary || '',
+      image: [image, ...(product.images || []).map(i => i.image_url)].filter(Boolean),
+      category: product.category?.name,
+      brand: {
+        '@type': 'Brand',
+        name: environment.siteName
+      },
+      url: `${environment.baseUrl}/product/${product.slug || product.id}`
+    });
+
+    const trail: Array<{ name: string; path?: string }> = [{ name: 'Trang chủ', path: '/' }];
+    if (product.category?.parent) {
+      trail.push({
+        name: product.category.parent.name,
+        path: `/category/${product.category.parent.slug}`
+      });
     }
+    if (product.category) {
+      trail.push({ name: product.category.name, path: `/category/${product.category.slug}` });
+    }
+    trail.push({ name: product.title, path: `/product/${product.slug || product.id}` });
+    this.seo.setBreadcrumb(trail);
   }
 
-  private removeImageDimensions(): void {
-    // Remove width and height attributes from all images and figures in content
-    const contentImages = document.querySelectorAll('.content-html img');
-    contentImages.forEach((img: Element) => {
-      img.removeAttribute('width');
-      img.removeAttribute('height');
-    });
+  private loadRelated(product: Product): void {
+    if (!product.category_id) {
+      return;
+    }
 
-    const contentFigures = document.querySelectorAll('.content-html figure');
-    contentFigures.forEach((figure: Element) => {
-      figure.removeAttribute('width');
-      figure.removeAttribute('height');
-      (figure as HTMLElement).style.width = '';
-      (figure as HTMLElement).style.height = '';
-    });
+    this.dataService.getRelatedProducts(product.category_id, product.id)
+      .pipe(catchError(() => of([] as Product[])), takeUntilDestroyed(this.destroyRef))
+      .subscribe(products => {
+        this.relatedProducts = products.slice(0, 3);
+        this.suggestedProducts = products.slice(3, 7);
+        this.cdr.markForCheck();
+      });
+  }
+
+  private countView(product: Product): void {
+    if (this.authService.getToken()) {
+      return;
+    }
+
+    this.dataService.incrementProductView(product.id)
+      .pipe(catchError(() => of(null)), takeUntilDestroyed(this.destroyRef))
+      .subscribe();
   }
 
   selectImage(imageUrl: string): void {
     this.selectedImage = imageUrl;
   }
 
-  onImageError(event: any): void {
-    event.target.src = 'assets/images/placeholder-product.jpg';
-  }
-
   shareOnFacebook(product: Product): void {
     const url = encodeURIComponent(window.location.href);
     const text = encodeURIComponent(product.title);
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, '_blank');
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, '_blank', 'noopener');
   }
 
-  copyLink(): void {
-    navigator.clipboard.writeText(window.location.href).then(() => {
-      // Could show a snackbar notification here
-    });
-  }
-
-  loadRelatedProducts(categoryId: number, currentProductId: number): void {
-    this.dataService.getProducts().subscribe({
-      next: (products) => {
-        // Filter products from the same category, exclude current product
-        const sameCategoryProducts = products.filter(p =>
-          p.category_id === categoryId &&
-          p.id !== currentProductId &&
-          p.published
-        );
-
-        // Take 3 for sidebar, 4 for bottom (different sets)
-        this.relatedProducts = sameCategoryProducts.slice(0, 3);
-        this.suggestedProducts = sameCategoryProducts.slice(3, 7);
-
-        // If not enough products, fill with other published products
-        if (this.suggestedProducts.length < 4) {
-          const otherProducts = products.filter(p =>
-            p.id !== currentProductId &&
-            p.published &&
-            !this.relatedProducts.some(rp => rp.id === p.id) &&
-            !this.suggestedProducts.some(sp => sp.id === p.id)
-          );
-          this.suggestedProducts = [...this.suggestedProducts, ...otherProducts].slice(0, 4);
-        }
-      },
-      error: (error) => {
-        console.error('Error loading related products:', error);
-      }
-    });
+  async copyLink(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      this.snackBar.open('Đã sao chép liên kết', 'Đóng', { duration: 2500 });
+    } catch {
+      this.snackBar.open('Không sao chép được. Hãy copy từ thanh địa chỉ.', 'Đóng', { duration: 4000 });
+    }
   }
 }

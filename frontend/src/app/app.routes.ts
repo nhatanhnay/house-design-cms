@@ -19,20 +19,21 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/product-detail/product-detail.component').then(c => c.ProductDetailComponent)
   },
   {
-    path: 'sitemap.xml',
-    loadComponent: () => import('./components/sitemap/sitemap.component').then(c => c.SitemapComponent)
-  },
-  {
     path: 'admin/login',
-    loadComponent: () => import('./pages/admin-login/admin-login.component').then(c => c.AdminLoginComponent)
+    loadComponent: () => import('./pages/admin-login/admin-login.component').then(c => c.AdminLoginComponent),
+    // Chặn preload: chunk admin kéo theo CKEditor (~1.8MB), khách vãng lai không cần.
+    data: { preload: false }
   },
   {
     path: 'admin',
     canActivate: [authGuard],
-    loadComponent: () => import('./pages/admin/admin.component').then(c => c.AdminComponent)
+    loadComponent: () => import('./pages/admin/admin.component').then(c => c.AdminComponent),
+    data: { preload: false }
   },
   {
+    // Trang 404 thật thay vì redirect im lặng về trang chủ: giữ đúng ngữ cảnh cho
+    // người dùng và tránh soft-404 với công cụ tìm kiếm.
     path: '**',
-    redirectTo: ''
+    loadComponent: () => import('./pages/not-found/not-found.component').then(c => c.NotFoundComponent)
   }
 ];

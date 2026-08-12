@@ -12,42 +12,27 @@ export class UrlConverter {
   static convertImageUrl(url: string, options: UrlConversionOptions = {}): string {
     if (!url) return url;
 
-    const { logConversion = false, fallbackUrl = url } = options;
+    const { fallbackUrl = url } = options;
 
-    if (logConversion) {
-      console.log('Converting URL:', url);
-    }
 
     // Handle localhost URLs
     if (url.startsWith(ADMIN_CONSTANTS.URL_PATTERNS.LOCALHOST)) {
       const converted = url.replace(ADMIN_CONSTANTS.URL_PATTERNS.LOCALHOST, '/');
-      if (logConversion) {
-        console.log('Converted localhost URL:', converted);
-      }
       return converted;
     }
 
     // Handle HTTPS backend URLs
     if (ADMIN_CONSTANTS.URL_PATTERNS.HTTPS_BACKEND.test(url)) {
       const converted = url.replace(ADMIN_CONSTANTS.URL_PATTERNS.HTTPS_BACKEND, '/');
-      if (logConversion) {
-        console.log('Converted HTTPS URL:', converted);
-      }
       return converted;
     }
 
     // Handle HTTP backend URLs
     if (ADMIN_CONSTANTS.URL_PATTERNS.HTTP_BACKEND.test(url)) {
       const converted = url.replace(ADMIN_CONSTANTS.URL_PATTERNS.HTTP_BACKEND, '/');
-      if (logConversion) {
-        console.log('Converted HTTP URL:', converted);
-      }
       return converted;
     }
 
-    if (logConversion) {
-      console.log('URL not converted:', url);
-    }
 
     return fallbackUrl;
   }
@@ -65,24 +50,22 @@ export class UrlConverter {
   static convertContentImageUrls(htmlContent: string, options: UrlConversionOptions = {}): string {
     if (!htmlContent) return htmlContent;
 
-    const { logConversion = false } = options;
-
-    if (logConversion) {
-      console.log('Converting content image URLs');
-    }
 
     // Replace img src attributes with converted URLs
     const convertedContent = htmlContent.replace(
       /(<img[^>]+src=["'])([^"']+)(["'][^>]*>)/gi,
-      (match, prefix, url, suffix) => {
-        const convertedUrl = this.convertImageUrl(url, { logConversion: false });
-        if (logConversion) {
-          console.log('Content image URL converted:', url, '->', convertedUrl);
-        }
-        return prefix + convertedUrl + suffix;
-      }
+      (_match, prefix, url, suffix) => prefix + this.convertImageUrl(url) + suffix
     );
 
     return convertedContent;
   }
+}
+/**
+ * Chuyển URL tuyệt đối của backend về đường dẫn tương đối để đi qua proxy.
+ *
+ * Dạng hàm rời để dùng thẳng trong `.map()` mà không phải bind `this`.
+ * Trước đây mỗi component tự chép lại logic này thành một hàm riêng.
+ */
+export function convertImageUrl(url: string): string {
+  return UrlConverter.convertImageUrl(url);
 }

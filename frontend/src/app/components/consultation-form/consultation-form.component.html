@@ -5,34 +5,47 @@
       <p class="section-subtitle">Để lại thông tin, chúng tôi sẽ liên hệ tư vấn miễn phí cho bạn trong 24h</p>
     </div>
 
-    <form [formGroup]="consultationForm" (ngSubmit)="onSubmit()" class="consultation-form">
+    <form [formGroup]="consultationForm" (ngSubmit)="onSubmit()" class="consultation-form" novalidate>
       <div class="form-row">
         <div class="form-group">
-          <label for="name">Họ và tên <span class="required">*</span></label>
+          <label for="name">Họ và tên <span class="required" aria-hidden="true">*</span></label>
           <input
             type="text"
             id="name"
             formControlName="name"
             placeholder="Nhập họ và tên của bạn"
-            [class.error]="consultationForm.get('name')?.invalid && consultationForm.get('name')?.touched"
+            autocomplete="name"
+            required
+            [class.error]="showError('name')"
+            [attr.aria-invalid]="showError('name')"
+            [attr.aria-describedby]="showError('name') ? 'name-error' : null"
           />
-          <div class="error-message" *ngIf="consultationForm.get('name')?.invalid && consultationForm.get('name')?.touched">
-            Vui lòng nhập họ và tên
+          <div class="error-message" id="name-error" *ngIf="showError('name')">
+            <span *ngIf="nameControl.errors?.['required']">Vui lòng nhập họ và tên</span>
+            <span *ngIf="nameControl.errors?.['minlength']">Họ tên phải có ít nhất 2 ký tự</span>
           </div>
         </div>
 
         <div class="form-group">
-          <label for="phone">Số điện thoại <span class="required">*</span></label>
+          <label for="phone">Số điện thoại <span class="required" aria-hidden="true">*</span></label>
           <input
             type="tel"
             id="phone"
             formControlName="phone"
-            placeholder="Nhập số điện thoại"
-            [class.error]="consultationForm.get('phone')?.invalid && consultationForm.get('phone')?.touched"
+            placeholder="Ví dụ: 0912 345 678"
+            autocomplete="tel"
+            inputmode="numeric"
+            required
+            [class.error]="showError('phone')"
+            [attr.aria-invalid]="showError('phone')"
+            [attr.aria-describedby]="showError('phone') ? 'phone-error' : 'phone-hint'"
           />
-          <div class="error-message" *ngIf="consultationForm.get('phone')?.invalid && consultationForm.get('phone')?.touched">
-            <span *ngIf="consultationForm.get('phone')?.errors?.['required']">Vui lòng nhập số điện thoại</span>
-            <span *ngIf="consultationForm.get('phone')?.errors?.['pattern']">Số điện thoại không hợp lệ</span>
+          <p class="field-hint" id="phone-hint" *ngIf="!showError('phone')">
+            Gõ có dấu cách hay dấu chấm đều được.
+          </p>
+          <div class="error-message" id="phone-error" *ngIf="showError('phone')">
+            <span *ngIf="phoneControl.errors?.['required']">Vui lòng nhập số điện thoại</span>
+            <span *ngIf="phoneControl.errors?.['phone']">Số điện thoại chưa đúng. Kiểm tra lại giúp bạn nhé.</span>
           </div>
         </div>
       </div>
@@ -45,10 +58,14 @@
             id="email"
             formControlName="email"
             placeholder="Nhập địa chỉ email (tùy chọn)"
-            [class.error]="consultationForm.get('email')?.invalid && consultationForm.get('email')?.touched"
+            autocomplete="email"
+            inputmode="email"
+            [class.error]="showError('email')"
+            [attr.aria-invalid]="showError('email')"
+            [attr.aria-describedby]="showError('email') ? 'email-error' : null"
           />
-          <div class="error-message" *ngIf="consultationForm.get('email')?.invalid && consultationForm.get('email')?.touched">
-            Email không hợp lệ
+          <div class="error-message" id="email-error" *ngIf="showError('email')">
+            Email chưa đúng định dạng
           </div>
         </div>
       </div>
@@ -59,32 +76,45 @@
           id="details"
           formControlName="details"
           rows="4"
+          autocomplete="off"
           placeholder="Mô tả chi tiết nhu cầu của bạn (diện tích, phong cách, ngân sách...)"
         ></textarea>
       </div>
 
+      <!-- Honeypot: ẩn với người dùng, bot điền tự động thì bị lọc -->
+      <div class="honeypot" aria-hidden="true">
+        <label for="website">Website</label>
+        <input type="text" id="website" formControlName="website" tabindex="-1" autocomplete="off">
+      </div>
+
       <div class="form-actions">
-        <button type="submit" class="btn-submit" [disabled]="consultationForm.invalid || isSubmitting">
+        <!-- Không disable khi form chưa hợp lệ: người dùng bấm được và thấy ngay
+             chỗ nào cần sửa, thay vì một nút xám không giải thích lý do. -->
+        <button type="submit" class="btn-submit" [disabled]="isSubmitting">
           <span *ngIf="!isSubmitting">Gửi thông tin</span>
           <span *ngIf="isSubmitting">Đang gửi...</span>
         </button>
       </div>
 
-      <div class="success-message" *ngIf="submitSuccess">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
-        <span>Cảm ơn bạn! Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.</span>
-      </div>
+      <div class="form-feedback" #feedback role="status" aria-live="polite">
+        <div class="success-message" *ngIf="submitSuccess">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <span>Cảm ơn bạn! Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.</span>
+        </div>
 
-      <div class="error-alert" *ngIf="submitError">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="12"></line>
-          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
-        <span>{{ submitError }}</span>
+        <div class="error-alert" *ngIf="submitError">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>{{ submitError }}</span>
+        </div>
       </div>
     </form>
   </div>

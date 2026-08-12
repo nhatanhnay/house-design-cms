@@ -1,42 +1,49 @@
 <div class="admin-page">
 
+  <!-- Nút mở menu, chỉ hiện khi sidenav ở chế độ overlay (mobile/tablet dọc) -->
+  <button type="button" mat-icon-button class="sidenav-toggle" *ngIf="isHandset" (click)="toggleSidenav()"
+    [attr.aria-expanded]="sidenavOpened" aria-controls="admin-sidebar" aria-label="Mở menu quản trị">
+    <mat-icon aria-hidden="true">menu</mat-icon>
+  </button>
+
   <!-- Main Content with Sidebar -->
   <div class="admin-content">
     <!-- Sidebar -->
     <mat-sidenav-container class="admin-sidenav-container">
-      <mat-sidenav mode="side" opened class="admin-sidebar">
+      <mat-sidenav [mode]="sidenavMode" [opened]="sidenavOpened" (openedChange)="sidenavOpened = $event"
+        class="admin-sidebar" id="admin-sidebar">
         <mat-nav-list>
-          <mat-list-item (click)="setCurrentSection('categories')" [class.active]="currentSection === 'categories'">
+          <mat-list-item (click)="setCurrentSection('categories'); onSidenavItemSelected()" [class.active]="currentSection === 'categories'">
             <mat-icon matListIcon>category</mat-icon>
             <span matLine>Quản Lý Danh Mục</span>
           </mat-list-item>
 
-          <mat-list-item (click)="setCurrentSection('posts')" [class.active]="currentSection === 'posts'">
+          <mat-list-item (click)="setCurrentSection('posts'); onSidenavItemSelected()" [class.active]="currentSection === 'posts'">
             <mat-icon matListIcon>article</mat-icon>
             <span matLine>Quản Lý Bài Viết</span>
           </mat-list-item>
 
-          <mat-list-item (click)="setCurrentSection('products')" [class.active]="currentSection === 'products'">
+          <mat-list-item (click)="setCurrentSection('products'); onSidenavItemSelected()" [class.active]="currentSection === 'products'">
             <mat-icon matListIcon>shopping_bag</mat-icon>
             <span matLine>Quản Lý Sản Phẩm</span>
           </mat-list-item>
 
-          <mat-list-item (click)="setCurrentSection('homepage')" [class.active]="currentSection === 'homepage'">
+          <mat-list-item (click)="setCurrentSection('homepage'); onSidenavItemSelected()" [class.active]="currentSection === 'homepage'">
             <mat-icon matListIcon>home</mat-icon>
             <span matLine>Quản Lý Trang Chủ</span>
           </mat-list-item>
 
-          <mat-list-item (click)="setCurrentSection('footer')" [class.active]="currentSection === 'footer'">
+          <mat-list-item (click)="setCurrentSection('footer'); onSidenavItemSelected()" [class.active]="currentSection === 'footer'">
             <mat-icon matListIcon>web</mat-icon>
             <span matLine>Quản Lý Footer</span>
           </mat-list-item>
 
-          <mat-list-item (click)="setCurrentSection('seo')" [class.active]="currentSection === 'seo'">
+          <mat-list-item (click)="setCurrentSection('seo'); onSidenavItemSelected()" [class.active]="currentSection === 'seo'">
             <mat-icon matListIcon>search</mat-icon>
             <span matLine>Cài Đặt SEO</span>
           </mat-list-item>
 
-          <mat-list-item (click)="setCurrentSection('consultations')"
+          <mat-list-item (click)="setCurrentSection('consultations'); onSidenavItemSelected()"
             [class.active]="currentSection === 'consultations'">
             <mat-icon matListIcon>contact_support</mat-icon>
             <span matLine>Yêu Cầu Tư Vấn</span>
@@ -105,7 +112,7 @@
                       <button mat-icon-button (click)="editCategory(mainCategory)" matTooltip="Chỉnh sửa">
                         <mat-icon>edit</mat-icon>
                       </button>
-                      <button mat-icon-button color="warn" (click)="deleteCategory(mainCategory.id)" matTooltip="Xóa">
+                      <button mat-icon-button color="warn" (click)="deleteCategory(mainCategory)" matTooltip="Xóa">
                         <mat-icon>delete</mat-icon>
                       </button>
 
@@ -174,7 +181,7 @@
                             <button mat-icon-button (click)="editCategory(subcategory)" matTooltip="Chỉnh sửa">
                               <mat-icon>edit</mat-icon>
                             </button>
-                            <button mat-icon-button color="warn" (click)="deleteCategory(subcategory.id)"
+                            <button mat-icon-button color="warn" (click)="deleteCategory(subcategory)"
                               matTooltip="Xóa">
                               <mat-icon>delete</mat-icon>
                             </button>
@@ -312,7 +319,7 @@
                   <button mat-icon-button (click)="editPost(post)" matTooltip="Chỉnh sửa">
                     <mat-icon>edit</mat-icon>
                   </button>
-                  <button mat-icon-button color="warn" (click)="deletePost(post.id)" matTooltip="Xóa">
+                  <button mat-icon-button color="warn" (click)="deletePost(post)" matTooltip="Xóa">
                     <mat-icon>delete</mat-icon>
                   </button>
                 </td>
@@ -426,7 +433,7 @@
                   <button mat-icon-button (click)="editProduct(product)" matTooltip="Chỉnh sửa">
                     <mat-icon>edit</mat-icon>
                   </button>
-                  <button mat-icon-button color="warn" (click)="deleteProduct(product.id)" matTooltip="Xóa">
+                  <button mat-icon-button color="warn" (click)="deleteProduct(product)" matTooltip="Xóa">
                     <mat-icon>delete</mat-icon>
                   </button>
                 </td>
@@ -470,7 +477,8 @@
             <div class="media-grid" *ngIf="homepageImages.length > 0; else noImages">
               <div class="media-item" *ngFor="let image of homepageImages; let i = index">
                 <div class="media-preview">
-                  <img [src]="image" [alt]="'Homepage image ' + (i + 1)" loading="lazy" (error)="onImageError($event)">
+                  <img [src]="image" [appSkeleton]="image" [alt]="'Ảnh trang chủ ' + (i + 1)" loading="lazy"
+                    decoding="async">
                   <div class="media-overlay">
                     <button mat-icon-button class="overlay-btn replace-btn"
                       (click)="replaceHomepageMedia(image, 'images')" matTooltip="Thay thế">
@@ -514,7 +522,7 @@
 
             <div class="logo-preview-container" *ngIf="navbarLogoUrl; else noLogo">
               <div class="logo-preview">
-                <img [src]="navbarLogoUrl" alt="Navbar Logo" (error)="onImageError($event)">
+                <img [src]="navbarLogoUrl" [appSkeleton]="navbarLogoUrl" alt="Logo navbar">
                 <span class="brand-text">MMA Architectural Design</span>
                 <div class="logo-overlay">
                   <button mat-icon-button class="overlay-btn replace-btn" (click)="uploadNavbarLogo()"
@@ -1134,7 +1142,7 @@
                     </button>
                   </mat-menu>
 
-                  <button mat-icon-button color="warn" (click)="deleteConsultation(consultation.id)" matTooltip="Xóa">
+                  <button mat-icon-button color="warn" (click)="deleteConsultation(consultation)" matTooltip="Xóa">
                     <mat-icon>delete</mat-icon>
                   </button>
                 </td>

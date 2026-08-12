@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,6 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AuthService } from '../../services/auth.service';
 import { LoginRequest } from '../../models/models';
+import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-admin-login',
@@ -31,7 +32,7 @@ import { LoginRequest } from '../../models/models';
           <mat-card class="login-card">
             <mat-card-content>
               <div class="login-header">
-                <mat-icon class="login-icon">admin_panel_settings</mat-icon>
+                <mat-icon class="login-icon" aria-hidden="true">admin_panel_settings</mat-icon>
                 <h2>Đăng Nhập Quản Trị</h2>
                 <p>Nhập thông tin để truy cập trang quản trị</p>
               </div>
@@ -44,7 +45,7 @@ import { LoginRequest } from '../../models/models';
                          name="username"
                          required
                          autocomplete="username">
-                  <mat-icon matSuffix>person</mat-icon>
+                  <mat-icon matSuffix aria-hidden="true">person</mat-icon>
                 </mat-form-field>
                 
                 <mat-form-field appearance="outline" class="full-width">
@@ -55,9 +56,11 @@ import { LoginRequest } from '../../models/models';
                          name="password"
                          required
                          autocomplete="current-password">
-                  <button mat-icon-button 
-                          matSuffix 
+                  <button mat-icon-button
+                          matSuffix
                           (click)="hidePassword = !hidePassword"
+                          [attr.aria-label]="hidePassword ? 'Hiện mật khẩu' : 'Ẩn mật khẩu'"
+                          [attr.aria-pressed]="!hidePassword"
                           type="button">
                     <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
                   </button>
@@ -68,7 +71,7 @@ import { LoginRequest } from '../../models/models';
                         class="login-btn full-width"
                         [disabled]="!loginForm.valid || isLoading"
                         color="primary">
-                  <mat-icon *ngIf="isLoading">refresh</mat-icon>
+                  <mat-icon *ngIf="isLoading" aria-hidden="true">refresh</mat-icon>
                   <span>{{ isLoading ? 'Đang đăng nhập...' : 'Đăng Nhập' }}</span>
                 </button>
               </form>
@@ -81,7 +84,7 @@ import { LoginRequest } from '../../models/models';
   styles: [`
     .login-page {
       min-height: 100vh;
-      background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+      background: linear-gradient(135deg, var(--surface-darker, #2a2a2a), var(--surface-dark, #3a3a3a));
       display: flex;
       align-items: center;
       padding: 20px 0;
@@ -110,18 +113,18 @@ import { LoginRequest } from '../../models/models';
       font-size: 4rem;
       width: 4rem;
       height: 4rem;
-      color: var(--primary-blue);
+      color: var(--brand, #e09543);
       margin-bottom: 20px;
     }
     
     .login-header h2 {
-      color: var(--dark-blue);
+      color: #1a1a1a;
       margin-bottom: 10px;
       font-weight: 600;
     }
     
     .login-header p {
-      color: var(--text-secondary);
+      color: #6B6B6B;
       margin: 0;
     }
     
@@ -145,6 +148,21 @@ import { LoginRequest } from '../../models/models';
     .login-btn[disabled] {
       opacity: 0.6;
     }
+
+    .login-btn mat-icon {
+      animation: spin 1s linear infinite;
+      margin-right: 6px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .login-btn mat-icon {
+        animation: none;
+      }
+    }
     
     @media (max-width: 480px) {
       .login-card {
@@ -159,7 +177,9 @@ import { LoginRequest } from '../../models/models';
     }
   `]
 })
-export class AdminLoginComponent {
+export class AdminLoginComponent implements OnInit {
+  private readonly seo = inject(SeoService);
+
   credentials: LoginRequest = {
     username: '',
     password: ''
@@ -177,6 +197,20 @@ export class AdminLoginComponent {
     if (this.authService.isAuthenticated()) {
       this.router.navigate(['/admin']);
     }
+  }
+
+  ngOnInit(): void {
+    // Trang đăng nhập không được index, và canonical phải trỏ đúng chính nó
+    // thay vì kế thừa thẻ mặc định trỏ về trang chủ.
+    this.seo.update({
+      title: 'Đăng nhập quản trị',
+      description: 'Khu vực quản trị nội bộ.',
+      path: '/admin/login',
+      noindex: true
+    });
+    this.seo.setBreadcrumb([]);
+    this.seo.setStructuredData('article', null);
+    this.seo.setStructuredData('product', null);
   }
 
   onLogin(): void {

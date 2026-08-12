@@ -1,4 +1,11 @@
 import { DataService } from '../services/data.service';
+import { LoggerService } from '../services/logger.service';
+import { UrlConverter } from './url-converter.util';
+
+// Lớp này do CKEditor khởi tạo trực tiếp nên không đi qua DI của Angular.
+// LoggerService không có phụ thuộc nào nên tạo thẳng một instance là đủ, và
+// nhờ vậy log tự hạ mức khi chạy ngoài localhost.
+const logger = new LoggerService();
 
 export class CKEditorUploadAdapter {
   private loader: any;
@@ -14,27 +21,16 @@ export class CKEditorUploadAdapter {
       return new Promise((resolve, reject) => {
         this.dataService.uploadImage(file).subscribe({
           next: (response) => {
-            console.log('Upload response:', response);
             // Ensure the response has the correct format for CKEditor
             if (response && response.url) {
-              // Convert absolute URL to relative URL for proxy support
-              let convertedUrl = response.url;
-              if (convertedUrl.startsWith('http://localhost:8080/')) {
-                convertedUrl = convertedUrl.replace('http://localhost:8080/', '/');
-              } else if (convertedUrl.startsWith('http://') && convertedUrl.includes(':8080/')) {
-                convertedUrl = convertedUrl.replace(/http:\/\/[^\/]+:8080\//, '/');
-              } else if (convertedUrl.startsWith('https://') && convertedUrl.includes(':8080/')) {
-                convertedUrl = convertedUrl.replace(/https:\/\/[^\/]+:8080\//, '/');
-              }
-              console.log('CKEditor upload URL converted:', response.url, '->', convertedUrl);
-              resolve({ default: convertedUrl });
+              resolve({ default: UrlConverter.convertImageUrl(response.url) });
             } else {
-              console.error('Invalid response format:', response);
+              logger.error('CKEditor: phản hồi upload sai định dạng', response, 'Editor');
               reject(`Invalid response format: ${JSON.stringify(response)}`);
             }
           },
           error: (error) => {
-            console.error('Upload failed:', error);
+            logger.error('CKEditor: upload thất bại', error, 'Editor');
             // Convert error to string to avoid [object Object] display
             let errorMessage = 'Upload failed';
             if (error?.error?.error) {
@@ -58,19 +54,17 @@ export class CKEditorUploadAdapter {
 
 export function CKEditorUploadAdapterPlugin(dataService: DataService) {
   return function(editor: any) {
-    console.log('Initializing upload adapter plugin');
     try {
       const fileRepository = editor.plugins.get('FileRepository');
       if (fileRepository) {
         fileRepository.createUploadAdapter = (loader: any) => {
-          console.log('Creating upload adapter for loader');
           return new CKEditorUploadAdapter(loader, dataService);
         };
       } else {
-        console.error('FileRepository plugin not found');
+        logger.error('CKEditor: thiếu plugin FileRepository', undefined, 'Editor');
       }
     } catch (error) {
-      console.error('Error setting up upload adapter:', error);
+      logger.error('CKEditor: không khởi tạo được upload adapter', error, 'Editor');
     }
   };
 }

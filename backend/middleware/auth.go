@@ -1,7 +1,10 @@
 package middleware
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -9,7 +12,29 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte("your-secret-key-change-in-production")
+const legacyDefaultSecret = "your-secret-key-change-in-production"
+
+var jwtSecret []byte
+
+// InitJWTSecret đọc JWT_SECRET từ environment.
+//
+// Phải gọi trong main() SAU config.LoadEnv(): biến package-level được khởi tạo
+// trước khi main() chạy, nên không thể đọc .env ở mức khai báo biến.
+func InitJWTSecret() error {
+	secret := os.Getenv("JWT_SECRET")
+
+	switch {
+	case secret == "":
+		return errors.New("JWT_SECRET chưa được set - thêm vào backend/.env")
+	case secret == legacyDefaultSecret:
+		return errors.New("JWT_SECRET vẫn là giá trị mặc định cũ, phải đổi sang giá trị bí mật")
+	case len(secret) < 32:
+		return fmt.Errorf("JWT_SECRET quá ngắn (%d ký tự), cần ít nhất 32", len(secret))
+	}
+
+	jwtSecret = []byte(secret)
+	return nil
+}
 
 type Claims struct {
 	UserID   uint   `json:"user_id"`
@@ -18,6 +43,10 @@ type Claims struct {
 }
 
 func GenerateToken(userID uint, username string) (string, error) {
+	if len(jwtSecret) == 0 {
+		return "", errors.New("JWT secret chưa khởi tạo - thiếu gọi InitJWTSecret()")
+	}
+
 	claims := &Claims{
 		UserID:   userID,
 		Username: username,
@@ -49,6 +78,9 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		claims := &Claims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			if len(jwtSecret) == 0 {
+				return nil, errors.New("JWT secret chưa khởi tạo")
+			}
 			return jwtSecret, nil
 		})
 

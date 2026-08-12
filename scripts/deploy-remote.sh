@@ -16,6 +16,8 @@ LIVE="${WEB_ROOT}/house-design-frontend"
 BE_DIR="/root/house-design-cms/backend"
 BE_BIN="${BE_DIR}/house-design-backend"
 BE_BAK="${BE_DIR}/house-design-backend.bak"
+BE_ENV="${BE_DIR}/.env"
+BE_ENV_BAK="${BE_DIR}/.env.bak"
 SERVICE="house-design-backend"
 HEALTH="http://127.0.0.1:8080/health"
 PUBLIC_URL="https://mmadesign.vn"
@@ -25,15 +27,26 @@ log() { printf '\n\033[1;34m>>> %s\033[0m\n' "$*"; }
 die() { printf '\n\033[1;31mXXX %s\033[0m\n' "$*" >&2; exit 1; }
 
 [ -f "${STAGE_DIR}/house-design-backend" ] || die "thieu binary trong ${STAGE_DIR}"
-[ -d "${STAGE_DIR}/frontend" ]            || die "thieu frontend build trong ${STAGE_DIR}"
-[ -n "$(ls -A "${STAGE_DIR}/frontend")" ] || die "frontend build rong"
+[ -f "${STAGE_DIR}/env" ]                  || die "thieu file env trong ${STAGE_DIR}"
+[ -d "${STAGE_DIR}/frontend" ]             || die "thieu frontend build trong ${STAGE_DIR}"
+[ -n "$(ls -A "${STAGE_DIR}/frontend")" ]  || die "frontend build rong"
+grep -q '^JWT_SECRET=.\{32,\}$' "${STAGE_DIR}/env" || die "env thieu JWT_SECRET hop le"
+grep -q '^DB_PASSWORD=.\+$'     "${STAGE_DIR}/env" || die "env thieu DB_PASSWORD"
 
 # ---------------------------------------------------------------- backend ----
 log "Deploy backend"
 if [ -f "${BE_BIN}" ]; then
   cp -a "${BE_BIN}" "${BE_BAK}"
-  echo "rollback point: ${BE_BAK}"
+  echo "rollback point binary: ${BE_BAK}"
 fi
+if [ -f "${BE_ENV}" ]; then
+  cp -a "${BE_ENV}" "${BE_ENV_BAK}"
+  echo "rollback point env   : ${BE_ENV_BAK}"
+fi
+
+# .env render tu GitHub Secrets moi lan deploy -> GitHub la nguon su that duy nhat.
+# Sua tay .env tren server se bi ghi de o lan deploy ke tiep.
+install -m 600 "${STAGE_DIR}/env" "${BE_ENV}"
 
 # install -m 755: artifact cua GitHub Actions mat bit +x, nen set mode tuong minh
 install -m 755 "${STAGE_DIR}/house-design-backend" "${BE_BIN}"
@@ -55,6 +68,10 @@ if [ "${healthy}" -ne 1 ]; then
   journalctl -u "${SERVICE}" -n 40 --no-pager || true
   if [ -f "${BE_BAK}" ]; then
     install -m 755 "${BE_BAK}" "${BE_BIN}"
+    # tra ca .env ve ban cu: secret sai cung lam backend chet, khong chi binary
+    if [ -f "${BE_ENV_BAK}" ]; then
+      install -m 600 "${BE_ENV_BAK}" "${BE_ENV}"
+    fi
     systemctl restart "${SERVICE}"
     sleep 5
     if curl -fsS --max-time 5 "${HEALTH}" >/dev/null 2>&1; then
@@ -116,7 +133,9 @@ cd "${RELEASES}"
 # shellcheck disable=SC2012
 ls -1dt */ 2>/dev/null | tail -n "+$((KEEP_RELEASES + 1))" | while read -r old; do
   old_abs="$(readlink -f "${old}")"
-  [ "${old_abs}" = "${CURRENT}" ] && continue   # tuyet doi khong xoa ban dang live
+  if [ "${old_abs}" = "${CURRENT}" ]; then      # tuyet doi khong xoa ban dang live
+    continue
+  fi
   echo "xoa ${old}"
   rm -rf "${old}"
 done

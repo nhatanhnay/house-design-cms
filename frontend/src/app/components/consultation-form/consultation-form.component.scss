@@ -35,7 +35,7 @@
     .section-title {
       font-size: 2.5rem;
       font-weight: 700;
-      color: #fbbf24; /* Màu vàng sáng */
+      color: var(--brand, #e09543);
       margin-bottom: 15px;
     }
 
@@ -361,4 +361,35 @@
       }
     }
   }
+}
+
+/* Honeypot chống spam: ẩn hoàn toàn với người dùng nhưng vẫn tồn tại trong DOM
+   để bot điền tự động. Không dùng display:none vì một số bot bỏ qua field ẩn kiểu đó. */
+.honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.field-hint {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.form-feedback:empty {
+  display: none;
+}
+
+/* Nút gửi không còn bị disable khi form chưa hợp lệ, chỉ mờ khi đang gửi */
+.btn-submit:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+
+.btn-submit:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { DataService } from '../../services/data.service';
@@ -9,6 +9,7 @@ import { FooterContent } from '../../pages/admin/admin.component';
   selector: 'app-footer',
   standalone: true,
   imports: [CommonModule, MatToolbarModule, MatIconModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './footer.component.html',
   styleUrls: ['./footer.component.scss']
 })
@@ -33,7 +34,17 @@ export class FooterComponent implements OnInit {
     ]
   };
 
+  private readonly cdr = inject(ChangeDetectorRef);
+
   constructor(private dataService: DataService) {}
+
+  trackByIndex(index: number): number {
+    return index;
+  }
+
+  trackBySocialName(_index: number, social: { name: string }): string {
+    return social.name;
+  }
 
   ngOnInit(): void {
     this.loadFooterContent();
@@ -55,6 +66,7 @@ export class FooterComponent implements OnInit {
             { name: 'LinkedIn', url: 'https://linkedin.com/company/company', icon: 'business' }
           ];
         }
+        this.cdr.markForCheck();
       },
       error: (error) => {
         // Keep using default values if API fails
