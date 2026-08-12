@@ -201,8 +201,12 @@ func main() {
 
 	// Robots.txt endpoint
 	r.GET("/robots.txt", func(c *gin.Context) {
+		// nginx phục vụ /robots.txt từ handler này chứ không phải file tĩnh của
+		// frontend, nên mọi quy tắc phải nằm ở đây mới có tác dụng.
 		robotsTxt := `User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /admin/*
 
 Sitemap: https://mmadesign.vn/sitemap.xml`
 		c.Header("Content-Type", "text/plain; charset=utf-8")
