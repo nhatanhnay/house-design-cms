@@ -84,11 +84,14 @@
 
           <!-- Desktop/tablet: hiện toàn bộ bước -->
           <div class="process-steps-grid desktop-only">
-            <ng-container *ngFor="let step of tab.steps; let isLast = last">
+            <ng-container *ngFor="let step of tab.steps; let stepIndex = index; let isLast = last">
               <div class="process-step-item">
                 <div class="step-icon">
-                  <img [src]="step.icon_url" [appSkeleton]="step.icon_url" class="on-dark" [alt]="step.title"
-                    loading="lazy" decoding="async">
+                  <img *ngIf="step.icon_url" [src]="step.icon_url" [appSkeleton]="step.icon_url" class="on-dark"
+                    [alt]="step.title" loading="lazy" decoding="async">
+                  <!-- Chưa có icon: đánh số bước thay vì để một ô trống.
+                       Mũi tên giữa các bước đã cho thấy đây là chuỗi có thứ tự. -->
+                  <span *ngIf="!step.icon_url" class="step-number" aria-hidden="true">{{ stepIndex + 1 }}</span>
                 </div>
                 <div class="step-content">
                   <h3 class="step-title">{{ step.title }}</h3>
@@ -115,8 +118,9 @@
                   <div *ngFor="let step of tab.steps; let stepIndex = index" class="process-step-item"
                     [class.active]="stepIndex === currentProcessStepIndex">
                     <div class="step-icon">
-                      <img [src]="step.icon_url" [appSkeleton]="step.icon_url" class="on-dark" [alt]="step.title"
-                        loading="lazy" decoding="async">
+                      <img *ngIf="step.icon_url" [src]="step.icon_url" [appSkeleton]="step.icon_url" class="on-dark"
+                        [alt]="step.title" loading="lazy" decoding="async">
+                      <span *ngIf="!step.icon_url" class="step-number" aria-hidden="true">{{ stepIndex + 1 }}</span>
                     </div>
                     <div class="step-content">
                       <h3 class="step-title">{{ step.title }}</h3>

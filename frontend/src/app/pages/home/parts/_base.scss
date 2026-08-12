@@ -1450,3 +1450,24 @@
 .post-image:has(img.is-failed) .post-overlay {
   background: none;
 }
+
+/* ---------------------------------------------------------------------------
+   Số thứ tự bước, dùng khi bước chưa có icon
+
+   Ô skeleton trống 100×100 không mang thông tin gì. Thứ tự bước thì có —
+   và các mũi tên giữa những bước đã thể hiện đúng điều đó.
+--------------------------------------------------------------------------- */
+.step-icon .step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--accent-copper);
+  border-radius: 50%;
+  color: var(--accent-copper);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
