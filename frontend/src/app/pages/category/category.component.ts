@@ -13,6 +13,7 @@ import { SeoService } from '../../services/seo.service';
 import { Admin, Category } from '../../models/models';
 import { CardItem, byNewest, cardItemKey, toCardItem } from '../../models/card-item';
 import { SkeletonImageDirective } from '../../directives/skeleton-image.directive';
+import { BlueprintRevealDirective } from '../../directives/blueprint-reveal.directive';
 
 /** Tab lọc theo danh mục con. `id === null` là "Mới nhất". */
 interface SubTab {
@@ -23,7 +24,7 @@ interface SubTab {
 @Component({
   selector: 'app-category',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, RouterModule, SkeletonImageDirective],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, RouterModule, SkeletonImageDirective, BlueprintRevealDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="category-page">
@@ -121,46 +122,38 @@ interface SubTab {
           </div>
 
           <div class="posts-grid">
-            <mat-card class="post-card" *ngFor="let item of pagedItems; trackBy: trackByItem"
+            <mat-card class="post-card"
+                      *ngFor="let item of pagedItems; let i = index; trackBy: trackByItem"
                       [routerLink]="item.route">
               <div class="post-image">
                 <img [src]="item.imageUrl"
                      [appSkeleton]="item.imageUrl"
+                     appBlueprint
+                     [blueprintDelay]="i * 180"
                      [alt]="item.title"
                      loading="lazy"
                      decoding="async">
-                <div class="post-overlay">
-                  <div class="post-category-badge">{{ categoryName }}</div>
-                  <div class="item-type-badge" *ngIf="item.isProduct">
-                    <mat-icon aria-hidden="true">shopping_cart</mat-icon>
-                    Sản phẩm
-                  </div>
-                </div>
+                <div class="post-overlay"></div>
+                <span class="post-category-badge">{{ categoryName }}</span>
+                <span class="item-type-badge" *ngIf="item.isProduct">Sản phẩm</span>
+                <h3 class="post-title">{{ item.title }}</h3>
               </div>
 
+              <div class="card-rule"></div>
+
               <mat-card-content class="post-content">
-                <h3 class="post-title">{{ item.title }}</h3>
                 <p class="post-summary">{{ item.summary || 'Không có mô tả' }}</p>
 
                 <div class="post-meta">
-                  <div class="post-date">
-                    <mat-icon aria-hidden="true">event</mat-icon>
-                    <span>{{ item.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
-                  </div>
-                  <div class="post-status" *ngIf="currentUser$ | async"
-                       [class.published]="item.published" [class.draft]="!item.published">
-                    <mat-icon aria-hidden="true">{{ item.published ? 'visibility' : 'visibility_off' }}</mat-icon>
-                    <span>{{ item.published ? 'Đã xuất bản' : 'Bản nháp' }}</span>
-                  </div>
-                  <div class="post-views" *ngIf="!(currentUser$ | async)">
-                    <mat-icon aria-hidden="true">visibility</mat-icon>
-                    <span>{{ item.views }} lượt xem</span>
-                  </div>
-                </div>
-
-                <div class="read-more">
-                  <span>{{ item.isProduct ? 'Xem sản phẩm' : 'Xem chi tiết' }}</span>
-                  <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                  <span class="post-date">{{ item.createdAt | date:'dd·MM·yyyy' }}</span>
+                  <span class="post-status" *ngIf="currentUser$ | async"
+                        [class.published]="item.published" [class.draft]="!item.published">
+                    {{ item.published ? 'Đã xuất bản' : 'Bản nháp' }}
+                  </span>
+                  <span class="read-more">
+                    {{ item.isProduct ? 'Xem sản phẩm' : 'Xem chi tiết' }}
+                    <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                  </span>
                 </div>
               </mat-card-content>
             </mat-card>
@@ -526,39 +519,56 @@ interface SubTab {
     .posts-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      grid-auto-rows: 500px;
+      grid-auto-rows: auto;
+      align-items: start;
       gap: 30px;
       margin-top: 20px;
       margin-bottom: 20px;
     }
 
     /* Post Cards */
+    /* Thẻ tối viền nét mảnh: ảnh công trình là nội dung, thẻ chỉ là khung —
+       nó không nên sáng hơn thứ nó chứa. */
     .post-card {
       cursor: pointer;
-      border-radius: 16px;
+      border-radius: 0;
       overflow: hidden;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-      background: white;
-      border: none;
+      transition: transform 0.45s cubic-bezier(.16,1,.3,1), border-color 0.45s ease;
+      box-shadow: none;
+      background: #1F1E1C;
+      border: 1px solid rgba(255, 255, 255, 0.09);
       text-decoration: none;
       color: inherit;
       width: 100%;
-      height: 500px;
+      height: auto;
       display: flex;
       flex-direction: column;
     }
 
     .post-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+      transform: translateY(-4px);
+      border-color: rgba(224, 149, 67, 0.42);
+      box-shadow: none;
     }
 
     .post-image {
       position: relative;
-      height: 220px;
+      aspect-ratio: 4 / 3;
+      height: auto;
       overflow: hidden;
       flex-shrink: 0;
+    }
+
+    /* Nét đồng kéo hết chiều ngang khi rê chuột */
+    .card-rule {
+      height: 1px;
+      width: 0;
+      background: var(--brand, #e09543);
+      transition: width 0.6s cubic-bezier(.16,1,.3,1);
+    }
+
+    .post-card:hover .card-rule {
+      width: 100%;
     }
 
     .post-image img {
@@ -578,7 +588,7 @@ interface SubTab {
       left: 0;
       right: 0;
       bottom: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.3));
+      background: linear-gradient(to top, rgba(10,10,9,.90) 0%, rgba(10,10,9,.10) 55%, transparent 100%);
     }
 
     /* Lớp phủ chỉ để làm nổi nhãn trên ảnh thật; phủ lên skeleton trống chỉ
@@ -587,31 +597,52 @@ interface SubTab {
       background: none;
     }
 
-    .post-category-badge {
+    /* Nhãn viền nét mảnh thay viên thuốc bo tròn */
+    .post-category-badge,
+    .item-type-badge {
       position: absolute;
-      top: 15px;
-      left: 15px;
-      background: var(--brand, #e09543);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.8rem;
+      z-index: 4;
+      top: 14px;
+      background: rgba(10, 10, 9, 0.55);
+      backdrop-filter: blur(4px);
+      padding: 5px 10px;
+      border-radius: 0;
+      font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
       font-weight: 500;
     }
 
+    .post-category-badge {
+      left: 14px;
+      color: var(--brand, #e09543);
+      border: 1px solid rgba(224, 149, 67, 0.42);
+    }
+
     .item-type-badge {
+      right: 14px;
+      color: #7FD1A8;
+      border: 1px solid rgba(127, 209, 168, 0.42);
+    }
+
+    /* Tiêu đề đè lên ảnh — ảnh giữ được phần lớn thẻ */
+    .post-title {
       position: absolute;
-      top: 15px;
-      right: 15px;
-      background: var(--state-success, #2e7d52);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      z-index: 4;
+      left: 18px;
+      right: 18px;
+      bottom: 14px;
+      margin: 0;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .item-type-badge mat-icon {
@@ -622,31 +653,21 @@ interface SubTab {
 
     /* Post Content */
     .post-content {
-      padding: 20px !important;
+      padding: 16px 18px 18px !important;
       flex: 1;
       display: flex;
       flex-direction: column;
-    }
-
-    .post-title {
-      color: #3A3A3A;
-      margin-bottom: 12px;
-      font-size: 1.25rem;
-      font-weight: 600;
-      line-height: 1.4;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      background: #1F1E1C;
     }
 
     .post-summary {
-      color: #6c757d;
+      color: #A9A39A;
+      font-size: 0.9rem;
       line-height: 1.6;
-      margin-bottom: auto;
-      flex: 1;
+      margin-bottom: 0;
+      flex: 0 0 auto;
       display: -webkit-box;
-      -webkit-line-clamp: 3;
+      -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
@@ -655,11 +676,17 @@ interface SubTab {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
       margin-top: auto;
-      margin-bottom: 16px;
-      padding-top: 12px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid #eee;
+      margin-bottom: 0;
+      padding-top: 14px;
+      padding-bottom: 0;
+      border-bottom: 0;
+      font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6B665F;
     }
 
     .post-date,
@@ -704,13 +731,21 @@ interface SubTab {
     .read-more {
       display: inline-flex;
       align-items: center;
-      justify-content: space-between;
-      color: var(--brand-strong, #c97c2b);
+      gap: 7px;
+      color: var(--brand, #e09543);
       font-weight: 500;
-      font-size: 0.9rem;
-      margin-top: auto;
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 0;
       line-height: 1.3;
-      width: 100%;
+      width: auto;
+      white-space: nowrap;
+      transition: gap 0.35s cubic-bezier(.16,1,.3,1);
+    }
+
+    .post-card:hover .read-more {
+      gap: 13px;
     }
 
     .read-more mat-icon {

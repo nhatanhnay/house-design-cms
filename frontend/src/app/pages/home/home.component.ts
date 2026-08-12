@@ -26,6 +26,7 @@ import { StructuredDataService } from '../../services/structured-data.service';
 import { SearchComponent, SearchResponse } from '../../components/search/search.component';
 import { convertImageUrl } from '../../utils/url-converter.util';
 import { SkeletonImageDirective } from '../../directives/skeleton-image.directive';
+import { BlueprintRevealDirective } from '../../directives/blueprint-reveal.directive';
 
 /** Tab con của một danh mục. `id === null` là tab "Mới nhất". */
 interface SubTab {
@@ -65,7 +66,8 @@ const CAROUSEL_INTERVAL_MS = 5000;
     MatButtonModule,
     MatIconModule,
     SearchComponent,
-    SkeletonImageDirective
+    SkeletonImageDirective,
+    BlueprintRevealDirective
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './home.component.html',

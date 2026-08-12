@@ -20,7 +20,7 @@
   }
 
   .category-posts-carousel-wrapper {
-    height: 1020px; // (500px * 2 + 20px gap) for tablet
+    height: auto;
   }
 
   .category-posts-carousel {
@@ -30,12 +30,12 @@
   .category-posts-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
-    height: 1020px; // (500px * 2 rows) + 20px gap
+    height: auto;
 
     .post-card {
       // Tablet: 2 columns x 2 rows = 4 items per page
       width: 100% !important;
-      height: 500px !important;
+      height: auto !important;
       max-width: none !important;
       min-width: auto !important;
     }

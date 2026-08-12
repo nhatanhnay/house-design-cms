@@ -540,11 +540,12 @@ html.reduce-motion *::after {
   to   { background-position: -80% 0; }
 }
 
-/* Nền nhấp nháy dùng chung cho cả <img> lẫn khối chờ.
+/* Nền skeleton nằm ở phần tử CHA của ảnh, không nằm trên chính thẻ <img>.
 
-   Biến thể màu bọc trong :where() để giữ specificity ở mức (0,1,0) — nhờ vậy
-   các quy tắc trạng thái phía dưới (0,2,0) luôn thắng, bất kể thứ tự khai báo. */
-.skeleton-img,
+   Đặt trên <img> buộc phải can thiệp vào thuộc tính src khi ảnh hỏng, mà gán
+   src sẽ huỷ request đang tải — nguồn gốc của một lỗi chập chờn làm ảnh biến
+   mất. Đặt ở cha thì thẻ <img> không bao giờ bị đụng tới. */
+.skeleton-host,
 .skeleton-block {
   background-color: var(--skeleton-base);
   background-image: linear-gradient(
@@ -558,11 +559,12 @@ html.reduce-motion *::after {
   animation: skeleton-sweep var(--skeleton-speed) ease-in-out infinite;
 }
 
-/* Biến thể cho vùng nền tối */
-.skeleton-img:where(.on-dark),
+/* Biến thể cho vùng nền tối. :where() giữ specificity thấp để các quy tắc
+   trạng thái phía dưới luôn thắng, bất kể thứ tự khai báo. */
+.skeleton-host:where(.on-dark),
 .skeleton-block:where(.on-dark),
-:where(.on-dark) .skeleton-img,
-:where(.on-dark) .skeleton-block {
+:where(.on-dark) .skeleton-block,
+.skeleton-host:where(:has(> .skeleton-img.on-dark)) {
   background-color: var(--skeleton-base-dark);
   background-image: linear-gradient(
     100deg,
@@ -572,18 +574,16 @@ html.reduce-motion *::after {
   );
 }
 
-/* --- Trạng thái: khai báo sau cùng và thắng mọi biến thể màu --- */
+/* --- Trạng thái, khai báo sau cùng --- */
 
 /* Ảnh đã tải: bỏ hẳn nền để ảnh thật hiện ra, kể cả ảnh nền trong suốt */
-.skeleton-img.is-loaded {
+.skeleton-host.is-loaded {
   background: none;
   animation: none;
 }
 
-/* Ảnh hỏng hoặc không có: nền đứng yên, không giả vờ đang tải nữa.
-   Directive gán src về pixel trong suốt nên thẻ vẫn giữ đúng kích thước
-   container và không hiện icon ảnh vỡ hay chữ alt. */
-.skeleton-img.is-failed {
+/* Ảnh hỏng hoặc trống: nền đứng yên, không giả vờ đang tải nữa */
+.skeleton-host.is-failed {
   background-image: none;
   animation: none;
 }

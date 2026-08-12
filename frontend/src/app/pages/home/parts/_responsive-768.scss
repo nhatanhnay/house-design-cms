@@ -18,15 +18,18 @@
   }
 
   .hero-content-overlay {
-    position: relative;
-    height: auto;
-    padding: 24px 0 0 0;
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    padding: 0;
+    justify-content: center;
   }
 
   .hero-content {
-    padding: 24px 20px;
+    /* Chừa chỗ cho dải số liệu bám đáy hero */
+    padding: 24px 20px 190px;
     margin-top: 0;
-    text-align: center;
+    text-align: left;
   }
 
   .hero-content h1 {
@@ -48,9 +51,11 @@
   }
 
   .hero-stats-boxes {
-    position: relative;
-    padding: 20px 16px 30px 16px;
-    margin-top: 20px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding: 0;
+    margin-top: 0;
   }
 
   // Hero stats responsive - 2x2 grid on mobile
@@ -65,9 +70,10 @@
     border-radius: 0 !important;
     
     .stat-number {
-      font-size: 1.8rem;
+      font-size: 1.35rem;
       margin-bottom: 6px;
-      font-weight: 700;
+      font-weight: 300;
+      color: #fff;
     }
 
     .stat-label {
@@ -201,7 +207,6 @@
 
   .feature-strip {
     padding: 30px 24px;
-    border-radius: 14px;
   }
 
   .feature-content {
@@ -266,7 +271,7 @@
   }
 
   .category-posts-carousel-wrapper {
-    height: 1016px; // (500px * 2 + 16px gap) for mobile
+    height: auto;
   }
 
   .category-posts-carousel {
@@ -276,12 +281,12 @@
   .category-posts-grid {
     grid-template-columns: 1fr;
     gap: 16px;
-    height: 1016px; // (500px * 2 rows) + 16px gap
+    height: auto;
 
     .post-card {
       // Mobile: 1 column x 2 rows = 2 items per page
       width: 100% !important;
-      height: 500px !important;
+      height: auto !important;
       max-width: none !important;
       min-width: auto !important;
     }
@@ -330,7 +335,8 @@
 
   .subcategory-image,
   .post-image {
-    height: 200px;
+    /* Giữ tỷ lệ 4:3 để lưới thẳng hàng ở mọi bề rộng */
+    height: auto;
   }
 
   .subcategory-content,

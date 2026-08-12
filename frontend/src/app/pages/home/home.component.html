@@ -7,9 +7,10 @@
         <div class="carousel-slide" *ngFor="let image of homepageImages; let i = index"
           [class.active]="i === currentSlideIndex" [attr.aria-hidden]="i === currentSlideIndex ? null : 'true'">
           <!-- Ảnh hero là LCP: slide đầu tải ngay, các slide sau mới lazy -->
-          <img [src]="image" [appSkeleton]="image" class="on-dark" [alt]="'Ảnh dự án ' + (i + 1)"
-            [attr.loading]="i === 0 ? 'eager' : 'lazy'" [attr.fetchpriority]="i === 0 ? 'high' : 'low'"
-            decoding="async" style="width: 100%; height: 100%; object-fit: cover;">
+          <img [src]="image" [appSkeleton]="image" [appBlueprint]="i === 0" class="on-dark"
+            [alt]="'Ảnh dự án ' + (i + 1)" [attr.loading]="i === 0 ? 'eager' : 'lazy'"
+            [attr.fetchpriority]="i === 0 ? 'high' : 'low'" decoding="async"
+            style="width: 100%; height: 100%; object-fit: cover;">
         </div>
 
         <div class="carousel-overlay"></div>
@@ -22,10 +23,12 @@
             <mat-icon aria-hidden="true">chevron_right</mat-icon>
           </button>
 
+          <!-- Chỉ báo kiểu vạch thước, thay cho chấm tròn -->
           <div class="carousel-indicators" role="tablist" aria-label="Chọn ảnh">
             <button *ngFor="let image of homepageImages; let i = index" type="button" class="indicator"
               [class.active]="i === currentSlideIndex" (click)="goToSlide(i)" role="tab"
               [attr.aria-selected]="i === currentSlideIndex" [attr.aria-label]="'Ảnh ' + (i + 1)">
+              <span class="tick-no">{{ i + 1 < 10 ? '0' : '' }}{{ i + 1 }}</span>
             </button>
           </div>
         </ng-container>
@@ -35,11 +38,22 @@
     <div class="hero-content-overlay">
       <div class="container">
         <header class="hero-content">
+          <p class="hero-kicker">Thiết kế &amp; thi công · 6 năm kinh nghiệm</p>
           <h1>{{ homeContent?.hero_title || 'CÔNG TY THIẾT KẾ VÀ THI CÔNG NHÀ ĐẸP AZAR' }}</h1>
-          <p class="hero-tagline">Với 6 Năm Kinh Nghiệm</p>
           <p class="hero-subtitle">{{ homeContent?.hero_description || 'Chuyên thiết kế và thi công biệt thự, nhà ở hiện
             đại với phong cách kiến trúc độc đáo' }}</p>
+          <div class="hero-cta">
+            <a class="hero-btn solid" routerLink="/category/mau-thiet-ke">Xem mẫu thiết kế</a>
+            <a class="hero-btn" href="#main-content">Nhận tư vấn</a>
+          </div>
         </header>
+      </div>
+
+      <!-- Khung tên bản vẽ: quy ước của nghề, dùng làm thành phần giao diện -->
+      <div class="title-block top-right" aria-hidden="true">
+        <div><span>Hạng mục</span><b>Mặt đứng</b></div>
+        <div><span>Tỷ lệ</span><b>1:100</b></div>
+        <div><span>Địa điểm</span><b>Toàn quốc</b></div>
       </div>
 
       <div class="hero-stats-boxes">
@@ -249,31 +263,27 @@
 
           <div class="category-posts-carousel">
             <div class="category-posts-grid" [style.--grid-rows]="row.rowCount">
-              <mat-card class="post-card" *ngFor="let item of row.visibleItems; trackBy: trackByItem"
+              <mat-card class="post-card"
+                *ngFor="let item of row.visibleItems; let i = index; trackBy: trackByItem"
                 [routerLink]="item.route">
                 <div class="post-image">
-                  <img [src]="item.imageUrl" [appSkeleton]="item.imageUrl" [alt]="item.title" loading="lazy"
-                    decoding="async">
-                  <div class="post-overlay">
-                    <div class="post-category">{{ row.name }}</div>
-                  </div>
-                </div>
-                <mat-card-content class="post-content">
+                  <img [src]="item.imageUrl" [appSkeleton]="item.imageUrl" appBlueprint
+                    [blueprintDelay]="i * 180" [alt]="item.title" loading="lazy" decoding="async">
+                  <div class="post-overlay"></div>
+                  <span class="post-category">{{ row.name }}</span>
                   <h3 class="post-title">{{ item.title }}</h3>
+                </div>
+                <!-- Nét đồng kéo ngang khi rê chuột -->
+                <div class="card-rule"></div>
+
+                <mat-card-content class="post-content">
                   <p class="post-summary">{{ item.summary || 'Không có mô tả' }}</p>
                   <div class="post-meta">
-                    <div class="meta-item">
-                      <mat-icon aria-hidden="true">event</mat-icon>
-                      <span class="post-date">{{ item.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
-                    </div>
-                    <div class="meta-item" *ngIf="!(currentUser$ | async)">
-                      <mat-icon aria-hidden="true">visibility</mat-icon>
-                      <span>{{ item.views }} lượt xem</span>
-                    </div>
-                  </div>
-                  <div class="read-more">
-                    <span>{{ item.isProduct ? 'Xem sản phẩm' : 'Xem chi tiết' }}</span>
-                    <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                    <span class="post-date">{{ item.createdAt | date:'dd·MM·yyyy' }}</span>
+                    <span class="read-more">
+                      {{ item.isProduct ? 'Xem sản phẩm' : 'Xem chi tiết' }}
+                      <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                    </span>
                   </div>
                 </mat-card-content>
               </mat-card>

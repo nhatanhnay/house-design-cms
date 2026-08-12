@@ -36,8 +36,8 @@
   }
 
   .hero-content {
-    padding: 30px 20px;
-    text-align: center;
+    padding: 30px 20px 200px;
+    text-align: left;
   }
 
   .hero-content h1 {
@@ -64,60 +64,37 @@
   }
 
   .hero-stats-boxes {
-    padding: 30px 20px 40px 20px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding: 0;
   }
 
   .stats-container {
-    border-radius: 16px;
-    padding: 24px 16px;
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    /* Dải nét mảnh, đồng bộ với desktop — không quay lại thẻ trắng bo góc */
+    border-radius: 0;
+    padding: 0;
+    background: rgba(10, 10, 9, 0.42);
+    box-shadow: none;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
   }
 
   .stat-box {
-    padding: 24px 16px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-    
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    }
-    
-    .stat-number {
-      font-size: 2.2rem;
-      margin-bottom: 8px;
-      font-weight: 700;
-      color: var(--accent-copper, #E09543);
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    }
+    padding: 16px 14px 18px;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.10);
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
+  }
 
-    .stat-label {
-      font-size: 0.85rem;
-      line-height: 1.35;
-      color: #555;
-      font-weight: 500;
-    }
-    
-    &:nth-child(1) {
-      border-radius: 10px 0 0 0 !important;
-    }
-    
-    &:nth-child(2) {
-      border-radius: 0 10px 0 0 !important;
-    }
-    
-    &:nth-child(3) {
-      border-radius: 0 0 0 10px !important;
-    }
-    
-    &:nth-child(4) {
-      border-radius: 0 0 10px 0 !important;
-    }
+  .stat-box:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .stat-box:nth-child(-n + 2) {
+    border-top: 0;
   }
 
   .btn-primary,
@@ -233,15 +210,6 @@
 
   .feature-strip {
     padding: 28px 20px;
-    border-radius: 16px;
-    background: white;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-    
-    &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    }
   }
 
   .feature-strip .feature-content,
@@ -497,23 +465,13 @@
 
   .feature-strip {
     padding: 25px 20px;
-    margin-bottom: 20px;
-    border-radius: 16px;
-    background: white;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-    
-    &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    }
-    
+
     .feature-content {
       flex-direction: column;
       text-align: center;
       gap: 20px;
     }
-    
+
     &.right-aligned .feature-content {
       flex-direction: column;
     }
@@ -599,19 +557,12 @@
 
   .post-card {
     margin-bottom: 20px;
-    border-radius: 16px;
+    border-radius: 0;
     overflow: hidden;
-    background: white;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-    
-    &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    }
-    
+
     .post-image {
-      height: 200px;
+      aspect-ratio: 4 / 3;
+      height: auto;
       position: relative;
       overflow: hidden;
       
