@@ -87,8 +87,8 @@
             <ng-container *ngFor="let step of tab.steps; let isLast = last">
               <div class="process-step-item">
                 <div class="step-icon">
-                  <img [src]="step.icon_url" [appSkeleton]="step.icon_url" [alt]="step.title" loading="lazy"
-                    decoding="async">
+                  <img [src]="step.icon_url" [appSkeleton]="step.icon_url" class="on-dark" [alt]="step.title"
+                    loading="lazy" decoding="async">
                 </div>
                 <div class="step-content">
                   <h3 class="step-title">{{ step.title }}</h3>
@@ -115,8 +115,8 @@
                   <div *ngFor="let step of tab.steps; let stepIndex = index" class="process-step-item"
                     [class.active]="stepIndex === currentProcessStepIndex">
                     <div class="step-icon">
-                      <img [src]="step.icon_url" [appSkeleton]="step.icon_url" [alt]="step.title" loading="lazy"
-                        decoding="async">
+                      <img [src]="step.icon_url" [appSkeleton]="step.icon_url" class="on-dark" [alt]="step.title"
+                        loading="lazy" decoding="async">
                     </div>
                     <div class="step-content">
                       <h3 class="step-title">{{ step.title }}</h3>

@@ -158,6 +158,11 @@
   height: 100%;
   object-fit: contain;
   display: block;
+}
+
+/* Nền trắng cho ảnh sản phẩm nền trong suốt — chỉ khi ảnh đã tải, nếu không nó
+   đè mất nền skeleton (specificity cao hơn và component style nạp sau). */
+.main-image img.is-loaded {
   background: white;
 }
 
