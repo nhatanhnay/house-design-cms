@@ -47,3 +47,7 @@ temp/
 
 # Terminal Paste Image folder
 .cp-images/
+
+# Compiled Go binary (CI tu build, khong commit)
+/backend/house-design-backend
+/backend/house-design-backend.bak

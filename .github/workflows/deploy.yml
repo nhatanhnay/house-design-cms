@@ -1,0 +1,151 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Khong bao gio deploy 2 lan song song vao cung 1 server
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  GO_VERSION: '1.23'
+  NODE_VERSION: '20'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: backend/go.sum
+
+      - name: Vet backend
+        working-directory: backend
+        run: go vet ./...
+
+      - name: Build backend (static linux/amd64)
+        working-directory: backend
+        env:
+          CGO_ENABLED: '0'
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          go build -trimpath -ldflags='-s -w' -o house-design-backend .
+          ls -lh house-design-backend
+          file house-design-backend || true
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend (production)
+        working-directory: frontend
+        run: |
+          npm run build
+          test -f dist/house-design-frontend/index.html \
+            || { echo "::error::Build frontend khong ra index.html"; exit 1; }
+          du -sh dist/house-design-frontend
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            backend/house-design-backend
+            frontend/dist/house-design-frontend/
+            scripts/deploy-remote.sh
+
+  deploy:
+    name: Deploy to VPS
+    needs: build
+    runs-on: ubuntu-latest
+    # PR chi build de kiem tra, khong deploy
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: release
+
+      - name: Setup SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -T 15 "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          test -s ~/.ssh/known_hosts || { echo "::error::ssh-keyscan that bai"; exit 1; }
+
+      - name: Upload build len VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -Eeuo pipefail
+          RELEASE_ID="${GITHUB_SHA:0:7}-${GITHUB_RUN_NUMBER}"
+          echo "RELEASE_ID=$RELEASE_ID" >> "$GITHUB_ENV"
+
+          STAGE="/tmp/hd-deploy-${RELEASE_ID}"
+          SSH_CMD="ssh -i ~/.ssh/deploy_key -o BatchMode=yes"
+          TARGET="${VPS_USER}@${VPS_HOST}"
+
+          $SSH_CMD "$TARGET" "rm -rf '$STAGE' && mkdir -p '$STAGE/frontend'"
+
+          rsync -az --delete -e "$SSH_CMD" \
+            release/frontend/dist/house-design-frontend/ \
+            "$TARGET:$STAGE/frontend/"
+
+          rsync -az -e "$SSH_CMD" \
+            release/backend/house-design-backend \
+            release/scripts/deploy-remote.sh \
+            "$TARGET:$STAGE/"
+
+          echo "Da upload release $RELEASE_ID len $STAGE"
+
+      - name: Chay deploy (co health check + auto rollback)
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "${VPS_USER}@${VPS_HOST}" \
+            "bash /tmp/hd-deploy-${RELEASE_ID}/deploy-remote.sh '${RELEASE_ID}'"
+
+      - name: Smoke test tu ben ngoai
+        run: |
+          set -Eeuo pipefail
+          fail=0
+          for ep in / /api/posts /api/products /api/categories /api/home-content; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "https://mmadesign.vn${ep}")
+            printf '%-22s -> %s\n' "$ep" "$code"
+            [ "$code" = "200" ] || fail=1
+          done
+          [ "$fail" -eq 0 ] || { echo "::error::Smoke test that bai"; exit 1; }
+          echo "Smoke test OK"
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
